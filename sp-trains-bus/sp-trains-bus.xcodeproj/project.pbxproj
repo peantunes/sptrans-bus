@@ -10,22 +10,9 @@
 		9C022E062F2FBEF00073F454 /* sp-trains-bus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "sp-trains-bus.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		9C022E132F2FBEF20073F454 /* Exceptions for "sp-trains-bus" folder in "sp-trains-bus" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 9C022E052F2FBEF00073F454 /* sp-trains-bus */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		9C022E082F2FBEF00073F454 /* sp-trains-bus */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				9C022E132F2FBEF20073F454 /* Exceptions for "sp-trains-bus" folder in "sp-trains-bus" target */,
-			);
 			path = "sp-trains-bus";
 			sourceTree = "<group>";
 		};
