@@ -6,9 +6,10 @@ class HomeViewModel: ObservableObject {
     @Published var favoriteStops: [Stop] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
+    @Published var userLocation: Location?
 
     private let getNearbyStopsUseCase: GetNearbyStopsUseCase
-    private let locationService: LocationServiceProtocol
+    let locationService: LocationServiceProtocol
     private let storageService: StorageServiceProtocol
 
     init(getNearbyStopsUseCase: GetNearbyStopsUseCase,
@@ -17,6 +18,9 @@ class HomeViewModel: ObservableObject {
         self.getNearbyStopsUseCase = getNearbyStopsUseCase
         self.locationService = locationService
         self.storageService = storageService
+        
+        // Request location permissions when the ViewModel is initialized
+        self.locationService.requestLocationPermission()
     }
 
     func loadData() {
@@ -25,8 +29,16 @@ class HomeViewModel: ObservableObject {
 
         Task {
             do {
-                locationService.requestLocationPermission()
-                let stops = try await getNearbyStopsUseCase.execute(limit: 5)
+                if userLocation == nil {
+                    // Try to get current location if not already set
+                    userLocation = locationService.getCurrentLocation()
+                }
+
+                guard let currentLocation = userLocation else {
+                    throw LocationError.locationUnavailable
+                }
+
+                let stops = try await getNearbyStopsUseCase.execute(location: currentLocation, limit: 5)
                 DispatchQueue.main.async {
                     self.nearbyStops = stops
                     self.isLoading = false

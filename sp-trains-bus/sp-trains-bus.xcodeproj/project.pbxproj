@@ -8,12 +8,61 @@
 
 /* Begin PBXFileReference section */
 		9C022E062F2FBEF00073F454 /* sp-trains-bus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "sp-trains-bus.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		9C022EA12F2FDAE20073F454 /* sp_trains_bus.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = sp_trains_bus.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		9C2B24D22F2FDDC100727FB6 /* Exceptions for "Resources" folder in "sp-trains-bus" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 9C022E052F2FBEF00073F454 /* sp-trains-bus */;
+		};
+		9C2B24D32F2FDF6400727FB6 /* Exceptions for "Presentation" folder in "sp-trains-bus" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Map/Components/RouteOverlay.swift,
+			);
+			target = 9C022E052F2FBEF00073F454 /* sp-trains-bus */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		9C022E082F2FBEF00073F454 /* sp-trains-bus */ = {
+		9C022E442F2FDAE20073F454 /* App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "sp-trains-bus";
+			path = App;
+			sourceTree = "<group>";
+		};
+		9C022E4C2F2FDAE20073F454 /* Application */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Application;
+			sourceTree = "<group>";
+		};
+		9C022E592F2FDAE20073F454 /* Domain */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Domain;
+			sourceTree = "<group>";
+		};
+		9C022E6B2F2FDAE20073F454 /* Infrastructure */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Infrastructure;
+			sourceTree = "<group>";
+		};
+		9C022E9D2F2FDAE20073F454 /* Presentation */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				9C2B24D32F2FDF6400727FB6 /* Exceptions for "Presentation" folder in "sp-trains-bus" target */,
+			);
+			path = Presentation;
+			sourceTree = "<group>";
+		};
+		9C022EA02F2FDAE20073F454 /* Resources */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				9C2B24D22F2FDDC100727FB6 /* Exceptions for "Resources" folder in "sp-trains-bus" target */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -32,7 +81,13 @@
 		9C022DFD2F2FBEF00073F454 = {
 			isa = PBXGroup;
 			children = (
-				9C022E082F2FBEF00073F454 /* sp-trains-bus */,
+				9C022E442F2FDAE20073F454 /* App */,
+				9C022E4C2F2FDAE20073F454 /* Application */,
+				9C022E592F2FDAE20073F454 /* Domain */,
+				9C022E6B2F2FDAE20073F454 /* Infrastructure */,
+				9C022E9D2F2FDAE20073F454 /* Presentation */,
+				9C022EA02F2FDAE20073F454 /* Resources */,
+				9C022EA12F2FDAE20073F454 /* sp_trains_bus.entitlements */,
 				9C022E072F2FBEF00073F454 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -61,7 +116,12 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				9C022E082F2FBEF00073F454 /* sp-trains-bus */,
+				9C022E442F2FDAE20073F454 /* App */,
+				9C022E4C2F2FDAE20073F454 /* Application */,
+				9C022E592F2FDAE20073F454 /* Domain */,
+				9C022E6B2F2FDAE20073F454 /* Infrastructure */,
+				9C022E9D2F2FDAE20073F454 /* Presentation */,
+				9C022EA02F2FDAE20073F454 /* Resources */,
 			);
 			name = "sp-trains-bus";
 			packageProductDependencies = (
@@ -137,7 +197,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "sp-trains-bus/Info.plist";
+				INFOPLIST_FILE = Resources/Info.plist;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -181,7 +241,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "sp-trains-bus/Info.plist";
+				INFOPLIST_FILE = Resources/Info.plist;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;

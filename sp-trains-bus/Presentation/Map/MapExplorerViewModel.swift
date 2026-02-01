@@ -29,10 +29,8 @@ class MapExplorerViewModel: ObservableObject {
         Task {
             do {
                 locationService.requestLocationPermission()
-                guard let currentLocation = locationService.getCurrentLocation() else {
-                    throw LocationError.locationUnavailable
-                }
-                let fetchedStops = try await getNearbyStopsUseCase.execute(limit: 50) // Fetch more stops for map
+                let mapLocation = Location(latitude: region.center.latitude, longitude: region.center.longitude)
+                let fetchedStops = try await getNearbyStopsUseCase.execute(limit: 50, location: mapLocation) // Fetch more stops for map
                 DispatchQueue.main.async {
                     self.stops = fetchedStops
                     self.isLoading = false

@@ -12,6 +12,8 @@
 	<string>We need your location to show you nearby stops and provide you with commute information.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>

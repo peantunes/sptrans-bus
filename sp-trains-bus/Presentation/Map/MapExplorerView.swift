@@ -4,9 +4,11 @@ import MapKit
 struct MapExplorerView: View {
     @StateObject private var viewModel: MapExplorerViewModel
     @State private var selectedFilter: TransitFilter = .bus // Default filter
+    let dependencies: AppDependencies // Inject dependencies
 
-    init(viewModel: MapExplorerViewModel) {
+    init(viewModel: MapExplorerViewModel, dependencies: AppDependencies) {
         _viewModel = StateObject(wrappedValue: viewModel)
+        self.dependencies = dependencies
     }
 
     var body: some View {
@@ -14,7 +16,7 @@ struct MapExplorerView: View {
             FilterChips(selectedFilter: $selectedFilter)
                 .padding(.vertical, 5)
 
-            TransitMapView(region: $viewModel.region, stops: viewModel.stops)
+            TransitMapView(region: $viewModel.region, stops: viewModel.stops, dependencies: dependencies)
                 .edgesIgnoringSafeArea(.all)
         }
         .navigationTitle("Map Explorer")
@@ -39,11 +41,11 @@ struct MapExplorerView: View {
     class MockTransitRepository: TransitRepositoryProtocol {
         func getNearbyStops(location: Location, limit: Int) async throws -> [Stop] {
             return [
-                Stop(stopId: 1, stopName: "Map Stop A", location: Location(latitude: -23.555, longitude: -46.635), stopSequence: 1, stopCode: "MSA", wheelchairBoarding: 0),
-                Stop(stopId: 2, stopName: "Map Stop B", location: Location(latitude: -23.548, longitude: -46.630), stopSequence: 2, stopCode: "MSB", wheelchairBoarding: 0)
+                Stop(stopId: "1", stopName: "Map Stop A", location: Location(latitude: -23.555, longitude: -46.635), stopSequence: 1, stopCode: "MSA", wheelchairBoarding: 0),
+                Stop(stopId: "2", stopName: "Map Stop B", location: Location(latitude: -23.548, longitude: -46.630), stopSequence: 2, stopCode: "MSB", wheelchairBoarding: 0)
             ]
         }
-        func getArrivals(stopId: Int, limit: Int) async throws -> [Arrival] { return [] }
+        func getArrivals(stopId: String, limit: Int) async throws -> [Arrival] { return [] }
         func searchStops(query: String, limit: Int) async throws -> [Stop] { return [] }
         func getTrip(tripId: String) async throws -> Trip { fatalError() }
         func getRoute(routeId: String) async throws -> Route { fatalError() }
@@ -63,6 +65,7 @@ struct MapExplorerView: View {
     let mockGetNearbyStopsUseCase = GetNearbyStopsUseCase(transitRepository: MockTransitRepository(), locationService: MockLocationService())
     let mockLocationService = MockLocationService()
     let viewModel = MapExplorerViewModel(getNearbyStopsUseCase: mockGetNearbyStopsUseCase, locationService: mockLocationService)
+    let dependencies = AppDependencies()
 
-    return MapExplorerView(viewModel: viewModel)
+    return MapExplorerView(viewModel: viewModel, dependencies: dependencies)
 }

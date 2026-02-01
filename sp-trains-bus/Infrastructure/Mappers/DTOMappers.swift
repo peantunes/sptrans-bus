@@ -2,9 +2,9 @@ import Foundation
 
 extension StopDTO {
     func toDomain() -> Stop {
-        return Stop(stopId: Int(stopId) ?? 0,
+        return Stop(stopId: stopId,
                     stopName: stopName,
-                    location: Location(latitude: stopLat, longitude: stopLon),
+                    location: Location(latitude: Double(stopLat) ?? 0, longitude: Double(stopLon) ?? 0),
                     stopSequence: 0, // StopDTO does not have stopSequence
                     stopCode: "", // StopDTO does not have stopCode
                     wheelchairBoarding: 0) // StopDTO does not have wheelchairBoarding
@@ -13,9 +13,9 @@ extension StopDTO {
 
 extension NearbyStopDTO {
     func toDomain() -> Stop {
-        return Stop(stopId: Int(id) ?? 0,
+        return Stop(stopId: id,
                     stopName: name,
-                    location: Location(latitude: lat, longitude: lon),
+                    location: Location(latitude: Double(lat) ?? 0, longitude: Double(lon) ?? 0),
                     stopSequence: 0,
                     stopCode: "",
                     wheelchairBoarding: 0)
@@ -27,7 +27,7 @@ extension ArrivalDTO {
         return Arrival(tripId: tripId,
                        arrivalTime: arrivalTime,
                        departureTime: departureTime,
-                       stopId: Int(stopId) ?? 0,
+                       stopId: stopId,
                        stopSequence: stopSequence,
                        stopHeadsign: headsign,
                        pickupType: 0, // ArrivalDTO does not have pickupType

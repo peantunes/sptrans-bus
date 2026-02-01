@@ -4,8 +4,8 @@ struct StopDTO: Decodable {
     let stopId: String
     let stopName: String
     let stopDesc: String?
-    let stopLat: Double
-    let stopLon: Double
+    let stopLat: String
+    let stopLon: String
     let routes: String?
 }
 
@@ -17,10 +17,10 @@ struct NearbyStopDTO: Decodable {
     let id: String
     let name: String
     let desc: String?
-    let lat: Double
-    let lon: Double
+    let lat: String
+    let lon: String
     let routes: String?
-    let distance: Double
+    let distance: String
 }
 
 struct SearchStopsResponse: Decodable {

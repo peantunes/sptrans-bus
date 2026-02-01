@@ -13,8 +13,8 @@ struct SearchResultRow: View {
                 Text(stop.stopName)
                     .font(AppFonts.headline())
                     .foregroundColor(AppColors.text)
-                if let stopCode = stop.stopCode, !stopCode.isEmpty {
-                    Text(stopCode)
+                if !stop.stopCode.isEmpty {
+                    Text(stop.stopCode)
                         .font(AppFonts.subheadline())
                         .foregroundColor(AppColors.text.opacity(0.8))
                 }
@@ -31,7 +31,7 @@ struct SearchResultRow: View {
 }
 
 #Preview {
-    let sampleStop = Stop(stopId: 1, stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561414, longitude: -46.656166), stopSequence: 1, stopCode: "SP-1234", wheelchairBoarding: 0)
+    let sampleStop = Stop(stopId: "1", stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561414, longitude: -46.656166), stopSequence: 1, stopCode: "SP-1234", wheelchairBoarding: 0)
     return SearchResultRow(stop: sampleStop, distance: 150.5)
         .padding()
 }

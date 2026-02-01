@@ -5,7 +5,7 @@ struct Arrival: Identifiable {
     let tripId: String
     let arrivalTime: String
     let departureTime: String
-    let stopId: Int
+    let stopId: String
     let stopSequence: Int
     let stopHeadsign: String
     let pickupType: Int

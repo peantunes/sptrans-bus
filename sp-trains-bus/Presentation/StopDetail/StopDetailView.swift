@@ -23,7 +23,7 @@ struct StopDetailView: View {
                         viewModel.loadArrivals()
                     }
                 } else if let nextArrival = viewModel.arrivals.first {
-                    NextBusCard(arrival: nextArrival)
+                    NextBusCard(arrival: nextArrival, routeColorString: "CCDD00", routeTextColorString: "FFFFFF")
                         .padding(.horizontal)
                 } else {
                     Text("No upcoming arrivals.")
@@ -51,11 +51,11 @@ struct StopDetailView: View {
     // Mock dependencies for Preview
     class MockTransitRepository: TransitRepositoryProtocol {
         func getNearbyStops(location: Location, limit: Int) async throws -> [Stop] { return [] }
-        func getArrivals(stopId: Int, limit: Int) async throws -> [Arrival] {
+        func getArrivals(stopId: String, limit: Int) async throws -> [Arrival] {
             return [
-                Arrival(tripId: "123", arrivalTime: "10:30", departureTime: "10:30", stopId: 1, stopSequence: 1, stopHeadsign: "Terminal Bandeira", pickupType: 0, dropOffType: 0, shapeDistTraveled: "", frequency: nil, waitTime: 5),
-                Arrival(tripId: "124", arrivalTime: "10:45", departureTime: "10:45", stopId: 1, stopSequence: 2, stopHeadsign: "Jardim Paulista", pickupType: 0, dropOffType: 0, shapeDistTraveled: "", frequency: nil, waitTime: 20),
-                Arrival(tripId: "125", arrivalTime: "11:00", departureTime: "11:00", stopId: 1, stopSequence: 3, stopHeadsign: "Parque Ibirapuera", pickupType: 0, dropOffType: 0, shapeDistTraveled: "", frequency: nil, waitTime: 35)
+                Arrival(tripId: "123", arrivalTime: "10:30", departureTime: "10:30", stopId: "1", stopSequence: 1, stopHeadsign: "Terminal Bandeira", pickupType: 0, dropOffType: 0, shapeDistTraveled: "", frequency: nil, waitTime: 5),
+                Arrival(tripId: "124", arrivalTime: "10:45", departureTime: "10:45", stopId: "1", stopSequence: 2, stopHeadsign: "Jardim Paulista", pickupType: 0, dropOffType: 0, shapeDistTraveled: "", frequency: nil, waitTime: 20),
+                Arrival(tripId: "125", arrivalTime: "11:00", departureTime: "11:00", stopId: "1", stopSequence: 3, stopHeadsign: "Parque Ibirapuera", pickupType: 0, dropOffType: 0, shapeDistTraveled: "", frequency: nil, waitTime: 35)
             ]
         }
         func searchStops(query: String, limit: Int) async throws -> [Stop] { return [] }
@@ -65,7 +65,7 @@ struct StopDetailView: View {
         func getAllRoutes(limit: Int, offset: Int) async throws -> [Route] { return [] }
     }
 
-    let sampleStop = Stop(stopId: 18848, stopName: "Clínicas", location: Location(latitude: -23.554022, longitude: -46.671108), stopSequence: 0, stopCode: "", wheelchairBoarding: 0)
+    let sampleStop = Stop(stopId: "18848", stopName: "Clínicas", location: Location(latitude: -23.554022, longitude: -46.671108), stopSequence: 0, stopCode: "", wheelchairBoarding: 0)
     let mockGetArrivalsUseCase = GetArrivalsUseCase(transitRepository: MockTransitRepository())
     let viewModel = StopDetailViewModel(stop: sampleStop, getArrivalsUseCase: mockGetArrivalsUseCase)
 

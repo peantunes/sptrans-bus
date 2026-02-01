@@ -5,7 +5,7 @@ struct MainTabView: View {
 
     var body: some View {
         TabView {
-            HomeView(viewModel: dependencies.homeViewModel)
+            HomeView(viewModel: dependencies.homeViewModel, dependencies: dependencies)
                 .tabItem {
                     Label("Home", systemImage: "house.fill")
                 }
@@ -16,7 +16,7 @@ struct MainTabView: View {
                     Label("Nearby", systemImage: "location.fill")
                 }
 
-            SearchView(viewModel: dependencies.searchViewModel) // Assuming SearchViewModel exists in dependencies
+            SearchView(viewModel: dependencies.searchViewModel, dependencies: dependencies) // Assuming SearchViewModel exists in dependencies
                 .tabItem {
                     Label("Search", systemImage: "magnifyingglass")
                 }
@@ -26,7 +26,7 @@ struct MainTabView: View {
                     Label("Status", systemImage: "waveform.path.ecg")
                 }
 
-            MapExplorerView(viewModel: dependencies.mapExplorerViewModel) // Assuming MapExplorerViewModel exists in dependencies
+            MapExplorerView(viewModel: dependencies.mapExplorerViewModel, dependencies: dependencies) // Assuming MapExplorerViewModel exists in dependencies
                 .tabItem {
                     Label("Map", systemImage: "map.fill")
                 }

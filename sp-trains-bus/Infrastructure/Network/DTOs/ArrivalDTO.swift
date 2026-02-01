@@ -8,6 +8,7 @@ struct ArrivalDTO: Decodable {
     let headsign: String
     let arrivalTime: String
     let departureTime: String
+    let stopId: String // Changed to String
     let stopSequence: Int
     let routeType: Int
     let routeColor: String

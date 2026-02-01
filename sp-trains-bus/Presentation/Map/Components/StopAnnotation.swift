@@ -24,5 +24,5 @@ struct StopAnnotation: View {
 }
 
 #Preview {
-    StopAnnotation(stop: Stop(stopId: 1, stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561414, longitude: -46.656166), stopSequence: 1, stopCode: "SP1", wheelchairBoarding: 0))
+    StopAnnotation(stop: Stop(stopId: "1", stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561414, longitude: -46.656166), stopSequence: 1, stopCode: "SP1", wheelchairBoarding: 0))
 }

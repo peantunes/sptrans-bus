@@ -10,7 +10,7 @@ protocol APIEndpoint {
 
 extension APIEndpoint {
     var baseURL: URL {
-        return URL(string: "http://localhost:8080/api")!
+        return URL(string: "http://192.168.1.49:8080/api")!
     }
 
     var headers: [String: String]? {

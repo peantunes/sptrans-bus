@@ -10,9 +10,9 @@ extension View {
         }
     }
 
-    func onAppear(perform action: (() -> Void)? = nil) -> some View {
-        self.onAppear {
-            action?()
-        }
-    }
+//    func onAppear(perform action: (() -> Void)? = nil) -> some View {
+//        self.onAppear {
+//            action?()
+//        }
+//    }
 }

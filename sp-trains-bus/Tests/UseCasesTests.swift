@@ -17,7 +17,7 @@ class UseCasesTests: XCTestCase {
         func getNearbyStops(location: Location, limit: Int) async throws -> [Stop] {
             return try nearbyStopsResult.get()
         }
-        func getArrivals(stopId: Int, limit: Int) async throws -> [Arrival] {
+        func getArrivals(stopId: String, limit: Int) async throws -> [Arrival] {
             return try arrivalsResult.get()
         }
         func searchStops(query: String, limit: Int) async throws -> [Stop] {
@@ -62,7 +62,7 @@ class UseCasesTests: XCTestCase {
         let mockRepo = MockTransitRepository()
         let mockLocationService = MockLocationService()
         mockLocationService.currentLocation = Location(latitude: 1.0, longitude: 1.0)
-        mockRepo.nearbyStopsResult = .success([Stop(stopId: 1, stopName: "Test Stop", location: Location(latitude: 1.0, longitude: 1.0), stopSequence: 0, stopCode: "", wheelchairBoarding: 0)])
+        mockRepo.nearbyStopsResult = .success([Stop(stopId: "1", stopName: "Test Stop", location: Location(latitude: 1.0, longitude: 1.0), stopSequence: 0, stopCode: "", wheelchairBoarding: 0)])
 
         let useCase = GetNearbyStopsUseCase(transitRepository: mockRepo, locationService: mockLocationService)
         let stops = try await useCase.execute(limit: 1)
@@ -92,10 +92,10 @@ class UseCasesTests: XCTestCase {
 
     func testGetArrivalsUseCaseSuccess() async throws {
         let mockRepo = MockTransitRepository()
-        mockRepo.arrivalsResult = .success([Arrival(tripId: "T1", arrivalTime: "10:00", departureTime: "10:01", stopId: 1, stopSequence: 1, stopHeadsign: "Dest", pickupType: 0, dropOffType: 0, shapeDistTraveled: "", frequency: nil, waitTime: 5)])
+        mockRepo.arrivalsResult = .success([Arrival(tripId: "T1", arrivalTime: "10:00", departureTime: "10:01", stopId: "1", stopSequence: 1, stopHeadsign: "Dest", pickupType: 0, dropOffType: 0, shapeDistTraveled: "", frequency: nil, waitTime: 5)])
 
         let useCase = GetArrivalsUseCase(transitRepository: mockRepo)
-        let arrivals = try await useCase.execute(stopId: 1, limit: 1)
+        let arrivals = try await useCase.execute(stopId: "1", limit: 1)
 
         XCTAssertEqual(arrivals.count, 1)
         XCTAssertEqual(arrivals.first?.tripId, "T1")
@@ -105,7 +105,7 @@ class UseCasesTests: XCTestCase {
 
     func testSearchStopsUseCaseSuccess() async throws {
         let mockRepo = MockTransitRepository()
-        mockRepo.searchStopsResult = .success([Stop(stopId: 1, stopName: "Search Stop", location: Location(latitude: 1.0, longitude: 1.0), stopSequence: 0, stopCode: "", wheelchairBoarding: 0)])
+        mockRepo.searchStopsResult = .success([Stop(stopId: "1", stopName: "Search Stop", location: Location(latitude: 1.0, longitude: 1.0), stopSequence: 0, stopCode: "", wheelchairBoarding: 0)])
 
         let useCase = SearchStopsUseCase(transitRepository: mockRepo)
         let stops = try await useCase.execute(query: "Search", limit: 1)

@@ -22,7 +22,7 @@ class ViewModelsTests: XCTestCase {
         let mockStorageService = MockStorageService()
 
         mockLocationService.currentLocation = Location(latitude: 1.0, longitude: 1.0)
-        mockGetNearbyStopsUseCase.stopsToReturn = [Stop(stopId: 1, stopName: "Test Stop", location: Location(latitude: 1.0, longitude: 1.0), stopSequence: 0, stopCode: "", wheelchairBoarding: 0)]
+        mockGetNearbyStopsUseCase.stopsToReturn = [Stop(stopId: "1", stopName: "Test Stop", location: Location(latitude: 1.0, longitude: 1.0), stopSequence: 0, stopCode: "", wheelchairBoarding: 0)]
 
         let viewModel = HomeViewModel(getNearbyStopsUseCase: mockGetNearbyStopsUseCase, locationService: mockLocationService, storageService: mockStorageService)
 
@@ -74,9 +74,9 @@ class ViewModelsTests: XCTestCase {
 
     func testStopDetailViewModelLoadArrivalsSuccess() async throws {
         let mockGetArrivalsUseCase = MockGetArrivalsUseCase()
-        mockGetArrivalsUseCase.arrivalsToReturn = [Arrival(tripId: "T1", arrivalTime: "10:00", departureTime: "10:01", stopId: 1, stopSequence: 1, stopHeadsign: "Dest", pickupType: 0, dropOffType: 0, shapeDistTraveled: "", frequency: nil, waitTime: 5)]
+        mockGetArrivalsUseCase.arrivalsToReturn = [Arrival(tripId: "T1", arrivalTime: "10:00", departureTime: "10:01", stopId: "1", stopSequence: 1, stopHeadsign: "Dest", pickupType: 0, dropOffType: 0, shapeDistTraveled: "", frequency: nil, waitTime: 5)]
 
-        let stop = Stop(stopId: 1, stopName: "Test Stop", location: Location(latitude: 0, longitude: 0), stopSequence: 0, stopCode: "", wheelchairBoarding: 0)
+        let stop = Stop(stopId: "1", stopName: "Test Stop", location: Location(latitude: 0, longitude: 0), stopSequence: 0, stopCode: "", wheelchairBoarding: 0)
         let viewModel = StopDetailViewModel(stop: stop, getArrivalsUseCase: mockGetArrivalsUseCase)
 
         let expectation = XCTestExpectation(description: "StopDetailViewModel loads arrivals")
@@ -127,7 +127,7 @@ class ViewModelsTests: XCTestCase {
         let mockGetNearbyStopsUseCase = MockGetNearbyStopsUseCase()
         let mockLocationService = MockLocationService()
         mockLocationService.currentLocation = Location(latitude: -23.0, longitude: -46.0)
-        mockGetNearbyStopsUseCase.stopsToReturn = [Stop(stopId: 1, stopName: "Map Stop", location: Location(latitude: -23.0, longitude: -46.0), stopSequence: 0, stopCode: "", wheelchairBoarding: 0)]
+        mockGetNearbyStopsUseCase.stopsToReturn = [Stop(stopId: "1", stopName: "Map Stop", location: Location(latitude: -23.0, longitude: -46.0), stopSequence: 0, stopCode: "", wheelchairBoarding: 0)]
 
         let viewModel = MapExplorerViewModel(getNearbyStopsUseCase: mockGetNearbyStopsUseCase, locationService: mockLocationService)
 
@@ -153,7 +153,7 @@ class ViewModelsTests: XCTestCase {
 
     func testSearchViewModelPerformSearchSuccess() async throws {
         let mockSearchStopsUseCase = MockSearchStopsUseCase()
-        mockSearchStopsUseCase.stopsToReturn = [Stop(stopId: 1, stopName: "Search Result", location: Location(latitude: 0, longitude: 0), stopSequence: 0, stopCode: "", wheelchairBoarding: 0)]
+        mockSearchStopsUseCase.stopsToReturn = [Stop(stopId: "1", stopName: "Search Result", location: Location(latitude: 0, longitude: 0), stopSequence: 0, stopCode: "", wheelchairBoarding: 0)]
 
         let viewModel = SearchViewModel(searchStopsUseCase: mockSearchStopsUseCase)
 
@@ -193,7 +193,7 @@ class ViewModelsTests: XCTestCase {
         var arrivalsToReturn: [Arrival] = []
         var shouldThrowError: Bool = false
 
-        override func execute(stopId: Int, limit: Int = 10) async throws -> [Arrival] {
+        override func execute(stopId: String, limit: Int = 10) async throws -> [Arrival] {
             if shouldThrowError {
                 throw TestError.forcedError
             }

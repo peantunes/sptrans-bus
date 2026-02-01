@@ -12,8 +12,8 @@ class TransitAPIRepository: TransitRepositoryProtocol {
         return response.stops.map { $0.toDomain() }
     }
 
-    func getArrivals(stopId: Int, limit: Int) async throws -> [Arrival] {
-        let response: ArrivalsResponse = try await apiClient.request(endpoint: TransitAPIEndpoint.arrivals(stopId: String(stopId), limit: limit))
+    func getArrivals(stopId: String, limit: Int) async throws -> [Arrival] {
+        let response: ArrivalsResponse = try await apiClient.request(endpoint: TransitAPIEndpoint.arrivals(stopId: stopId, limit: limit))
         return response.arrivals.map { $0.toDomain() }
     }
 
@@ -25,6 +25,14 @@ class TransitAPIRepository: TransitRepositoryProtocol {
     func getShape(shapeId: String) async throws -> [Location] {
         let response: ShapeResponse = try await apiClient.request(endpoint: TransitAPIEndpoint.shape(shapeId: shapeId))
         return response.points.map { $0.toDomain() }
+    }
+    
+    func getTrip(tripId: String) async throws -> Trip {
+        fatalError("getTrip - Needs to be implemented")
+    }
+    
+    func getRoute(routeId: String) async throws -> Route {
+        fatalError("getRoute - Needs to be implemented")
     }
 
     func getAllRoutes(limit: Int, offset: Int) async throws -> [Route] {
