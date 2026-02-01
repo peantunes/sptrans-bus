@@ -74,10 +74,11 @@ class ViewModelsTests: XCTestCase {
 
     func testStopDetailViewModelLoadArrivalsSuccess() async throws {
         let mockGetArrivalsUseCase = MockGetArrivalsUseCase()
-        mockGetArrivalsUseCase.arrivalsToReturn = [Arrival(tripId: "T1", arrivalTime: "10:00", departureTime: "10:01", stopId: "1", stopSequence: 1, stopHeadsign: "Dest", pickupType: 0, dropOffType: 0, shapeDistTraveled: "", frequency: nil, waitTime: 5)]
+        let mockStorageService = MockStorageService()
+        mockGetArrivalsUseCase.arrivalsToReturn = [Arrival(tripId: "T1", routeId: "R1", routeShortName: "R1", routeLongName: "Route 1", headsign: "Dest", arrivalTime: "10:00", departureTime: "10:01", stopId: "1", stopSequence: 1, routeType: 3, routeColor: "FF0000", routeTextColor: "FFFFFF", frequency: nil, waitTime: 5)]
 
         let stop = Stop(stopId: "1", stopName: "Test Stop", location: Location(latitude: 0, longitude: 0), stopSequence: 0, stopCode: "", wheelchairBoarding: 0)
-        let viewModel = StopDetailViewModel(stop: stop, getArrivalsUseCase: mockGetArrivalsUseCase)
+        let viewModel = StopDetailViewModel(stop: stop, getArrivalsUseCase: mockGetArrivalsUseCase, storageService: mockStorageService)
 
         let expectation = XCTestExpectation(description: "StopDetailViewModel loads arrivals")
 

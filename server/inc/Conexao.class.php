@@ -256,6 +256,39 @@ class Conexao {
 		return $totRows;
 	}
 
+	/**
+	 * Execute a prepared statement with bound parameters (MySQL only)
+	 *
+	 * @param string $sql SQL query with ? placeholders
+	 * @param string $types Type string (s=string, i=integer, d=double, b=blob)
+	 * @param array $params Array of parameter values
+	 * @return bool Success status
+	 */
+	function ExecutaPrepared($sql, $types = "", $params = []) {
+		if ($this->intBanco != INT_MYSQL) {
+			throw new Exception("Prepared statements only supported for MySQL");
+		}
+
+		$stmt = mysqli_prepare($this->conexao, $sql);
+		if (!$stmt) {
+			die("Prepare failed: " . mysqli_error($this->conexao));
+		}
+
+		if (!empty($params) && !empty($types)) {
+			mysqli_stmt_bind_param($stmt, $types, ...$params);
+		}
+
+		$result = mysqli_stmt_execute($stmt);
+		if (!$result) {
+			die("Execute failed: " . mysqli_stmt_error($stmt));
+		}
+
+		$this->cursor = mysqli_stmt_get_result($stmt);
+		mysqli_stmt_close($stmt);
+
+		return $result;
+	}
+
 	//Retorna as colunas do recordset
 	function &getColunas(){
 		$templist = array();

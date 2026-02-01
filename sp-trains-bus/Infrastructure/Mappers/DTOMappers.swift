@@ -23,18 +23,23 @@ extension NearbyStopDTO {
 }
 
 extension ArrivalDTO {
-    func toDomain() -> Arrival {
-        return Arrival(tripId: tripId,
-                       arrivalTime: arrivalTime,
-                       departureTime: departureTime,
-                       stopId: stopId,
-                       stopSequence: stopSequence,
-                       stopHeadsign: headsign,
-                       pickupType: 0, // ArrivalDTO does not have pickupType
-                       dropOffType: 0, // ArrivalDTO does not have dropOffType
-                       shapeDistTraveled: "", // ArrivalDTO does not have shapeDistTraveled
-                       frequency: frequency,
-                       waitTime: waitTime)
+    func toDomain(stopId: String) -> Arrival {
+        return Arrival(
+            tripId: tripId,
+            routeId: routeId,
+            routeShortName: routeShortName,
+            routeLongName: routeLongName,
+            headsign: headsign,
+            arrivalTime: arrivalTime,
+            departureTime: departureTime,
+            stopId: stopId,
+            stopSequence: stopSequence,
+            routeType: routeType,
+            routeColor: routeColor,
+            routeTextColor: routeTextColor,
+            frequency: frequency,
+            waitTime: waitTime
+        )
     }
 }
 

@@ -19,7 +19,7 @@ struct HomeView: View {
                 QuickCommuteCard()
                     .padding(.horizontal)
 
-                MiniMapView(userLocation: viewModel.userLocation?.toCLLocationCoordinate2D(), stops: viewModel.nearbyStops, dependencies: dependencies)
+                MiniMapView(userLocation: $viewModel.userLocation, stops: viewModel.nearbyStops, dependencies: dependencies)
                     .frame(height: 200)
                     .padding(.horizontal)
 
@@ -75,6 +75,12 @@ struct HomeView: View {
     }
 
     class MockStorageService: StorageServiceProtocol {
+        var favoriteValue: Bool = false
+        
+        func isFavorite(stopId: String) -> Bool {
+            return favoriteValue
+        }
+        
         func saveFavorite(stop: Stop) {}
         func removeFavorite(stop: Stop) {}
         func getFavoriteStops() -> [Stop] {

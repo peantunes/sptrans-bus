@@ -2,20 +2,21 @@ import SwiftUI
 import MapKit
 
 struct MiniMapView: View {
-    var userLocation: CLLocationCoordinate2D?
     var stops: [Stop]
     let dependencies: AppDependencies // Inject dependencies
 
+    @Binding var userLocation: Location?
     @State private var region: MKCoordinateRegion
-    @State private var selectedStop: Stop?
+    @State private var selectedStop: Stop? = nil
     @State private var isShowingStopDetail: Bool = false
 
-    init(userLocation: CLLocationCoordinate2D?, stops: [Stop], dependencies: AppDependencies) {
-        self.userLocation = userLocation
+    init(userLocation: Binding<Location?>, stops: [Stop], dependencies: AppDependencies) {
+        self._userLocation = userLocation
         self.stops = stops
         self.dependencies = dependencies
+
         _region = State(initialValue: MKCoordinateRegion(
-            center: userLocation ?? CLLocationCoordinate2D(latitude: -23.5505, longitude: -46.6333), // Default to São Paulo
+            center: userLocation.wrappedValue?.toCLLocationCoordinate2D() ?? .saoPaulo, // Default to São Paulo
             span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
         ))
     }
@@ -43,20 +44,24 @@ struct MiniMapView: View {
         .cornerRadius(10)
         .frame(height: 200)
         .onChange(of: userLocation) { _, newLocation in
-            if let newLocation = newLocation {
-                region.center = newLocation
+            if let newLocation {
+                region.center = newLocation.toCLLocationCoordinate2D()
             }
         }
         .sheet(isPresented: $isShowingStopDetail) {
             if let selectedStop = selectedStop {
-                StopDetailView(viewModel: StopDetailViewModel(stop: selectedStop, getArrivalsUseCase: dependencies.getArrivalsUseCase))
+                StopDetailView(viewModel: StopDetailViewModel(
+                    stop: selectedStop,
+                    getArrivalsUseCase: dependencies.getArrivalsUseCase,
+                    storageService: dependencies.storageService
+                ))
             }
         }
     }
 }
 
 #Preview {
-    MiniMapView(userLocation: CLLocationCoordinate2D(latitude: -23.5505, longitude: -46.6333), stops: [
+    MiniMapView(userLocation: .constant(Location(latitude: -23.5505, longitude: -46.6333)), stops: [
         Stop(stopId: "1", stopName: "Stop A", location: Location(latitude: -23.5510, longitude: -46.6340), stopSequence: 1, stopCode: "SA", wheelchairBoarding: 0),
         Stop(stopId: "2", stopName: "Stop B", location: Location(latitude: -23.5480, longitude: -46.6300), stopSequence: 2, stopCode: "SB", wheelchairBoarding: 0)
     ], dependencies: AppDependencies())
@@ -66,4 +71,6 @@ extension CLLocationCoordinate2D: Equatable {
     public static func == (lhs: CLLocationCoordinate2D, rhs: CLLocationCoordinate2D) -> Bool {
         lhs.latitude == rhs.latitude && lhs.longitude == rhs.longitude
     }
+    
+    static let saoPaulo = CLLocationCoordinate2D(latitude: -23.5505, longitude: -46.6333)
 }

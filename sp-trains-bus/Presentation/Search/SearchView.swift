@@ -26,7 +26,11 @@ struct SearchView: View {
                     .padding()
             } else {
                 List(viewModel.searchResults, id: \.stopId) { stop in
-                    NavigationLink(destination: StopDetailView(viewModel: StopDetailViewModel(stop: stop, getArrivalsUseCase: dependencies.getArrivalsUseCase))) {
+                    NavigationLink(destination: StopDetailView(viewModel: StopDetailViewModel(
+                        stop: stop,
+                        getArrivalsUseCase: dependencies.getArrivalsUseCase,
+                        storageService: dependencies.storageService
+                    ))) {
                         SearchResultRow(stop: stop)
                     }
                 }

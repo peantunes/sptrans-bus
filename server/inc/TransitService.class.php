@@ -135,9 +135,14 @@ class TransitService {
         $currentTime = $time ?? date('H:i:s');
         $currentDate = $this->getCurrentDateGtfs($timestamp);
         $dayColumn = $this->getDayOfWeekColumn($timestamp);
-
-        $stopId = $this->con->conexao->real_escape_string($stopId);
         $limit = (int)$limit;
+
+        // Note: Day column cannot be parameterized as it's a column name
+        // We validate it's one of the allowed values
+        $allowedDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        if (!in_array($dayColumn, $allowedDays)) {
+            return [];
+        }
 
         $sql = "SELECT
                     st.trip_id,
@@ -155,22 +160,30 @@ class TransitService {
                     (SELECT ROUND(f.headway_secs/60)
                      FROM sp_frequencies f
                      WHERE f.trip_id = st.trip_id
-                       AND f.start_time <= '$currentTime'
-                       AND f.end_time >= '$currentTime'
+                       AND f.start_time <= ?
+                       AND f.end_time >= ?
                      LIMIT 1) as frequency
                 FROM sp_stop_times st
                 INNER JOIN sp_trip t ON st.trip_id = t.trip_id
                 INNER JOIN sp_routes r ON t.route_id = r.route_id
                 INNER JOIN sp_calendar c ON t.service_id = c.service_id
-                WHERE st.stop_id = '$stopId'
-                  AND st.arrival_time >= '$currentTime'
+                WHERE st.stop_id = ?
+                  AND st.arrival_time >= ?
                   AND c.$dayColumn = 1
-                  AND c.start_date <= '$currentDate'
-                  AND c.end_date >= '$currentDate'
+                  AND c.start_date <= ?
+                  AND c.end_date >= ?
                 ORDER BY st.arrival_time
-                LIMIT $limit";
+                LIMIT ?";
 
-        $this->con->Executa($sql);
+        $this->con->ExecutaPrepared($sql, "ssssssi", [
+            $currentTime,
+            $currentTime,
+            $stopId,
+            $currentTime,
+            $currentDate,
+            $currentDate,
+            $limit
+        ]);
 
         $arrivals = [];
         while ($this->con->Linha()) {
@@ -210,15 +223,13 @@ class TransitService {
      * @return TripInfo|null Trip information with stops
      */
     public function getTripRoute($tripId) {
-        $tripId = $this->con->conexao->real_escape_string($tripId);
-
         // Get trip info
         $sql = "SELECT t.*, r.route_short_name, r.route_long_name, r.route_type, r.route_color, r.route_text_color
                 FROM sp_trip t
                 INNER JOIN sp_routes r ON t.route_id = r.route_id
-                WHERE t.trip_id = '$tripId'";
+                WHERE t.trip_id = ?";
 
-        $this->con->Executa($sql);
+        $this->con->ExecutaPrepared($sql, "s", [$tripId]);
 
         if (!$this->con->Linha()) {
             return null;
@@ -246,10 +257,10 @@ class TransitService {
                     s.stop_lon
                 FROM sp_stop_times st
                 INNER JOIN sp_stop s ON st.stop_id = s.stop_id
-                WHERE st.trip_id = '$tripId'
+                WHERE st.trip_id = ?
                 ORDER BY st.stop_sequence";
 
-        $this->con->Executa($sql);
+        $this->con->ExecutaPrepared($sql, "s", [$tripId]);
 
         $stops = [];
         while ($this->con->Linha()) {
@@ -282,11 +293,9 @@ class TransitService {
      * @return RouteInfo|null Route information
      */
     public function getRouteInfo($routeId) {
-        $routeId = $this->con->conexao->real_escape_string($routeId);
+        $sql = "SELECT * FROM sp_routes WHERE route_id = ?";
 
-        $sql = "SELECT * FROM sp_routes WHERE route_id = '$routeId'";
-
-        $this->con->Executa($sql);
+        $this->con->ExecutaPrepared($sql, "s", [$routeId]);
 
         if (!$this->con->Linha()) {
             return null;
@@ -306,9 +315,9 @@ class TransitService {
         // Get trips for this route
         $sql = "SELECT trip_id, service_id, trip_headsign, direction_id, shape_id
                 FROM sp_trip
-                WHERE route_id = '$routeId'";
+                WHERE route_id = ?";
 
-        $this->con->Executa($sql);
+        $this->con->ExecutaPrepared($sql, "s", [$routeId]);
 
         $trips = [];
         while ($this->con->Linha()) {
@@ -335,8 +344,8 @@ class TransitService {
      * @return array List of StopInfo objects
      */
     public function searchStops($query, $limit = 20) {
-        $query = $this->con->conexao->real_escape_string($query);
         $limit = (int)$limit;
+        $searchQuery = '%' . $query . '%';
 
         $sql = "SELECT s.*,
                     (SELECT GROUP_CONCAT(DISTINCT t.route_id SEPARATOR ', ')
@@ -344,11 +353,11 @@ class TransitService {
                      INNER JOIN sp_trip t ON st.trip_id = t.trip_id
                      WHERE st.stop_id = s.stop_id) as routes
                 FROM sp_stop s
-                WHERE s.stop_name LIKE '%$query%'
+                WHERE s.stop_name LIKE ?
                 ORDER BY s.stop_name
-                LIMIT $limit";
+                LIMIT ?";
 
-        $this->con->Executa($sql);
+        $this->con->ExecutaPrepared($sql, "si", [$searchQuery, $limit]);
 
         $stops = [];
         while ($this->con->Linha()) {
@@ -375,17 +384,15 @@ class TransitService {
      * @return StopInfo|null Stop information
      */
     public function getStopInfo($stopId) {
-        $stopId = $this->con->conexao->real_escape_string($stopId);
-
         $sql = "SELECT s.*,
                     (SELECT GROUP_CONCAT(DISTINCT t.route_id SEPARATOR ', ')
                      FROM sp_stop_times st
                      INNER JOIN sp_trip t ON st.trip_id = t.trip_id
                      WHERE st.stop_id = s.stop_id) as routes
                 FROM sp_stop s
-                WHERE s.stop_id = '$stopId'";
+                WHERE s.stop_id = ?";
 
-        $this->con->Executa($sql);
+        $this->con->ExecutaPrepared($sql, "s", [$stopId]);
 
         if (!$this->con->Linha()) {
             return null;
@@ -411,14 +418,12 @@ class TransitService {
      * @return array List of ShapePoint objects
      */
     public function getShape($shapeId) {
-        $shapeId = $this->con->conexao->real_escape_string($shapeId);
-
         $sql = "SELECT shape_pt_lat, shape_pt_lon, shape_pt_sequence, shape_dist_traveled
                 FROM sp_shapes
-                WHERE shape_id = '$shapeId'
+                WHERE shape_id = ?
                 ORDER BY shape_pt_sequence";
 
-        $this->con->Executa($sql);
+        $this->con->ExecutaPrepared($sql, "s", [$shapeId]);
 
         $points = [];
         while ($this->con->Linha()) {
@@ -443,15 +448,13 @@ class TransitService {
      * @return FareInfo|null Fare information
      */
     public function getFare($routeId) {
-        $routeId = $this->con->conexao->real_escape_string($routeId);
-
         $sql = "SELECT fa.*
                 FROM sp_fare_rules fr
                 INNER JOIN sp_fare_att fa ON fr.fare_id = fa.fare_id
-                WHERE fr.route_id = '$routeId'
+                WHERE fr.route_id = ?
                 LIMIT 1";
 
-        $this->con->Executa($sql);
+        $this->con->ExecutaPrepared($sql, "s", [$routeId]);
 
         if (!$this->con->Linha()) {
             return null;
@@ -477,16 +480,14 @@ class TransitService {
      * @return array List of route information
      */
     public function getRoutesAtStop($stopId) {
-        $stopId = $this->con->conexao->real_escape_string($stopId);
-
         $sql = "SELECT DISTINCT r.*
                 FROM sp_stop_times st
                 INNER JOIN sp_trip t ON st.trip_id = t.trip_id
                 INNER JOIN sp_routes r ON t.route_id = r.route_id
-                WHERE st.stop_id = '$stopId'
+                WHERE st.stop_id = ?
                 ORDER BY r.route_short_name";
 
-        $this->con->Executa($sql);
+        $this->con->ExecutaPrepared($sql, "s", [$stopId]);
 
         $routes = [];
         while ($this->con->Linha()) {
@@ -516,9 +517,9 @@ class TransitService {
         $limit = (int)$limit;
         $offset = (int)$offset;
 
-        $sql = "SELECT * FROM sp_routes ORDER BY route_short_name LIMIT $offset, $limit";
+        $sql = "SELECT * FROM sp_routes ORDER BY route_short_name LIMIT ?, ?";
 
-        $this->con->Executa($sql);
+        $this->con->ExecutaPrepared($sql, "ii", [$offset, $limit]);
 
         $routes = [];
         while ($this->con->Linha()) {
@@ -544,11 +545,9 @@ class TransitService {
      * @return array|null Calendar information
      */
     public function getServiceCalendar($serviceId) {
-        $serviceId = $this->con->conexao->real_escape_string($serviceId);
+        $sql = "SELECT * FROM sp_calendar WHERE service_id = ?";
 
-        $sql = "SELECT * FROM sp_calendar WHERE service_id = '$serviceId'";
-
-        $this->con->Executa($sql);
+        $this->con->ExecutaPrepared($sql, "s", [$serviceId]);
 
         if (!$this->con->Linha()) {
             return null;

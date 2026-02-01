@@ -2,34 +2,39 @@ import SwiftUI
 
 struct MainTabView: View {
     let dependencies: AppDependencies
+    
+    enum TabOption {
+        case home
+        case nearby
+        case search
+        case status
+        case map
+    }
+    
+    @State private var tabSelection: TabOption = .home
 
     var body: some View {
-        TabView {
-            HomeView(viewModel: dependencies.homeViewModel, dependencies: dependencies)
-                .tabItem {
-                    Label("Home", systemImage: "house.fill")
-                }
+        TabView(selection: $tabSelection) {
+            Tab("Home", systemImage: "house.fill", value: .home){
+                HomeView(viewModel: dependencies.homeViewModel, dependencies: dependencies)
+            }
 
             // Placeholder for NearbyView
-            Text("Nearby View")
-                .tabItem {
-                    Label("Nearby", systemImage: "location.fill")
-                }
+            Tab("Nearby", systemImage: "location.fill", value: .nearby) {
+                Text("Nearby View")
+            }
+            
+            Tab("Search", systemImage: "magnifyingglass", value: .search, role: .search) {
+                SearchView(viewModel: dependencies.searchViewModel, dependencies: dependencies) // Assuming SearchViewModel exists in dependencies
+            }
 
-            SearchView(viewModel: dependencies.searchViewModel, dependencies: dependencies) // Assuming SearchViewModel exists in dependencies
-                .tabItem {
-                    Label("Search", systemImage: "magnifyingglass")
-                }
+            Tab("Status", systemImage: "waveform.path.ecg", value: .search, role: .search) {
+                SystemStatusView(viewModel: dependencies.systemStatusViewModel) // Assuming SystemStatusViewModel exists in dependencies
+            }
 
-            SystemStatusView(viewModel: dependencies.systemStatusViewModel) // Assuming SystemStatusViewModel exists in dependencies
-                .tabItem {
-                    Label("Status", systemImage: "waveform.path.ecg")
-                }
-
-            MapExplorerView(viewModel: dependencies.mapExplorerViewModel, dependencies: dependencies) // Assuming MapExplorerViewModel exists in dependencies
-                .tabItem {
-                    Label("Map", systemImage: "map.fill")
-                }
+            Tab("Map", systemImage: "map.fill", value: .map) {
+                MapExplorerView(viewModel: dependencies.mapExplorerViewModel, dependencies: dependencies) // Assuming MapExplorerViewModel exists in dependencies
+            }
         }
     }
 }

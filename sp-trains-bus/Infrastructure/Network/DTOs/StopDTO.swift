@@ -20,7 +20,7 @@ struct NearbyStopDTO: Decodable {
     let lat: String
     let lon: String
     let routes: String?
-    let distance: String
+    let distance: Double
 }
 
 struct SearchStopsResponse: Decodable {

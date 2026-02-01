@@ -31,14 +31,14 @@ class HomeViewModel: ObservableObject {
             do {
                 if userLocation == nil {
                     // Try to get current location if not already set
-                    userLocation = locationService.getCurrentLocation()
+                    userLocation = locationService.getCurrentLocation() ?? Location.saoPaulo
                 }
 
                 guard let currentLocation = userLocation else {
                     throw LocationError.locationUnavailable
                 }
 
-                let stops = try await getNearbyStopsUseCase.execute(location: currentLocation, limit: 5)
+                let stops = try await getNearbyStopsUseCase.execute(limit: 5, location: currentLocation)
                 DispatchQueue.main.async {
                     self.nearbyStops = stops
                     self.isLoading = false

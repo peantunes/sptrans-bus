@@ -14,7 +14,7 @@ class TransitAPIRepository: TransitRepositoryProtocol {
 
     func getArrivals(stopId: String, limit: Int) async throws -> [Arrival] {
         let response: ArrivalsResponse = try await apiClient.request(endpoint: TransitAPIEndpoint.arrivals(stopId: stopId, limit: limit))
-        return response.arrivals.map { $0.toDomain() }
+        return response.arrivals.map { $0.toDomain(stopId: stopId) }
     }
 
     func searchStops(query: String, limit: Int) async throws -> [Stop] {

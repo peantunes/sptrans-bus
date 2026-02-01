@@ -12,27 +12,97 @@ struct MapExplorerView: View {
     }
 
     var body: some View {
-        VStack {
-            FilterChips(selectedFilter: $selectedFilter)
-                .padding(.vertical, 5)
+        ZStack {
+            VStack(spacing: 0) {
+                FilterChips(selectedFilter: $selectedFilter)
+                    .padding(.vertical, 5)
 
-            TransitMapView(region: $viewModel.region, stops: viewModel.stops, dependencies: dependencies)
-                .edgesIgnoringSafeArea(.all)
+                TransitMapView(region: $viewModel.region, stops: viewModel.stops, dependencies: dependencies)
+                    .edgesIgnoringSafeArea(.bottom)
+            }
+
+            // Floating buttons overlay
+            VStack {
+                Spacer()
+
+                HStack {
+                    // Center on user location button
+                    Button(action: {
+                        viewModel.centerOnUserLocation()
+                    }) {
+                        Image(systemName: "location.fill")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(AppColors.primary)
+                            .frame(width: 44, height: 44)
+                            .background(.ultraThinMaterial)
+                            .clipShape(Circle())
+                            .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+                    }
+                    .padding(.leading, 16)
+
+                    Spacer()
+
+                    // Refresh button (appears when region changes)
+                    if viewModel.showRefreshButton {
+                        Button(action: {
+                            Task {
+                                await viewModel.refreshStops()
+                            }
+                        }) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.system(size: 14, weight: .semibold))
+                                Text("Search this area")
+                                    .font(AppFonts.subheadline())
+                                    .fontWeight(.medium)
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(AppColors.primary)
+                            .clipShape(Capsule())
+                            .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+                        }
+                        .transition(.scale.combined(with: .opacity))
+                    }
+
+                    Spacer()
+
+                    // Placeholder for balance (invisible)
+                    Color.clear
+                        .frame(width: 44, height: 44)
+                        .padding(.trailing, 16)
+                }
+                .padding(.bottom, 24)
+            }
+
+            // Loading indicator
+            if viewModel.isLoading {
+                VStack {
+                    HStack {
+                        Spacer()
+                        ProgressView()
+                            .padding(12)
+                            .background(.ultraThinMaterial)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .padding(.trailing, 16)
+                            .padding(.top, 60)
+                    }
+                    Spacer()
+                }
+            }
+
+            // Error view
+            if let errorMessage = viewModel.errorMessage, viewModel.stops.isEmpty {
+                ErrorView(message: errorMessage) {
+                    viewModel.loadStopsInVisibleRegion()
+                }
+            }
         }
         .navigationTitle("Map Explorer")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear(perform: viewModel.loadStopsInVisibleRegion)
-        .overlay(
-            Group {
-                if viewModel.isLoading {
-                    LoadingView()
-                } else if let errorMessage = viewModel.errorMessage {
-                    ErrorView(message: errorMessage) {
-                        viewModel.loadStopsInVisibleRegion()
-                    }
-                }
-            }
-        )
+        .animation(.easeInOut(duration: 0.3), value: viewModel.showRefreshButton)
     }
 }
 
@@ -41,8 +111,9 @@ struct MapExplorerView: View {
     class MockTransitRepository: TransitRepositoryProtocol {
         func getNearbyStops(location: Location, limit: Int) async throws -> [Stop] {
             return [
-                Stop(stopId: "1", stopName: "Map Stop A", location: Location(latitude: -23.555, longitude: -46.635), stopSequence: 1, stopCode: "MSA", wheelchairBoarding: 0),
-                Stop(stopId: "2", stopName: "Map Stop B", location: Location(latitude: -23.548, longitude: -46.630), stopSequence: 2, stopCode: "MSB", wheelchairBoarding: 0)
+                Stop(stopId: "1", stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561, longitude: -46.656), stopSequence: 1, stopCode: "PAU001", wheelchairBoarding: 1),
+                Stop(stopId: "2", stopName: "Rua Augusta, 500", location: Location(latitude: -23.555, longitude: -46.651), stopSequence: 2, stopCode: "AUG001", wheelchairBoarding: 0),
+                Stop(stopId: "3", stopName: "Consolação", location: Location(latitude: -23.557, longitude: -46.660), stopSequence: 3, stopCode: "CON001", wheelchairBoarding: 1)
             ]
         }
         func getArrivals(stopId: String, limit: Int) async throws -> [Arrival] { return [] }
@@ -67,5 +138,7 @@ struct MapExplorerView: View {
     let viewModel = MapExplorerViewModel(getNearbyStopsUseCase: mockGetNearbyStopsUseCase, locationService: mockLocationService)
     let dependencies = AppDependencies()
 
-    return MapExplorerView(viewModel: viewModel, dependencies: dependencies)
+    return NavigationView {
+        MapExplorerView(viewModel: viewModel, dependencies: dependencies)
+    }
 }

@@ -27,6 +27,10 @@ class UserDefaultsStorageService: StorageServiceProtocol {
         saveFavoriteStops(favorites)
     }
 
+    func isFavorite(stopId: String) -> Bool {
+        return getFavoriteStops().contains { $0.stopId == stopId }
+    }
+
     func getFavoriteStops() -> [Stop] {
         if let data = userDefaults.data(forKey: Keys.favoriteStops),
            let stops = try? JSONDecoder().decode([Stop].self, from: data) {
