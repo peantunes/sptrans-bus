@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SP Transit - Horários de Ônibus</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo">SP Transit</h1>
+                <p class="tagline">Horários em tempo real</p>
+            </div>
+        </header>
+
+        <!-- Search Bar -->
+        <div class="search-container">
+            <div class="search-box">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                </svg>
+                <input type="text" id="searchInput" placeholder="Buscar parada..." autocomplete="off">
+                <button id="clearSearch" class="clear-btn hidden">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <button id="locationBtn" class="location-btn" title="Usar minha localização">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M12 2v4m0 12v4m10-10h-4M6 12H2"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Search Results -->
+        <div id="searchResults" class="search-results hidden"></div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Map -->
+            <div class="map-container">
+                <div id="map" class="map"></div>
+                <div class="map-hint" id="mapHint">Clique no mapa para buscar paradas</div>
+            </div>
+
+            <!-- Stops Panel -->
+            <div class="stops-panel">
+                <div class="panel-header">
+                    <h2 id="panelTitle">Paradas Próximas</h2>
+                    <button id="refreshBtn" class="refresh-btn" title="Atualizar">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12a9 9 0 11-3-6.7M21 3v6h-6"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div id="stopsContainer" class="stops-container">
+                    <div class="loading-state">
+                        <div class="spinner"></div>
+                        <p>Carregando paradas...</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Stop Detail Modal -->
+        <div id="stopModal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modalStopName">Nome da Parada</h2>
+                    <button id="closeModal" class="close-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 6L6 18M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div id="modalContent" class="modal-body">
+                    <div class="loading-state">
+                        <div class="spinner"></div>
+                        <p>Carregando horários...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trip Detail Modal -->
+        <div id="tripModal" class="modal hidden">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h2 id="tripModalTitle">Detalhes da Linha</h2>
+                    <button id="closeTripModal" class="close-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 6L6 18M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div id="tripModalContent" class="modal-body">
+                    <div class="loading-state">
+                        <div class="spinner"></div>
+                        <p>Carregando rota...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+
+    <script src="app.js"></script>
+</body>
+</html>

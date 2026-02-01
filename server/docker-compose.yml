@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  php:
+    build: .
+    container_name: due-sp-php
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - mysql
+    environment:
+      - TZ=America/Sao_Paulo
+
+  mysql:
+    image: mysql:8.0
+    container_name: due-sp-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: lolados_bus
+      MYSQL_USER: lolados_bus
+      MYSQL_PASSWORD: bus@2013
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
