@@ -24,17 +24,18 @@ struct MainTabView: View {
                 Text("Nearby View")
             }
             
-            Tab("Search", systemImage: "magnifyingglass", value: .search, role: .search) {
-                SearchView(viewModel: dependencies.searchViewModel, dependencies: dependencies) // Assuming SearchViewModel exists in dependencies
-            }
-
-            Tab("Status", systemImage: "waveform.path.ecg", value: .search, role: .search) {
+            Tab("Status", systemImage: "waveform.path.ecg", value: .status) {
                 SystemStatusView(viewModel: dependencies.systemStatusViewModel) // Assuming SystemStatusViewModel exists in dependencies
             }
 
             Tab("Map", systemImage: "map.fill", value: .map) {
                 MapExplorerView(viewModel: dependencies.mapExplorerViewModel, dependencies: dependencies) // Assuming MapExplorerViewModel exists in dependencies
             }
+            
+            Tab("Search", systemImage: "magnifyingglass", value: .search, role: .search) {
+                SearchView(viewModel: dependencies.searchViewModel, dependencies: dependencies) // Assuming SearchViewModel exists in dependencies
+            }
+
         }
     }
 }

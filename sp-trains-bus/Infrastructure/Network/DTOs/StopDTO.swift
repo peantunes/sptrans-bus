@@ -4,8 +4,8 @@ struct StopDTO: Decodable {
     let stopId: String
     let stopName: String
     let stopDesc: String?
-    let stopLat: String
-    let stopLon: String
+    let stopLat: Double
+    let stopLon: Double
     let routes: String?
 }
 
