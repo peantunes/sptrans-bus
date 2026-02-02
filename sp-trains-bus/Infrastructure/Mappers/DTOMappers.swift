@@ -4,7 +4,7 @@ extension StopDTO {
     func toDomain() -> Stop {
         return Stop(stopId: stopId,
                     stopName: stopName,
-                    location: Location(latitude: Double(stopLat) ?? 0, longitude: Double(stopLon) ?? 0),
+                    location: Location(latitude: stopLat, longitude: stopLon),
                     stopSequence: 0, // StopDTO does not have stopSequence
                     stopCode: "", // StopDTO does not have stopCode
                     wheelchairBoarding: 0) // StopDTO does not have wheelchairBoarding
@@ -23,7 +23,7 @@ extension NearbyStopDTO {
 }
 
 extension ArrivalDTO {
-    func toDomain(stopId: String) -> Arrival {
+    func toDomain(stopId: Int) -> Arrival {
         return Arrival(
             tripId: tripId,
             routeId: routeId,

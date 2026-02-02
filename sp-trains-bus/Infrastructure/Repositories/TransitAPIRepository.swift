@@ -12,7 +12,7 @@ class TransitAPIRepository: TransitRepositoryProtocol {
         return response.stops.map { $0.toDomain() }
     }
 
-    func getArrivals(stopId: String, limit: Int) async throws -> [Arrival] {
+    func getArrivals(stopId: Int, limit: Int) async throws -> [Arrival] {
         let response: ArrivalsResponse = try await apiClient.request(endpoint: TransitAPIEndpoint.arrivals(stopId: stopId, limit: limit))
         return response.arrivals.map { $0.toDomain(stopId: stopId) }
     }

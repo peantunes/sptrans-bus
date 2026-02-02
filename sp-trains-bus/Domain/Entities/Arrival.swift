@@ -9,7 +9,7 @@ struct Arrival: Identifiable {
     let headsign: String
     let arrivalTime: String
     let departureTime: String
-    let stopId: String
+    let stopId: Int
     let stopSequence: Int
     let routeType: Int
     let routeColor: String

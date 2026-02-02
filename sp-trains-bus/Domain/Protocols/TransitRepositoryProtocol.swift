@@ -2,7 +2,7 @@ import Foundation
 
 protocol TransitRepositoryProtocol {
     func getNearbyStops(location: Location, limit: Int) async throws -> [Stop]
-    func getArrivals(stopId: String, limit: Int) async throws -> [Arrival]
+    func getArrivals(stopId: Int, limit: Int) async throws -> [Arrival]
     func searchStops(query: String, limit: Int) async throws -> [Stop]
     func getTrip(tripId: String) async throws -> Trip
     func getRoute(routeId: String) async throws -> Route

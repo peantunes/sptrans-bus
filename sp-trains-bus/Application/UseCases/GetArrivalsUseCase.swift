@@ -7,7 +7,7 @@ class GetArrivalsUseCase {
         self.transitRepository = transitRepository
     }
 
-    func execute(stopId: String, limit: Int = 10) async throws -> [Arrival] {
+    func execute(stopId: Int, limit: Int = 10) async throws -> [Arrival] {
         return try await transitRepository.getArrivals(stopId: stopId, limit: limit)
     }
 }

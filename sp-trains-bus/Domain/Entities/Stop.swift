@@ -1,10 +1,10 @@
 import Foundation
 
 struct Stop: Codable, Identifiable {
-    var id: String {
+    var id: Int {
         stopId
     }
-    let stopId: String
+    let stopId: Int
     let stopName: String
     let location: Location
     let stopSequence: Int

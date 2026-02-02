@@ -10,7 +10,7 @@ protocol APIEndpoint {
 
 extension APIEndpoint {
     var baseURL: URL {
-        return URL(string: "http://192.168.1.49:8080/api")!
+        return URL(string: "https://sptrans.lolados.app/api")!
     }
 
     var headers: [String: String]? {
@@ -20,11 +20,11 @@ extension APIEndpoint {
 
 enum TransitAPIEndpoint {
     case nearby(lat: Double, lon: Double, limit: Int)
-    case arrivals(stopId: String, limit: Int)
+    case arrivals(stopId: Int, limit: Int)
     case search(query: String)
     case trip(tripId: String)
     case shape(shapeId: String)
-    case stop(stopId: String)
+    case stop(stopId: Int)
     case routes
 }
 
@@ -62,7 +62,7 @@ extension TransitAPIEndpoint: APIEndpoint {
             ]
         case .arrivals(let stopId, let limit):
             return [
-                URLQueryItem(name: "stop_id", value: stopId),
+                URLQueryItem(name: "stop_id", value: "\(stopId)"),
                 URLQueryItem(name: "limit", value: "\(limit)")
             ]
         case .search(let query):
@@ -79,7 +79,7 @@ extension TransitAPIEndpoint: APIEndpoint {
             ]
         case .stop(let stopId):
             return [
-                URLQueryItem(name: "stop_id", value: stopId)
+                URLQueryItem(name: "stop_id", value: "\(stopId)")
             ]
         case .routes:
             return []

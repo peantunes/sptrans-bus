@@ -78,12 +78,12 @@ struct SearchBar: View {
     // Mock dependencies for Preview
     class MockTransitRepository: TransitRepositoryProtocol {
         func getNearbyStops(location: Location, limit: Int) async throws -> [Stop] { return [] }
-        func getArrivals(stopId: String, limit: Int) async throws -> [Arrival] { return [] }
+        func getArrivals(stopId: Int, limit: Int) async throws -> [Arrival] { return [] }
         func searchStops(query: String, limit: Int) async throws -> [Stop] {
             if query.lowercased().contains("paulista") {
                 return [
-                    Stop(stopId: "1", stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561414, longitude: -46.656166), stopSequence: 1, stopCode: "SP-1234", wheelchairBoarding: 0),
-                    Stop(stopId: "2", stopName: "Av. Paulista, 2000", location: Location(latitude: -23.562414, longitude: -46.657166), stopSequence: 2, stopCode: "SP-5678", wheelchairBoarding: 0)
+                    Stop(stopId: 1, stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561414, longitude: -46.656166), stopSequence: 1, stopCode: "SP-1234", wheelchairBoarding: 0),
+                    Stop(stopId: 2, stopName: "Av. Paulista, 2000", location: Location(latitude: -23.562414, longitude: -46.657166), stopSequence: 2, stopCode: "SP-5678", wheelchairBoarding: 0)
                 ]
             } else {
                 return []
@@ -102,8 +102,8 @@ struct SearchBar: View {
         override func execute(query: String, limit: Int = 10) async throws -> [Stop] {
             if query.lowercased().contains("paulista") {
                 return [
-                    Stop(stopId: "1", stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561414, longitude: -46.656166), stopSequence: 1, stopCode: "SP-1234", wheelchairBoarding: 0),
-                    Stop(stopId: "2", stopName: "Av. Paulista, 2000", location: Location(latitude: -23.562414, longitude: -46.657166), stopSequence: 2, stopCode: "SP-5678", wheelchairBoarding: 0)
+                    Stop(stopId: 1, stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561414, longitude: -46.656166), stopSequence: 1, stopCode: "SP-1234", wheelchairBoarding: 0),
+                    Stop(stopId: 2, stopName: "Av. Paulista, 2000", location: Location(latitude: -23.562414, longitude: -46.657166), stopSequence: 2, stopCode: "SP-5678", wheelchairBoarding: 0)
                 ]
             } else {
                 return []

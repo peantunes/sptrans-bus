@@ -111,12 +111,12 @@ struct MapExplorerView: View {
     class MockTransitRepository: TransitRepositoryProtocol {
         func getNearbyStops(location: Location, limit: Int) async throws -> [Stop] {
             return [
-                Stop(stopId: "1", stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561, longitude: -46.656), stopSequence: 1, stopCode: "PAU001", wheelchairBoarding: 1),
-                Stop(stopId: "2", stopName: "Rua Augusta, 500", location: Location(latitude: -23.555, longitude: -46.651), stopSequence: 2, stopCode: "AUG001", wheelchairBoarding: 0),
-                Stop(stopId: "3", stopName: "Consolação", location: Location(latitude: -23.557, longitude: -46.660), stopSequence: 3, stopCode: "CON001", wheelchairBoarding: 1)
+                Stop(stopId: 1, stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561, longitude: -46.656), stopSequence: 1, stopCode: "PAU001", wheelchairBoarding: 1),
+                Stop(stopId: 2, stopName: "Rua Augusta, 500", location: Location(latitude: -23.555, longitude: -46.651), stopSequence: 2, stopCode: "AUG001", wheelchairBoarding: 0),
+                Stop(stopId: 3, stopName: "Consolação", location: Location(latitude: -23.557, longitude: -46.660), stopSequence: 3, stopCode: "CON001", wheelchairBoarding: 1)
             ]
         }
-        func getArrivals(stopId: String, limit: Int) async throws -> [Arrival] { return [] }
+        func getArrivals(stopId: Int, limit: Int) async throws -> [Arrival] { return [] }
         func searchStops(query: String, limit: Int) async throws -> [Stop] { return [] }
         func getTrip(tripId: String) async throws -> Trip { fatalError() }
         func getRoute(routeId: String) async throws -> Route { fatalError() }

@@ -1,7 +1,7 @@
 import Foundation
 
 struct StopDTO: Decodable {
-    let stopId: String
+    let stopId: Int
     let stopName: String
     let stopDesc: String?
     let stopLat: Double
@@ -14,11 +14,11 @@ struct NearbyStopsResponse: Decodable {
 }
 
 struct NearbyStopDTO: Decodable {
-    let id: String
+    let id: Int
     let name: String
     let desc: String?
-    let lat: String
-    let lon: String
+    let lat: Double
+    let lon: Double
     let routes: String?
     let distance: Double
 }

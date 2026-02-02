@@ -27,7 +27,7 @@ class UserDefaultsStorageService: StorageServiceProtocol {
         saveFavoriteStops(favorites)
     }
 
-    func isFavorite(stopId: String) -> Bool {
+    func isFavorite(stopId: Int) -> Bool {
         return getFavoriteStops().contains { $0.stopId == stopId }
     }
 

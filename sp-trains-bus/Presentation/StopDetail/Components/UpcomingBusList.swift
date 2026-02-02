@@ -118,10 +118,10 @@ struct UpcomingBusRow: View {
 
         ScrollView {
             UpcomingBusList(arrivals: [
-                Arrival(tripId: "123", routeId: "6338-10", routeShortName: "6338-10", routeLongName: "Term. Pq. D. Pedro II", headsign: "Terminal Bandeira", arrivalTime: "10:30", departureTime: "10:30", stopId: "1", stopSequence: 1, routeType: 3, routeColor: "509E2F", routeTextColor: "FFFFFF", frequency: 15, waitTime: 3),
-                Arrival(tripId: "124", routeId: "609P-10", routeShortName: "609P-10", routeLongName: "Lapa - Centro", headsign: "Jardim Paulista", arrivalTime: "10:34", departureTime: "10:34", stopId: "1", stopSequence: 2, routeType: 3, routeColor: "2196F3", routeTextColor: "FFFFFF", frequency: nil, waitTime: 4),
-                Arrival(tripId: "125", routeId: "508M-10", routeShortName: "508M-10", routeLongName: "Vila Mariana", headsign: "Parque Ibirapuera", arrivalTime: "10:39", departureTime: "10:39", stopId: "1", stopSequence: 3, routeType: 3, routeColor: "9C27B0", routeTextColor: "FFFFFF", frequency: 20, waitTime: 9),
-                Arrival(tripId: "126", routeId: "8707-10", routeShortName: "8707-10", routeLongName: "Santo Amaro", headsign: "Term. Santo Amaro", arrivalTime: "10:50", departureTime: "10:50", stopId: "1", stopSequence: 4, routeType: 3, routeColor: "FF5722", routeTextColor: "FFFFFF", frequency: nil, waitTime: 20)
+                Arrival(tripId: "123", routeId: "6338-10", routeShortName: "6338-10", routeLongName: "Term. Pq. D. Pedro II", headsign: "Terminal Bandeira", arrivalTime: "10:30", departureTime: "10:30", stopId: 1, stopSequence: 1, routeType: 3, routeColor: "509E2F", routeTextColor: "FFFFFF", frequency: 15, waitTime: 3),
+                Arrival(tripId: "124", routeId: "609P-10", routeShortName: "609P-10", routeLongName: "Lapa - Centro", headsign: "Jardim Paulista", arrivalTime: "10:34", departureTime: "10:34", stopId: 1, stopSequence: 2, routeType: 3, routeColor: "2196F3", routeTextColor: "FFFFFF", frequency: nil, waitTime: 4),
+                Arrival(tripId: "125", routeId: "508M-10", routeShortName: "508M-10", routeLongName: "Vila Mariana", headsign: "Parque Ibirapuera", arrivalTime: "10:39", departureTime: "10:39", stopId: 1, stopSequence: 3, routeType: 3, routeColor: "9C27B0", routeTextColor: "FFFFFF", frequency: 20, waitTime: 9),
+                Arrival(tripId: "126", routeId: "8707-10", routeShortName: "8707-10", routeLongName: "Santo Amaro", headsign: "Term. Santo Amaro", arrivalTime: "10:50", departureTime: "10:50", stopId: 1, stopSequence: 4, routeType: 3, routeColor: "FF5722", routeTextColor: "FFFFFF", frequency: nil, waitTime: 20)
             ])
         }
     }

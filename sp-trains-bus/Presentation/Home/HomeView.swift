@@ -53,11 +53,11 @@ struct HomeView: View {
     class MockTransitRepository: TransitRepositoryProtocol {
         func getNearbyStops(location: Location, limit: Int) async throws -> [Stop] {
             return [
-                Stop(stopId: "1", stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561414, longitude: -46.656166), stopSequence: 1, stopCode: "SP1", wheelchairBoarding: 0),
-                Stop(stopId: "2", stopName: "Rua Augusta, 500", location: Location(latitude: -23.560000, longitude: -46.650000), stopSequence: 2, stopCode: "SP2", wheelchairBoarding: 0)
+                Stop(stopId: 1, stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561414, longitude: -46.656166), stopSequence: 1, stopCode: "SP1", wheelchairBoarding: 0),
+                Stop(stopId: 2, stopName: "Rua Augusta, 500", location: Location(latitude: -23.560000, longitude: -46.650000), stopSequence: 2, stopCode: "SP2", wheelchairBoarding: 0)
             ]
         }
-        func getArrivals(stopId: String, limit: Int) async throws -> [Arrival] { return [] }
+        func getArrivals(stopId: Int, limit: Int) async throws -> [Arrival] { return [] }
         func searchStops(query: String, limit: Int) async throws -> [Stop] { return [] }
         func getTrip(tripId: String) async throws -> Trip { fatalError() }
         func getRoute(routeId: String) async throws -> Route { fatalError() }
@@ -77,7 +77,7 @@ struct HomeView: View {
     class MockStorageService: StorageServiceProtocol {
         var favoriteValue: Bool = false
         
-        func isFavorite(stopId: String) -> Bool {
+        func isFavorite(stopId: Int) -> Bool {
             return favoriteValue
         }
         
@@ -85,7 +85,7 @@ struct HomeView: View {
         func removeFavorite(stop: Stop) {}
         func getFavoriteStops() -> [Stop] {
             return [
-                Stop(stopId: "1", stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561414, longitude: -46.656166), stopSequence: 1, stopCode: "SP1", wheelchairBoarding: 0)
+                Stop(stopId: 1, stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561414, longitude: -46.656166), stopSequence: 1, stopCode: "SP1", wheelchairBoarding: 0)
             ]
         }
         func saveHome(location: Location) {}
