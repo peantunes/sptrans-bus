@@ -145,43 +145,73 @@ class TransitService {
         }
 
         $sql = "SELECT
-                    st.trip_id,
-                    st.arrival_time,
-                    st.departure_time,
-                    st.stop_sequence,
-                    t.route_id,
-                    t.trip_headsign,
-                    t.service_id,
-                    r.route_short_name,
-                    r.route_long_name,
-                    r.route_type,
-                    r.route_color,
-                    r.route_text_color,
-                    (SELECT ROUND(f.headway_secs/60)
-                     FROM sp_frequencies f
-                     WHERE f.trip_id = st.trip_id
-                       AND f.start_time <= ?
-                       AND f.end_time >= ?
-                     LIMIT 1) as frequency
-                FROM sp_stop_times st
-                INNER JOIN sp_trip t ON st.trip_id = t.trip_id
-                INNER JOIN sp_routes r ON t.route_id = r.route_id
-                INNER JOIN sp_calendar c ON t.service_id = c.service_id
-                WHERE st.stop_id = ?
-                  AND st.arrival_time >= ?
-                  AND c.$dayColumn = 1
-                  AND c.start_date <= ?
-                  AND c.end_date >= ?
-                ORDER BY st.arrival_time
-                LIMIT ?";
+                st.trip_id,
+                t.route_id,
+                t.trip_headsign,
+                r.route_short_name,
+                r.route_long_name,
+                r.route_type,
+                r.route_color,
+                r.route_text_color,
+                stop_offset.stop_sequence as stop_sequence,
+                -- next arrival time (computed)
+                SEC_TO_TIME(
+                    TIME_TO_SEC(f.start_time)
+                    + (
+                        CEIL(
+                            GREATEST(
+                                0,
+                                TIME_TO_SEC(?) - TIME_TO_SEC(f.start_time)
+                            ) / f.headway_secs
+                        ) * f.headway_secs
+                    )
+                    + stop_offset.offset_secs
+                ) AS arrival_time,
 
-        $this->con->ExecutaPrepared($sql, "ssssssi", [
-            $currentTime,
+                ROUND(f.headway_secs / 60) AS frequency_minutes
+
+            FROM sp_stop_times st
+
+            JOIN (
+                SELECT
+                    trip_id,
+                    stop_id,
+                    stop_sequence,
+                    TIME_TO_SEC(arrival_time)
+                    - TIME_TO_SEC(MIN(arrival_time) OVER (PARTITION BY trip_id))
+                    AS offset_secs
+                FROM sp_stop_times
+            ) stop_offset
+            ON stop_offset.trip_id = st.trip_id
+            AND stop_offset.stop_id = st.stop_id
+
+            JOIN sp_frequencies f
+            ON f.trip_id = st.trip_id
+
+            JOIN sp_trip t ON t.trip_id = st.trip_id
+            JOIN sp_routes r ON r.route_id = t.route_id
+            JOIN sp_calendar c ON c.service_id = t.service_id
+
+            WHERE st.stop_id = ?
+            AND f.start_time <= ?
+            AND f.end_time >= ?
+            AND c.$dayColumn = 1
+            AND c.start_date <= ?
+            AND c.end_date >= ?
+
+            HAVING arrival_time >= ?
+
+            ORDER BY arrival_time
+            LIMIT ?";
+
+        $this->con->ExecutaPrepared($sql, "sssssssi", [
             $currentTime,
             $stopId,
             $currentTime,
+            $currentTime,
             $currentDate,
             $currentDate,
+            $currentTime,
             $limit
         ]);
 
@@ -196,17 +226,17 @@ class TransitService {
             $arrival->routeLongName = $this->safeEncode($rs['route_long_name']);
             $arrival->headsign = $this->safeEncode($rs['trip_headsign']);
             $arrival->arrivalTime = $rs['arrival_time'];
-            $arrival->departureTime = $rs['departure_time'];
+            $arrival->departureTime = $rs['arrival_time'];
             $arrival->stopSequence = (int)$rs['stop_sequence'];
             $arrival->routeType = (int)$rs['route_type'];
             $arrival->routeColor = $rs['route_color'];
             $arrival->routeTextColor = $rs['route_text_color'];
-            $arrival->frequency = $rs['frequency'] ? (int)$rs['frequency'] : null;
+            $arrival->frequency = $rs['frequency_minutes'] ? (int)$rs['frequency_minutes'] : null;
 
             // Calculate wait time in minutes
             $arrivalTimestamp = strtotime($rs['arrival_time']);
             $currentTimestamp = strtotime($currentTime);
-            $arrival->waitTime = round(($arrivalTimestamp - $currentTimestamp) / 60);
+            $arrival->waitTime = max(0, round(($arrivalTimestamp - $currentTimestamp) / 60));
 
             $arrivals[] = $arrival;
         }

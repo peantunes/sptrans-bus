@@ -13,7 +13,7 @@ xcuserdata/
 *.dSYM.zip
 *.dSYM
 
-./server/data_import/gtfs_to_import/*
+server/data_import/gtfs_to_import/*
 
 ## Playgrounds
 timeline.xctimeline
