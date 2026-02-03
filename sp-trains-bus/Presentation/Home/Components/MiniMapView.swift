@@ -24,17 +24,7 @@ struct MiniMapView: View {
     var body: some View {
         Map(coordinateRegion: $region, annotationItems: stops) { stop in
             MapAnnotation(coordinate: CLLocationCoordinate2D(latitude: stop.location.latitude, longitude: stop.location.longitude)) {
-                VStack {
-                    Image(systemName: "bus.fill")
-                        .font(.caption)
-                        .foregroundColor(.white)
-                        .padding(5)
-                        .background(Color.blue)
-                        .clipShape(Circle())
-                    Text(stop.stopName)
-                        .font(.caption2)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                StopAnnotation(stop: stop)
                 .onTapGesture {
                     self.selectedStop = stop
                     self.isShowingStopDetail = true
@@ -53,6 +43,8 @@ struct MiniMapView: View {
                 StopDetailView(viewModel: StopDetailViewModel(
                     stop: selectedStop,
                     getArrivalsUseCase: dependencies.getArrivalsUseCase,
+                    getTripRouteUseCase: dependencies.getTripRouteUseCase,
+                    getRouteShapeUseCase: dependencies.getRouteShapeUseCase,
                     storageService: dependencies.storageService
                 ))
             }

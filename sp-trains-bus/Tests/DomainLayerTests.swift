@@ -18,7 +18,7 @@ class DomainLayerTests: XCTestCase {
     }
 
     func testArrivalInitialization() {
-        let arrival = Arrival(tripId: "T1", arrivalTime: "10:00", departureTime: "10:01", stopId: 1, stopSequence: 1, stopHeadsign: "Downtown", pickupType: 0, dropOffType: 0, shapeDistTraveled: "1.5", frequency: 10, waitTime: 5)
+        let arrival = Arrival(tripId: "T1", routeId: "R1", routeShortName: "R1", routeLongName: "Route 1", headsign: "Downtown", arrivalTime: "10:00", departureTime: "10:01", stopId: 1, stopSequence: 1, routeType: 3, routeColor: "FF0000", routeTextColor: "FFFFFF", frequency: 10, waitTime: 5)
         XCTAssertEqual(arrival.tripId, "T1")
         XCTAssertEqual(arrival.arrivalTime, "10:00")
         XCTAssertEqual(arrival.waitTime, 5)

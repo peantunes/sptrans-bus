@@ -17,7 +17,7 @@ struct MapExplorerView: View {
                 FilterChips(selectedFilter: $selectedFilter)
                     .padding(.vertical, 5)
 
-                TransitMapView(region: $viewModel.region, stops: viewModel.stops, dependencies: dependencies)
+                TransitMapView(region: $viewModel.region, stops: viewModel.stops, dependencies: dependencies, selectedFilter: selectedFilter)
                     .edgesIgnoringSafeArea(.bottom)
             }
 
@@ -118,7 +118,7 @@ struct MapExplorerView: View {
         }
         func getArrivals(stopId: Int, limit: Int) async throws -> [Arrival] { return [] }
         func searchStops(query: String, limit: Int) async throws -> [Stop] { return [] }
-        func getTrip(tripId: String) async throws -> Trip { fatalError() }
+        func getTrip(tripId: String) async throws -> TripStop { fatalError() }
         func getRoute(routeId: String) async throws -> Route { fatalError() }
         func getShape(shapeId: String) async throws -> [Location] { return [] }
         func getAllRoutes(limit: Int, offset: Int) async throws -> [Route] { return [] }

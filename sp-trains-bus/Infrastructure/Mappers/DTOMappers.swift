@@ -5,7 +5,7 @@ extension StopDTO {
         return Stop(stopId: stopId,
                     stopName: stopName,
                     location: Location(latitude: stopLat, longitude: stopLon),
-                    stopSequence: 0, // StopDTO does not have stopSequence
+                    stopSequence: stopSequence ?? 0,
                     stopCode: "", // StopDTO does not have stopCode
                     wheelchairBoarding: 0) // StopDTO does not have wheelchairBoarding
     }
@@ -51,6 +51,21 @@ extension TripDTO {
                     tripHeadsign: headsign,
                     directionId: directionId,
                     shapeId: shapeId)
+    }
+
+    func toTripStop() -> TripStop {
+        let trip = toDomain()
+        let mappedStops = stops.enumerated().map { index, stop in
+            Stop(
+                stopId: stop.stopId,
+                stopName: stop.stopName,
+                location: Location(latitude: stop.stopLat, longitude: stop.stopLon),
+                stopSequence: stop.stopSequence ?? index + 1,
+                stopCode: "",
+                wheelchairBoarding: 0
+            )
+        }
+        return TripStop(trip: trip, stops: mappedStops)
     }
 }
 

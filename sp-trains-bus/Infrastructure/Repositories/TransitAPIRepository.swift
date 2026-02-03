@@ -27,8 +27,9 @@ class TransitAPIRepository: TransitRepositoryProtocol {
         return response.points.map { $0.toDomain() }
     }
     
-    func getTrip(tripId: String) async throws -> Trip {
-        fatalError("getTrip - Needs to be implemented")
+    func getTrip(tripId: String) async throws -> TripStop {
+        let response: TripResponse = try await apiClient.request(endpoint: TransitAPIEndpoint.trip(tripId: tripId))
+        return response.trip.toTripStop()
     }
     
     func getRoute(routeId: String) async throws -> Route {

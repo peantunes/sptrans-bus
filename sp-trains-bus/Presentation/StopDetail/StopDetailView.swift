@@ -42,15 +42,39 @@ struct StopDetailView: View {
                         } else if let nextArrival = viewModel.arrivals.first {
                             // Next bus card
                             NextBusCard(arrival: nextArrival)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 15)
+                                        .stroke(viewModel.selectedArrival?.tripId == nextArrival.tripId ? Color(hex: nextArrival.routeColor).opacity(0.6) : Color.clear, lineWidth: 1.5)
+                                )
                                 .padding(.horizontal)
+                                .onTapGesture {
+                                    viewModel.selectArrival(nextArrival)
+                                }
 
                             // Upcoming arrivals list
                             UpcomingBusList(
                                 arrivals: viewModel.arrivals,
+                                selectedTripId: viewModel.selectedArrival?.tripId,
                                 onArrivalTap: { arrival in
-                                    // Handle arrival tap if needed
+                                    viewModel.selectArrival(arrival)
                                 }
                             )
+
+                            JourneySection(
+                                selection: viewModel.selectedArrival,
+                                stops: viewModel.journeyStops,
+                                shape: viewModel.journeyShape,
+                                isLoading: viewModel.isLoadingJourney,
+                                errorMessage: viewModel.journeyErrorMessage,
+                                currentStopId: viewModel.stop.stopId,
+                                onClear: viewModel.clearJourneySelection,
+                                onRetry: {
+                                    if let selectedArrival = viewModel.selectedArrival {
+                                        viewModel.selectArrival(selectedArrival)
+                                    }
+                                }
+                            )
+                            .padding(.horizontal)
                         } else {
                             // Empty state
                             VStack(spacing: 16) {
@@ -132,9 +156,25 @@ struct StopDetailView: View {
             ]
         }
         func searchStops(query: String, limit: Int) async throws -> [Stop] { return [] }
-        func getTrip(tripId: String) async throws -> Trip { fatalError() }
+        func getTrip(tripId: String) async throws -> TripStop {
+            let trip = Trip(routeId: "6338-10", serviceId: "WK", tripId: tripId, tripHeadsign: "Terminal Bandeira", directionId: 0, shapeId: "shape-1")
+            let stops = [
+                Stop(stopId: 101, stopName: "Terminal Parque Dom Pedro II", location: Location(latitude: -23.5503, longitude: -46.6331), stopSequence: 1, stopCode: "", wheelchairBoarding: 0),
+                Stop(stopId: 102, stopName: "Parada Roberto Simonsen", location: Location(latitude: -23.5509, longitude: -46.6354), stopSequence: 2, stopCode: "", wheelchairBoarding: 0),
+                Stop(stopId: 103, stopName: "Rua Benjamin Constant", location: Location(latitude: -23.5526, longitude: -46.6362), stopSequence: 3, stopCode: "", wheelchairBoarding: 0),
+                Stop(stopId: 104, stopName: "Maria Paula", location: Location(latitude: -23.5545, longitude: -46.6372), stopSequence: 4, stopCode: "", wheelchairBoarding: 0)
+            ]
+            return TripStop(trip: trip, stops: stops)
+        }
         func getRoute(routeId: String) async throws -> Route { fatalError() }
-        func getShape(shapeId: String) async throws -> [Location] { fatalError() }
+        func getShape(shapeId: String) async throws -> [Location] {
+            return [
+                Location(latitude: -23.5503, longitude: -46.6331),
+                Location(latitude: -23.5512, longitude: -46.6344),
+                Location(latitude: -23.5526, longitude: -46.6362),
+                Location(latitude: -23.5538, longitude: -46.6370)
+            ]
+        }
         func getAllRoutes(limit: Int, offset: Int) async throws -> [Route] { return [] }
     }
 
@@ -151,9 +191,18 @@ struct StopDetailView: View {
     }
 
     let sampleStop = Stop(stopId: 18848, stopName: "Clínicas", location: Location(latitude: -23.554022, longitude: -46.671108), stopSequence: 0, stopCode: "CLI001", wheelchairBoarding: 0)
-    let mockGetArrivalsUseCase = GetArrivalsUseCase(transitRepository: MockTransitRepository())
+    let mockTransitRepository = MockTransitRepository()
+    let mockGetArrivalsUseCase = GetArrivalsUseCase(transitRepository: mockTransitRepository)
+    let mockGetTripRouteUseCase = GetTripRouteUseCase(transitRepository: mockTransitRepository)
+    let mockGetRouteShapeUseCase = GetRouteShapeUseCase(transitRepository: mockTransitRepository)
     let mockStorageService = MockStorageService()
-    let viewModel = StopDetailViewModel(stop: sampleStop, getArrivalsUseCase: mockGetArrivalsUseCase, storageService: mockStorageService)
+    let viewModel = StopDetailViewModel(
+        stop: sampleStop,
+        getArrivalsUseCase: mockGetArrivalsUseCase,
+        getTripRouteUseCase: mockGetTripRouteUseCase,
+        getRouteShapeUseCase: mockGetRouteShapeUseCase,
+        storageService: mockStorageService
+    )
 
     return StopDetailView(viewModel: viewModel)
 }

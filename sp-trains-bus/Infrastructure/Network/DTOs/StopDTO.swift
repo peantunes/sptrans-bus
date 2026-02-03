@@ -7,6 +7,7 @@ struct StopDTO: Decodable {
     let stopLat: Double
     let stopLon: Double
     let routes: String?
+    let stopSequence: Int?
 }
 
 struct NearbyStopsResponse: Decodable {

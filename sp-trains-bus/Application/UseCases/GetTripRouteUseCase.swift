@@ -7,7 +7,7 @@ class GetTripRouteUseCase {
         self.transitRepository = transitRepository
     }
 
-    func execute(tripId: String) async throws -> Trip {
+    func execute(tripId: String) async throws -> TripStop {
         return try await transitRepository.getTrip(tripId: tripId)
     }
 }

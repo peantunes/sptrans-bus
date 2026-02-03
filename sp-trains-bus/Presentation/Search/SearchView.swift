@@ -29,6 +29,8 @@ struct SearchView: View {
                     NavigationLink(destination: StopDetailView(viewModel: StopDetailViewModel(
                         stop: stop,
                         getArrivalsUseCase: dependencies.getArrivalsUseCase,
+                        getTripRouteUseCase: dependencies.getTripRouteUseCase,
+                        getRouteShapeUseCase: dependencies.getRouteShapeUseCase,
                         storageService: dependencies.storageService
                     ))) {
                         SearchResultRow(stop: stop)
@@ -89,7 +91,7 @@ struct SearchBar: View {
                 return []
             }
         }
-        func getTrip(tripId: String) async throws -> Trip { fatalError() }
+        func getTrip(tripId: String) async throws -> TripStop { fatalError() }
         func getRoute(routeId: String) async throws -> Route { fatalError() }
         func getShape(shapeId: String) async throws -> [Location] { fatalError() }
         func getAllRoutes(limit: Int, offset: Int) async throws -> [Route] { return [] }

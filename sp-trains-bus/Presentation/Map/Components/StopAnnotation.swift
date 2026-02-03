@@ -2,24 +2,39 @@ import SwiftUI
 
 struct StopAnnotation: View {
     let stop: Stop
+    var filter: TransitFilter = .bus
+
+    private var iconName: String {
+        switch filter {
+        case .bus:
+            return "bus.fill"
+        case .metro:
+            return "tram.fill"
+        case .train:
+            return "train.side.front.car"
+        }
+    }
+
+    private var iconColor: Color {
+        switch filter {
+        case .bus:
+            return AppColors.primary
+        case .metro:
+            return AppColors.metroL2Verde
+        case .train:
+            return AppColors.metroL11Coral
+        }
+    }
 
     var body: some View {
-        VStack(spacing: 0) {
-            Image(systemName: "bus.fill")
-                .font(.callout)
-                .foregroundColor(.white)
-                .padding(6)
-                .background(Color.blue)
-                .clipShape(Circle())
-
-            Text(stop.stopName)
-                .font(.caption2)
-                .lineLimit(1)
-                .fixedSize()
-                .padding(.horizontal, 4)
-                .background(.white.opacity(0.8))
-                .cornerRadius(5)
-        }
+        Image(systemName: iconName)
+            .font(.callout)
+            .foregroundColor(.white)
+            .padding(6)
+            .background(iconColor)
+            .clipShape(Circle())
+            .shadow(color: .black.opacity(0.2), radius: 3, x: 0, y: 1)
+            .accessibilityLabel(Text(stop.stopName))
     }
 }
 

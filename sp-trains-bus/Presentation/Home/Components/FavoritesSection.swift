@@ -56,6 +56,8 @@ struct FavoritesSection: View {
                             NavigationLink(destination: StopDetailView(viewModel: StopDetailViewModel(
                                 stop: stop,
                                 getArrivalsUseCase: dependencies.getArrivalsUseCase,
+                                getTripRouteUseCase: dependencies.getTripRouteUseCase,
+                                getRouteShapeUseCase: dependencies.getRouteShapeUseCase,
                                 storageService: dependencies.storageService
                             ))) {
                                 FavoriteStopCard(stop: stop)

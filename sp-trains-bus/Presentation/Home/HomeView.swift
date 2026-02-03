@@ -59,7 +59,7 @@ struct HomeView: View {
         }
         func getArrivals(stopId: Int, limit: Int) async throws -> [Arrival] { return [] }
         func searchStops(query: String, limit: Int) async throws -> [Stop] { return [] }
-        func getTrip(tripId: String) async throws -> Trip { fatalError() }
+        func getTrip(tripId: String) async throws -> TripStop { fatalError() }
         func getRoute(routeId: String) async throws -> Route { fatalError() }
         func getShape(shapeId: String) async throws -> [Location] { fatalError() }
         func getAllRoutes(limit: Int, offset: Int) async throws -> [Route] { return [] }

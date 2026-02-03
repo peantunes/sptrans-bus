@@ -176,8 +176,8 @@ class NetworkLayerTests: XCTestCase {
 
         let trip = try await transitRepository.getTrip(tripId: "1012-10-0")
 
-        XCTAssertEqual(trip.tripId, "1012-10-0")
-        XCTAssertEqual(trip.routeId, "1012-10")
+        XCTAssertEqual(trip.trip.tripId, "1012-10-0")
+        XCTAssertEqual(trip.trip.routeId, "1012-10")
     }
 
     func testGetRouteSuccess() async throws {
