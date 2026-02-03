@@ -16,7 +16,12 @@ struct MainTabView: View {
     var body: some View {
         TabView(selection: $tabSelection) {
             Tab("Home", systemImage: "house.fill", value: .home){
-                HomeView(viewModel: dependencies.homeViewModel, dependencies: dependencies)
+                HomeView(
+                    viewModel: dependencies.homeViewModel,
+                    dependencies: dependencies,
+                    onOpenMap: { tabSelection = .map },
+                    onOpenStatus: { tabSelection = .status }
+                )
             }
 
             // Placeholder for NearbyView

@@ -6,22 +6,46 @@ struct FavoriteStopCard: View {
 
     var body: some View {
         GlassCard {
-            VStack(alignment: .leading, spacing: 5) {
-                Text(stop.stopName)
-                    .font(AppFonts.headline())
-                    .foregroundColor(AppColors.text)
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "mappin.and.ellipse")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(AppColors.primary)
+                        .padding(6)
+                        .background(AppColors.primary.opacity(0.15))
+                        .clipShape(Circle())
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(stop.stopName)
+                            .font(AppFonts.headline())
+                            .foregroundColor(AppColors.text)
+                            .lineLimit(2)
+
+                        if !stop.stopCode.isEmpty {
+                            Text("#\(stop.stopCode)")
+                                .font(AppFonts.caption())
+                                .foregroundColor(AppColors.text.opacity(0.6))
+                        }
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(AppColors.text.opacity(0.4))
+                }
 
                 if let nextArrivalTime = nextArrivalTime {
-                    Text("Next: \(nextArrivalTime)")
+                    Text("Next arrival: \(nextArrivalTime)")
                         .font(AppFonts.subheadline())
                         .foregroundColor(AppColors.text.opacity(0.8))
                 } else {
-                    Text("No upcoming arrivals")
+                    Text("Tap to view arrivals")
                         .font(AppFonts.subheadline())
                         .foregroundColor(AppColors.text.opacity(0.6))
                 }
             }
-            .frame(width: 150, alignment: .leading) // Fixed width for horizontal scrolling
+            .frame(width: 190, alignment: .leading)
         }
     }
 }

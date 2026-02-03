@@ -114,6 +114,8 @@ sp-trains-bus/
 │   │   └── Components/
 │   │       ├── NextBusCard.swift
 │   │       ├── UpcomingBusList.swift
+│   │       ├── JourneySection.swift
+│   │       ├── JourneyMapView.swift
 │   │       └── BusProgressIndicator.swift
 │   ├── SystemStatus/
 │   │   ├── SystemStatusView.swift
@@ -229,6 +231,11 @@ Published Properties:
 - isLoading: Bool
 - isFavorite: Bool
 - errorMessage: String?
+- selectedArrival: Arrival?
+- journeyStops: [Stop]
+- journeyShape: [Location]
+- isLoadingJourney: Bool
+- journeyErrorMessage: String?
 
 Features:
 - Real-time arrival countdown
@@ -237,6 +244,7 @@ Features:
 - Favorite/unfavorite toggle
 - Wait time status color coding
 - Empty state handling
+- Journey preview when a route is selected (map shape + stop timeline)
 ```
 
 #### SystemStatusView & SystemStatusViewModel
@@ -307,10 +315,8 @@ Searches for bus stops by name or query string.
 #### GetTripRouteUseCase
 ```swift
 func execute(tripId: String) async throws -> TripStop
-
-Status: NOT IMPLEMENTED (throws fatalError)
 ```
-Intended to retrieve trip details with all stops.
+Retrieves trip details with all stops (used for the Journey preview).
 
 #### GetRouteShapeUseCase
 ```swift
@@ -465,7 +471,7 @@ func getRoute(routeId: String) async throws -> Route
 
 **LocationServiceProtocol**
 ```swift
-func requestLocationPermission() async
+func requestLocationPermission()
 func getCurrentLocation() -> Location?
 func startUpdatingLocation()
 func stopUpdatingLocation()
@@ -473,13 +479,13 @@ func stopUpdatingLocation()
 
 **StorageServiceProtocol**
 ```swift
-func saveFavorite(stop: Stop) throws
-func removeFavorite(stopId: Int) throws
+func saveFavorite(stop: Stop)
+func removeFavorite(stop: Stop)
 func isFavorite(stopId: Int) -> Bool
 func getFavoriteStops() -> [Stop]
-func saveHome(location: Location) throws
+func saveHome(location: Location)
 func getHomeLocation() -> Location?
-func saveWork(location: Location) throws
+func saveWork(location: Location)
 func getWorkLocation() -> Location?
 ```
 
@@ -536,7 +542,7 @@ Located in `/Infrastructure/Network/DTOs/`:
 - **StopDTO** - Maps to Stop entity
 - **ArrivalDTO** - Maps to Arrival entity
 - **RouteDTO** - Maps to Route entity
-- **TripDTO** - Maps to Trip entity
+- **TripDTO** - Maps to Trip and TripStop entities
 - **LocationDTO** - Maps to Location entity
 
 All DTOs are Codable for JSON decoding.
@@ -551,7 +557,7 @@ Methods:
 - searchStops(query:limit:)           // ✓ Implemented
 - getShape(shapeId:)                  // ✓ Implemented
 - getAllRoutes(limit:offset:)         // ✓ Implemented
-- getTrip(tripId:)                    // ✗ Not implemented (fatalError)
+- getTrip(tripId:)                    // ✓ Implemented
 - getRoute(routeId:)                  // ✗ Not implemented (fatalError)
 
 Dependencies:
@@ -570,7 +576,7 @@ Features:
 - Auto-updates on location changes
 
 Methods:
-- requestLocationPermission() async
+- requestLocationPermission()
 - getCurrentLocation() -> Location?
 - startUpdatingLocation()
 - stopUpdatingLocation()
@@ -584,13 +590,13 @@ Storage keys:
 - "workLocation" - Location object
 
 Methods:
-- saveFavorite(stop:) throws
-- removeFavorite(stopId:) throws
+- saveFavorite(stop:)
+- removeFavorite(stop:)
 - isFavorite(stopId:) -> Bool
 - getFavoriteStops() -> [Stop]
-- saveHome(location:) throws
+- saveHome(location:)
 - getHomeLocation() -> Location?
-- saveWork(location:) throws
+- saveWork(location:)
 - getWorkLocation() -> Location?
 ```
 
@@ -602,6 +608,7 @@ StopDTO.toDomain() -> Stop
 NearbyStopDTO.toDomain() -> Stop
 ArrivalDTO.toDomain(stopId: Int) -> Arrival
 TripDTO.toDomain() -> Trip
+TripDTO.toTripStop() -> TripStop
 RouteDTO.toDomain() -> Route
 LocationDTO.toDomain() -> Location
 ```
@@ -885,7 +892,6 @@ All networking, storage, and location services built from scratch using native i
 
 ## Next Steps / TODOs
 
-- [ ] Implement GetTripRouteUseCase (currently fatalError)
 - [ ] Implement GetRouteUseCase (currently fatalError)
 - [ ] Complete "Nearby" tab (currently placeholder)
 - [ ] Add offline data caching

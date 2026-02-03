@@ -1,13 +1,23 @@
 import SwiftUI
-import CoreLocation
 
 struct HomeView: View {
     @StateObject private var viewModel: HomeViewModel
     let dependencies: AppDependencies
+    let onOpenMap: () -> Void
+    let onOpenStatus: () -> Void
 
-    init(viewModel: HomeViewModel, dependencies: AppDependencies) {
+    @State private var selectedStop: Stop?
+
+    init(
+        viewModel: HomeViewModel,
+        dependencies: AppDependencies,
+        onOpenMap: @escaping () -> Void = {},
+        onOpenStatus: @escaping () -> Void = {}
+    ) {
         _viewModel = StateObject(wrappedValue: viewModel)
         self.dependencies = dependencies
+        self.onOpenMap = onOpenMap
+        self.onOpenStatus = onOpenStatus
     }
 
     var body: some View {
@@ -16,14 +26,85 @@ struct HomeView: View {
                 GreetingHeader(greeting: viewModel.getGreeting())
                     .padding(.top)
 
-                QuickCommuteCard()
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
+                    WeatherSummaryCard(
+                        city: "São Paulo",
+                        temperature: 26,
+                        condition: "Partly Cloudy",
+                        high: 28,
+                        low: 20,
+                        precipitationChance: 20,
+                        feelsLike: 27
+                    )
+
+                    QuickCommuteCard()
+                }
+                .padding(.horizontal)
+
+                RailStatusSection(
+                    items: [
+                        RailStatusItem(
+                            id: "metro",
+                            title: "Metrô de SP",
+                            status: "Normal",
+                            detail: "All lines operating normally",
+                            color: AppColors.statusNormal,
+                            systemImage: "tram.fill"
+                        ),
+                        RailStatusItem(
+                            id: "cptm",
+                            title: "CPTM",
+                            status: "Attention",
+                            detail: "Speed restriction on Line 9",
+                            color: AppColors.statusWarning,
+                            systemImage: "train.side.front.car"
+                        )
+                    ],
+                    onOpenStatus: onOpenStatus
+                )
+
+                TravelFeaturesSection(
+                    features: [
+                        TravelFeature(
+                            title: "Live Arrivals",
+                            subtitle: "Next bus and train ETAs",
+                            systemImage: "clock.badge.checkmark",
+                            tint: AppColors.primary
+                        ),
+                        TravelFeature(
+                            title: "Service Alerts",
+                            subtitle: "Disruptions and line status",
+                            systemImage: "exclamationmark.triangle.fill",
+                            tint: AppColors.statusWarning
+                        ),
+                        TravelFeature(
+                            title: "Accessibility",
+                            subtitle: "Elevators and ramps",
+                            systemImage: "figure.roll",
+                            tint: AppColors.accent
+                        ),
+                        TravelFeature(
+                            title: "Bike + Walk",
+                            subtitle: "First and last mile tips",
+                            systemImage: "figure.walk.circle",
+                            tint: AppColors.secondary
+                        )
+                    ]
+                )
+
+                HomeMapPreview(stops: viewModel.nearbyStops, userLocation: viewModel.userLocation, onOpenMap: onOpenMap)
                     .padding(.horizontal)
 
-                MiniMapView(userLocation: $viewModel.userLocation, stops: viewModel.nearbyStops, dependencies: dependencies)
-                    .frame(height: 200)
-                    .padding(.horizontal)
+                FavoritesSection(
+                    favoriteStops: viewModel.favoriteStops,
+                    onSelectStop: { selectedStop = $0 }
+                )
 
-                FavoritesSection(favoriteStops: viewModel.favoriteStops, dependencies: dependencies)
+                NearbyStopsSection(
+                    stops: viewModel.nearbyStops,
+                    userLocation: viewModel.userLocation,
+                    onSelectStop: { selectedStop = $0 }
+                )
             }
         }
         .navigationTitle("")
@@ -33,6 +114,17 @@ struct HomeView: View {
             if let location = viewModel.locationService.getCurrentLocation() {
                 viewModel.userLocation = location
             }
+        }
+        .sheet(item: $selectedStop) { stop in
+            StopDetailView(
+                viewModel: StopDetailViewModel(
+                    stop: stop,
+                    getArrivalsUseCase: dependencies.getArrivalsUseCase,
+                    getTripRouteUseCase: dependencies.getTripRouteUseCase,
+                    getRouteShapeUseCase: dependencies.getRouteShapeUseCase,
+                    storageService: dependencies.storageService
+                )
+            )
         }
         .overlay(
             Group {

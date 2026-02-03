@@ -3,20 +3,43 @@ import SwiftUI
 struct QuickCommuteCard: View {
     var body: some View {
         GlassCard {
-            VStack(alignment: .leading) {
-                Text("Quick Commute")
-                    .font(AppFonts.headline())
-                    .foregroundColor(AppColors.text)
-
+            VStack(alignment: .leading, spacing: 12) {
                 HStack {
+                    Text("Plan Your Trip")
+                        .font(AppFonts.headline())
+                        .foregroundColor(AppColors.text)
+
+                    Spacer()
+
+                    Image(systemName: "arrow.triangle.branch")
+                        .foregroundColor(AppColors.primary)
+                }
+
+                Text("Smart routes across buses, Metrô and CPTM.")
+                    .font(AppFonts.caption())
+                    .foregroundColor(AppColors.text.opacity(0.65))
+
+                HStack(spacing: 8) {
                     Button(action: {
-                        // Action for To Work
+                        // Action for Plan a Trip
                     }) {
-                        Label("To Work", systemImage: "briefcase.fill")
+                        Label("Plan", systemImage: "magnifyingglass")
                             .font(AppFonts.callout())
                             .padding(.vertical, 8)
                             .padding(.horizontal, 12)
-                            .background(AppColors.primary.opacity(0.7))
+                            .background(AppColors.primary.opacity(0.85))
+                            .cornerRadius(10)
+                            .foregroundColor(.white)
+                    }
+
+                    Button(action: {
+                        // Action for To Work
+                    }) {
+                        Label("Work", systemImage: "briefcase.fill")
+                            .font(AppFonts.callout())
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 12)
+                            .background(AppColors.secondary.opacity(0.85))
                             .cornerRadius(10)
                             .foregroundColor(.white)
                     }
@@ -24,21 +47,19 @@ struct QuickCommuteCard: View {
                     Button(action: {
                         // Action for To Home
                     }) {
-                        Label("To Home", systemImage: "house.fill")
+                        Label("Home", systemImage: "house.fill")
                             .font(AppFonts.callout())
                             .padding(.vertical, 8)
                             .padding(.horizontal, 12)
-                            .background(AppColors.primary.opacity(0.7))
+                            .background(AppColors.accent.opacity(0.85))
                             .cornerRadius(10)
                             .foregroundColor(.white)
                     }
                 }
-                .padding(.top, 5)
 
-                Text("ETA: -- min")
-                    .font(AppFonts.subheadline())
-                    .foregroundColor(AppColors.text.opacity(0.7))
-                    .padding(.top, 5)
+                Text("ETA preview and live alerts included.")
+                    .font(AppFonts.caption2())
+                    .foregroundColor(AppColors.text.opacity(0.6))
             }
         }
     }

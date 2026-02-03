@@ -2,7 +2,7 @@ import SwiftUI
 
 struct FavoritesSection: View {
     let favoriteStops: [Stop]
-    let dependencies: AppDependencies
+    let onSelectStop: (Stop) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -53,16 +53,10 @@ struct FavoritesSection: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 15) {
                         ForEach(favoriteStops, id: \.stopId) { stop in
-                            NavigationLink(destination: StopDetailView(viewModel: StopDetailViewModel(
-                                stop: stop,
-                                getArrivalsUseCase: dependencies.getArrivalsUseCase,
-                                getTripRouteUseCase: dependencies.getTripRouteUseCase,
-                                getRouteShapeUseCase: dependencies.getRouteShapeUseCase,
-                                storageService: dependencies.storageService
-                            ))) {
+                            Button(action: { onSelectStop(stop) }) {
                                 FavoriteStopCard(stop: stop)
                             }
-                            .buttonStyle(PlainButtonStyle())
+                            .buttonStyle(.plain)
                         }
                     }
                     .padding(.horizontal)
@@ -81,7 +75,7 @@ struct FavoritesSection: View {
     return ZStack {
         LinearGradient(gradient: Gradient(colors: [.blue.opacity(0.3), .purple.opacity(0.3)]), startPoint: .topLeading, endPoint: .bottomTrailing)
             .ignoresSafeArea()
-        FavoritesSection(favoriteStops: sampleStops, dependencies: AppDependencies())
+        FavoritesSection(favoriteStops: sampleStops, onSelectStop: { _ in })
     }
 }
 
@@ -89,6 +83,6 @@ struct FavoritesSection: View {
     ZStack {
         LinearGradient(gradient: Gradient(colors: [.blue.opacity(0.3), .purple.opacity(0.3)]), startPoint: .topLeading, endPoint: .bottomTrailing)
             .ignoresSafeArea()
-        FavoritesSection(favoriteStops: [], dependencies: AppDependencies())
+        FavoritesSection(favoriteStops: [], onSelectStop: { _ in })
     }
 }
