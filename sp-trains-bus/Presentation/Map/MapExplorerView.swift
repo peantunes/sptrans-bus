@@ -1,9 +1,11 @@
 import SwiftUI
 import MapKit
+import CoreLocation
 
 struct MapExplorerView: View {
     @StateObject private var viewModel: MapExplorerViewModel
     @State private var selectedFilter: TransitFilter = .bus // Default filter
+    @State private var selectedStop: Stop?
     let dependencies: AppDependencies // Inject dependencies
 
     init(viewModel: MapExplorerViewModel, dependencies: AppDependencies) {
@@ -15,9 +17,21 @@ struct MapExplorerView: View {
         ZStack {
             VStack(spacing: 0) {
                 FilterChips(selectedFilter: $selectedFilter)
-                    .padding(.vertical, 5)
+                    .padding(.top, 8)
+                    .padding(.bottom, selectedFilter.isAvailable ? 8 : 4)
 
-                TransitMapView(region: $viewModel.region, stops: viewModel.stops, dependencies: dependencies, selectedFilter: selectedFilter)
+                if !selectedFilter.isAvailable {
+                    FilterNoticeCard(text: selectedFilter.helperText)
+                        .padding(.horizontal)
+                        .padding(.bottom, 8)
+                }
+
+                TransitMapView(
+                    region: $viewModel.region,
+                    selectedStop: $selectedStop,
+                    stops: filteredStops,
+                    selectedFilter: selectedFilter
+                )
                     .edgesIgnoringSafeArea(.bottom)
             }
 
@@ -73,7 +87,7 @@ struct MapExplorerView: View {
                         .frame(width: 44, height: 44)
                         .padding(.trailing, 16)
                 }
-                .padding(.bottom, 24)
+                .padding(.bottom, showCarousel ? 0 : 24)
             }
 
             // Loading indicator
@@ -103,6 +117,43 @@ struct MapExplorerView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear(perform: viewModel.loadStopsInVisibleRegion)
         .animation(.easeInOut(duration: 0.3), value: viewModel.showRefreshButton)
+        .sheet(item: $selectedStop) { stop in
+            StopDetailView(
+                viewModel: StopDetailViewModel(
+                    stop: stop,
+                    getArrivalsUseCase: dependencies.getArrivalsUseCase,
+                    getTripRouteUseCase: dependencies.getTripRouteUseCase,
+                    getRouteShapeUseCase: dependencies.getRouteShapeUseCase,
+                    storageService: dependencies.storageService
+                )
+            )
+        }
+        .safeAreaInset(edge: .bottom) {
+            if showCarousel {
+                MapStopCarousel(items: nearbyItems, onSelect: { selectedStop = $0 })
+            }
+        }
+    }
+
+    private var filteredStops: [Stop] {
+        selectedFilter.isAvailable ? viewModel.stops : []
+    }
+
+    private var nearbyItems: [MapStopItem] {
+        guard !filteredStops.isEmpty else { return [] }
+
+        let center = CLLocation(latitude: viewModel.region.center.latitude, longitude: viewModel.region.center.longitude)
+        let sorted = filteredStops.map { stop -> MapStopItem in
+            let stopLocation = CLLocation(latitude: stop.location.latitude, longitude: stop.location.longitude)
+            return MapStopItem(id: stop.stopId, stop: stop, distanceMeters: center.distance(from: stopLocation))
+        }
+        .sorted { $0.distanceMeters < $1.distanceMeters }
+
+        return Array(sorted.prefix(12))
+    }
+
+    private var showCarousel: Bool {
+        !nearbyItems.isEmpty
     }
 }
 

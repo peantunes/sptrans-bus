@@ -3,32 +3,17 @@ import MapKit
 
 struct TransitMapView: View {
     @Binding var region: MKCoordinateRegion
+    @Binding var selectedStop: Stop?
     let stops: [Stop]
-    let dependencies: AppDependencies // Inject dependencies
     let selectedFilter: TransitFilter
-
-    @State private var selectedStop: Stop?
-    @State private var isShowingStopDetail: Bool = false
 
     var body: some View {
         Map(coordinateRegion: $region, annotationItems: stops) { stop in
             MapAnnotation(coordinate: stop.location.toCLLocationCoordinate2D()) {
                 StopAnnotation(stop: stop, filter: selectedFilter)
                     .onTapGesture {
-                        self.selectedStop = stop
-                        self.isShowingStopDetail = true
+                        selectedStop = stop
                     }
-            }
-        }
-        .sheet(isPresented: $isShowingStopDetail) {
-            if let selectedStop = selectedStop {
-                StopDetailView(viewModel: StopDetailViewModel(
-                    stop: selectedStop,
-                    getArrivalsUseCase: dependencies.getArrivalsUseCase,
-                    getTripRouteUseCase: dependencies.getTripRouteUseCase,
-                    getRouteShapeUseCase: dependencies.getRouteShapeUseCase,
-                    storageService: dependencies.storageService
-                ))
             }
         }
     }
