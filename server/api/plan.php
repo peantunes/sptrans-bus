@@ -12,6 +12,8 @@
  *   - direct_limit (optional): Max direct route suggestions (default 6)
  *   - transfer_limit (optional): Max 1-transfer suggestions (default 6)
  *   - max_transfers (optional): 0 or 1 (default 1)
+ *   - max_alternatives (optional): Max combined alternatives (default 5)
+ *   - ranking_priority (optional): arrives_first | shortest | fewest_transfers | closest_origin | closest_destination (default arrives_first)
  *
  * Example:
  * /api/plan.php?origin_lat=-23.561&origin_lon=-46.656&dest_lat=-23.55&dest_lon=-46.63
@@ -50,6 +52,8 @@ try {
     $directLimit = isset($_REQUEST['direct_limit']) ? (int)$_REQUEST['direct_limit'] : 6;
     $transferLimit = isset($_REQUEST['transfer_limit']) ? (int)$_REQUEST['transfer_limit'] : 6;
     $maxTransfers = isset($_REQUEST['max_transfers']) ? (int)$_REQUEST['max_transfers'] : 1;
+    $maxAlternatives = isset($_REQUEST['max_alternatives']) ? (int)$_REQUEST['max_alternatives'] : 5;
+    $rankingPriority = isset($_REQUEST['ranking_priority']) ? $_REQUEST['ranking_priority'] : 'arrives_first';
 
     date_default_timezone_set('America/Sao_Paulo');
     $cConexao = new Conexao(INT_MYSQL, "mysql", "lolados_bus", "bus@2013", "lolados_bus");
@@ -61,7 +65,9 @@ try {
         'destination_limit' => $destinationLimit,
         'direct_limit' => $directLimit,
         'transfer_limit' => $transferLimit,
-        'max_transfers' => $maxTransfers
+        'max_transfers' => $maxTransfers,
+        'max_alternatives' => $maxAlternatives,
+        'ranking_priority' => $rankingPriority
     ]);
 
     ob_end_clean();
@@ -76,7 +82,9 @@ try {
             'destination_limit' => $destinationLimit,
             'direct_limit' => $directLimit,
             'transfer_limit' => $transferLimit,
-            'max_transfers' => $maxTransfers
+            'max_transfers' => $maxTransfers,
+            'max_alternatives' => $maxAlternatives,
+            'ranking_priority' => $rankingPriority
         ],
         'result' => $result
     ], JSON_UNESCAPED_UNICODE);

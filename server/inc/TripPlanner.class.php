@@ -1,21 +1,30 @@
 <?php
 
+require_once(__DIR__ . '/TransitService.class.php');
+
 class TripPlanner {
     private $con;
     private $busInfo;
+    private $transitService;
 
     public function __construct($con) {
         $this->con = $con;
         $this->busInfo = new BusInfo($con);
+        $this->transitService = new TransitService($con);
     }
 
     public function plan($originLat, $originLon, $destLat, $destLon, $options = []) {
+        $maxAlternatives = $this->clampInt($options['max_alternatives'] ?? 5, 1, 10, 5);
         $originLimit = $this->clampInt($options['origin_limit'] ?? 5, 1, 20, 5);
         $destinationLimit = $this->clampInt($options['destination_limit'] ?? 5, 1, 20, 5);
         $directLimit = $this->clampInt($options['direct_limit'] ?? 6, 0, 20, 6);
         $transferLimit = $this->clampInt($options['transfer_limit'] ?? 6, 0, 20, 6);
         $maxTransfers = $this->clampInt($options['max_transfers'] ?? 1, 0, 1, 1);
         $legSearchLimit = $this->clampInt($options['leg_search_limit'] ?? 400, 50, 2000, 400);
+        $rankingPriority = $this->normalizePriority($options['ranking_priority'] ?? 'arrives_first');
+
+        $directLimit = min($directLimit, $maxAlternatives);
+        $transferLimit = min($transferLimit, $maxAlternatives);
 
         $originStops = array_slice($this->busInfo->listStopsByGeo($originLat, $originLon), 0, $originLimit);
         $destinationStops = array_slice($this->busInfo->listStopsByGeo($destLat, $destLon), 0, $destinationLimit);
@@ -40,6 +49,8 @@ class TripPlanner {
             );
         }
 
+        $alternatives = $this->buildAlternatives($directRoutes, $transferRoutes, $maxAlternatives, $rankingPriority);
+
         return [
             'origin' => [
                 'lat' => (float)$originLat,
@@ -53,11 +64,15 @@ class TripPlanner {
             'destinationStops' => array_values($destinationStops),
             'direct' => array_values($directRoutes),
             'transfers' => array_values($transferRoutes),
+            'alternatives' => $alternatives,
+            'rankingPriority' => $rankingPriority,
             'stats' => [
                 'originStopCount' => count($originStops),
                 'destinationStopCount' => count($destinationStops),
                 'directCount' => count($directRoutes),
-                'transferCount' => count($transferRoutes)
+                'transferCount' => count($transferRoutes),
+                'alternativeCount' => count($alternatives),
+                'maxAlternatives' => $maxAlternatives
             ]
         ];
     }
@@ -290,6 +305,162 @@ class TripPlanner {
         return $rows;
     }
 
+    private function buildAlternatives($directRoutes, $transferRoutes, $maxAlternatives, $rankingPriority) {
+        $candidates = [];
+
+        foreach ($directRoutes as $route) {
+            $candidates[] = $this->buildCandidate('direct', $route, $rankingPriority);
+        }
+
+        foreach ($transferRoutes as $route) {
+            $candidates[] = $this->buildCandidate('transfer', $route, $rankingPriority);
+        }
+
+        usort($candidates, function($a, $b) {
+            return $this->compareSortKey($a['sortKey'], $b['sortKey']);
+        });
+
+        $alternatives = [];
+        foreach (array_slice($candidates, 0, $maxAlternatives) as $candidate) {
+            $alternatives[] = [
+                'type' => $candidate['type'],
+                'data' => $candidate['data']
+            ];
+        }
+
+        return $alternatives;
+    }
+
+    private function buildCandidate($type, $route, $rankingPriority) {
+        $metrics = $this->computeMetrics($type, $route);
+        $sortKey = $this->buildSortKey($metrics, $rankingPriority, $route, $type);
+
+        return [
+            'type' => $type,
+            'data' => $route,
+            'metrics' => $metrics,
+            'sortKey' => $sortKey
+        ];
+    }
+
+    private function computeMetrics($type, $route) {
+        $transferCount = $type === 'transfer' ? 1 : 0;
+        $hopCount = $this->computeHopCount($type, $route);
+        $originDistance = $this->safeDistance($route['originStop'] ?? null);
+        $destinationDistance = $this->safeDistance($route['destinationStop'] ?? null);
+
+        return [
+            'transferCount' => $transferCount,
+            'hopCount' => $hopCount,
+            'originDistance' => $originDistance,
+            'destinationDistance' => $destinationDistance
+        ];
+    }
+
+    private function buildSortKey($metrics, $rankingPriority, $route, $type) {
+        $arrivalScore = $this->computeArrivalScore($rankingPriority, $route, $type);
+
+        switch ($rankingPriority) {
+            case 'shortest':
+                return [$metrics['hopCount'], $metrics['transferCount'], $arrivalScore, $metrics['originDistance'] + $metrics['destinationDistance']];
+            case 'fewest_transfers':
+                return [$metrics['transferCount'], $metrics['hopCount'], $arrivalScore];
+            case 'closest_origin':
+                return [$metrics['originDistance'], $metrics['hopCount'], $arrivalScore];
+            case 'closest_destination':
+                return [$metrics['destinationDistance'], $metrics['hopCount'], $arrivalScore];
+            case 'arrives_first':
+            default:
+                return [$arrivalScore, $metrics['transferCount'], $metrics['hopCount'], $metrics['originDistance'] + $metrics['destinationDistance']];
+        }
+    }
+
+    private function computeArrivalScore($rankingPriority, $route, $type) {
+        if ($rankingPriority !== 'arrives_first') {
+            return PHP_INT_MAX;
+        }
+
+        $originRouteId = $type === 'transfer' ? ($route['originRoute']['routeId'] ?? null) : ($route['route']['routeId'] ?? null);
+        $originStopId = $route['originStopId'] ?? null;
+        $originWait = $this->getNextArrivalWait($originStopId, $originRouteId);
+
+        if ($type !== 'transfer') {
+            return $originWait !== null ? $originWait : PHP_INT_MAX;
+        }
+
+        $transferStopId = $route['transferStopId'] ?? null;
+        $destinationRouteId = $route['destinationRoute']['routeId'] ?? null;
+        $transferWait = $this->getNextArrivalWait($transferStopId, $destinationRouteId);
+
+        if ($originWait === null && $transferWait === null) {
+            return PHP_INT_MAX;
+        }
+
+        $originWait = $originWait ?? PHP_INT_MAX / 2;
+        $transferWait = $transferWait ?? PHP_INT_MAX / 2;
+
+        return $originWait + $transferWait;
+    }
+
+    private function getNextArrivalWait($stopId, $routeId) {
+        if (!$stopId || !$routeId) {
+            return null;
+        }
+
+        $arrivals = $this->transitService->getArrivalsAtStop($stopId, null, null, 12);
+        foreach ($arrivals as $arrival) {
+            if (!isset($arrival->routeId)) {
+                continue;
+            }
+            if ($arrival->routeId == $routeId) {
+                return isset($arrival->waitTime) ? (int)$arrival->waitTime : null;
+            }
+        }
+
+        return null;
+    }
+
+    private function computeHopCount($type, $route) {
+        if ($type === 'transfer') {
+            $originSequence = $route['originSequence'] ?? null;
+            $transferSequence = $route['transferSequence'] ?? null;
+            $destinationSequence = $route['destinationSequence'] ?? null;
+
+            if ($originSequence === null || $transferSequence === null || $destinationSequence === null) {
+                return PHP_INT_MAX;
+            }
+
+            return max(0, ($transferSequence - $originSequence) + ($destinationSequence - $transferSequence));
+        }
+
+        $originSequence = $route['originSequence'] ?? null;
+        $destinationSequence = $route['destinationSequence'] ?? null;
+
+        if ($originSequence === null || $destinationSequence === null) {
+            return PHP_INT_MAX;
+        }
+
+        return max(0, $destinationSequence - $originSequence);
+    }
+
+    private function compareSortKey($a, $b) {
+        $length = min(count($a), count($b));
+        for ($i = 0; $i < $length; $i++) {
+            if ($a[$i] === $b[$i]) {
+                continue;
+            }
+            return ($a[$i] < $b[$i]) ? -1 : 1;
+        }
+        return count($a) <=> count($b);
+    }
+
+    private function safeDistance($stop) {
+        if (!$stop || !isset($stop->distance)) {
+            return PHP_INT_MAX;
+        }
+        return (float)$stop->distance;
+    }
+
     private function mapStopsById($stops) {
         $map = [];
         foreach ($stops as $stop) {
@@ -352,5 +523,11 @@ class TripPlanner {
             return $max;
         }
         return $value;
+    }
+
+    private function normalizePriority($value) {
+        $value = strtolower(trim((string)$value));
+        $allowed = ['arrives_first', 'shortest', 'fewest_transfers', 'closest_origin', 'closest_destination'];
+        return in_array($value, $allowed, true) ? $value : 'arrives_first';
     }
 }

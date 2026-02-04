@@ -71,6 +71,12 @@ A comprehensive São Paulo public transit information system for bus arrivals, r
 - Frequency-based arrival calculations
 - Stop search and nearby discovery
 
+**TripPlanner.class.php** - Lightweight trip planning (direct + 1 transfer)
+- Nearby stop discovery for origin/destination
+- Direct route discovery via stop sequence
+- Transfer options via common stops
+- Ranking by priority (default arrives_first)
+
 **Conexao.class.php** - Database abstraction layer
 - Multi-database support: MySQL, Oracle, PostgreSQL, MSSQL
 - Prepared statements for security
