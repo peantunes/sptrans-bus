@@ -57,8 +57,9 @@ class MapExplorerViewModel: NSObject, ObservableObject {
                 self.searchErrorMessage = nil
                 if query.isEmpty {
                     self.searchSuggestions = []
+                } else {
+                    self.searchCompleter.queryFragment = query
                 }
-                self.searchCompleter.queryFragment = query
             }
             .store(in: &cancellables)
     }
@@ -178,7 +179,6 @@ class MapExplorerViewModel: NSObject, ObservableObject {
         )
         lastLoadedRegion = region
         showRefreshButton = false
-        searchQuery = mapItem.name ?? searchQuery
         loadStopsInVisibleRegion()
     }
 }
