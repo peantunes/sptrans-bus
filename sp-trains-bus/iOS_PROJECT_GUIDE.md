@@ -92,6 +92,11 @@ sp-trains-bus/
 │   │   └── Components/
 │   │       ├── GreetingHeader.swift
 │   │       ├── QuickCommuteCard.swift
+│   │       ├── WeatherSummaryCard.swift
+│   │       ├── RailStatusSection.swift
+│   │       ├── TravelFeaturesSection.swift
+│   │       ├── HomeMapPreview.swift
+│   │       ├── NearbyStopsSection.swift
 │   │       ├── MiniMapView.swift
 │   │       ├── FavoritesSection.swift
 │   │       └── FavoriteStopCard.swift
@@ -107,6 +112,8 @@ sp-trains-bus/
 │   │       ├── TransitMapView.swift
 │   │       ├── StopAnnotation.swift
 │   │       ├── FilterChips.swift
+│   │       ├── MapStopCarousel.swift
+│   │       ├── FilterNoticeCard.swift
 │   │       └── RouteOverlay.swift
 │   ├── StopDetail/
 │   │   ├── StopDetailView.swift
@@ -134,7 +141,10 @@ sp-trains-bus/
 │       │   ├── AppColors.swift
 │       │   └── AppFonts.swift
 │       └── Extensions/
-│           └── View+Extensions.swift
+│           ├── View+Extensions.swift
+│           ├── Color+Extensions.swift
+│           ├── MKLocalSearchCompletion+Extensions.swift
+│           └── MKCoordinateRegion+Extensions.swift
 │
 ├── Resources/
 │   └── Assets.xcassets/
@@ -171,7 +181,7 @@ Five-tab navigation structure:
 2. **Nearby** - Placeholder for expansion
 3. **Status** - Metro line status
 4. **Map** - Interactive map explorer
-5. **Search** - Stop search
+5. **Search** - Place search with nearby stops
 
 #### HomeView & HomeViewModel
 ```swift
@@ -194,15 +204,18 @@ Responsibilities:
 ```swift
 Published Properties:
 - searchText: String
-- searchResults: [Stop]
-- isLoading: Bool
+- searchSuggestions: [MKLocalSearchCompletion]
+- nearbyStops: [Stop]
+- selectedPlaceName: String?
+- isSearchingLocation: Bool
+- isLoadingStops: Bool
 - errorMessage: String?
 
 Features:
-- Debounced search (500ms delay)
-- Duplicate search removal
-- Real-time results
-- Navigation to StopDetailView on selection
+- Apple Maps local search with suggestions
+- Places-first search that loads nearby stops (Sao Paulo metro only)
+- Search results list with distance hints
+- Sheet navigation to StopDetailView
 ```
 
 #### MapExplorerView & MapExplorerViewModel
@@ -213,10 +226,15 @@ Published Properties:
 - isLoading: Bool
 - showRefreshButton: Bool
 - errorMessage: String?
+- searchQuery: String
+- searchSuggestions: [MKLocalSearchCompletion]
+- isSearchingLocation: Bool
+- searchErrorMessage: String?
 
 Features:
 - MapKit integration
 - Stop annotations display
+- Searchable map with local suggestions (Sao Paulo metro only)
 - Region change detection (>500m threshold)
 - Manual refresh capability
 - Center on user location button
@@ -706,7 +724,7 @@ if let error = viewModel.errorMessage {
 ### 7. Debouncing
 Search and map region changes are debounced to reduce API calls:
 ```swift
-// SearchViewModel: 500ms debounce on search text
+// SearchViewModel: 300ms debounce on search text (MapKit suggestions)
 // MapExplorerViewModel: 500ms debounce on region changes
 ```
 
@@ -723,7 +741,7 @@ Search and map region changes are debounced to reduce API calls:
    - StopDetailViewModel arrivals
    - SystemStatusViewModel metro status
    - MapExplorerViewModel stops
-   - SearchViewModel search functionality
+   - SearchViewModel initial state
 
 2. **UseCasesTests.swift**
    - All 6 use cases with success and error scenarios

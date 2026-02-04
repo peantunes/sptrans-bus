@@ -158,28 +158,13 @@ class ViewModelsTests: XCTestCase {
 
     // MARK: - SearchViewModel Tests
 
-    func testSearchViewModelPerformSearchSuccess() async throws {
-        let mockSearchStopsUseCase = MockSearchStopsUseCase()
-        mockSearchStopsUseCase.stopsToReturn = [Stop(stopId: 1, stopName: "Search Result", location: Location(latitude: 0, longitude: 0), stopSequence: 0, stopCode: "", wheelchairBoarding: 0)]
+    func testSearchViewModelInitialState() {
+        let mockGetNearbyStopsUseCase = MockGetNearbyStopsUseCase()
+        let viewModel = SearchViewModel(getNearbyStopsUseCase: mockGetNearbyStopsUseCase)
 
-        let viewModel = SearchViewModel(searchStopsUseCase: mockSearchStopsUseCase)
-
-        let expectation = XCTestExpectation(description: "SearchViewModel performs search")
-
-        viewModel.$searchResults
-            .dropFirst()
-            .sink { results in
-                XCTAssertEqual(results.count, 1)
-                XCTAssertEqual(results.first?.stopName, "Search Result")
-                expectation.fulfill()
-            }
-            .store(in: &cancellables)
-
-        viewModel.searchText = "query" // Trigger search
-
-        await fulfillment(of: [expectation], timeout: 1.0)
-        XCTAssertFalse(viewModel.isLoading)
-        XCTAssertNil(viewModel.errorMessage)
+        XCTAssertEqual(viewModel.searchText, "")
+        XCTAssertTrue(viewModel.nearbyStops.isEmpty)
+        XCTAssertNil(viewModel.selectedPlaceName)
     }
 
     // MARK: - Mock Use Cases for ViewModel Testing
@@ -214,7 +199,11 @@ class ViewModelsTests: XCTestCase {
         var stopsToReturn: [Stop] = []
         var shouldThrowError: Bool = false
 
-        override func execute(limit: Int = 10) async throws -> [Stop] {
+        init() {
+            super.init(transitRepository: MockTransitRepository(), locationService: MockLocationService())
+        }
+
+        override func execute(limit: Int = 10, location: Location?) async throws -> [Stop] {
             if shouldThrowError {
                 throw TestError.forcedError
             }
@@ -225,6 +214,10 @@ class ViewModelsTests: XCTestCase {
     class MockGetArrivalsUseCase: GetArrivalsUseCase {
         var arrivalsToReturn: [Arrival] = []
         var shouldThrowError: Bool = false
+
+        init() {
+            super.init(transitRepository: MockTransitRepository())
+        }
 
         override func execute(stopId: Int, limit: Int = 10) async throws -> [Arrival] {
             if shouldThrowError {
@@ -258,18 +251,6 @@ class ViewModelsTests: XCTestCase {
         }
         func getShape(shapeId: String) async throws -> [Location] { [] }
         func getAllRoutes(limit: Int, offset: Int) async throws -> [Route] { [] }
-    }
-
-    class MockSearchStopsUseCase: SearchStopsUseCase {
-        var stopsToReturn: [Stop] = []
-        var shouldThrowError: Bool = false
-
-        override func execute(query: String, limit: Int = 10) async throws -> [Stop] {
-            if shouldThrowError {
-                throw TestError.forcedError
-            }
-            return stopsToReturn
-        }
     }
 
     class MockGetMetroStatusUseCase: GetMetroStatusUseCase {

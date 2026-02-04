@@ -34,11 +34,15 @@ struct MainTabView: View {
             }
 
             Tab("Map", systemImage: "map.fill", value: .map) {
-                MapExplorerView(viewModel: dependencies.mapExplorerViewModel, dependencies: dependencies) // Assuming MapExplorerViewModel exists in dependencies
+                NavigationStack {
+                    MapExplorerView(viewModel: dependencies.mapExplorerViewModel, dependencies: dependencies) // Assuming MapExplorerViewModel exists in dependencies
+                }
             }
             
             Tab("Search", systemImage: "magnifyingglass", value: .search, role: .search) {
-                SearchView(viewModel: dependencies.searchViewModel, dependencies: dependencies) // Assuming SearchViewModel exists in dependencies
+                NavigationStack {
+                    SearchView(viewModel: dependencies.searchViewModel, dependencies: dependencies) // Assuming SearchViewModel exists in dependencies
+                }
             }
 
         }

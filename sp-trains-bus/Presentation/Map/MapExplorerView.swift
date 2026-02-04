@@ -91,7 +91,7 @@ struct MapExplorerView: View {
             }
 
             // Loading indicator
-            if viewModel.isLoading {
+            if viewModel.isLoading || viewModel.isSearchingLocation {
                 VStack {
                     HStack {
                         Spacer()
@@ -117,6 +117,33 @@ struct MapExplorerView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear(perform: viewModel.loadStopsInVisibleRegion)
         .animation(.easeInOut(duration: 0.3), value: viewModel.showRefreshButton)
+        .searchable(text: $viewModel.searchQuery, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search places")
+        .searchSuggestions {
+            ForEach(viewModel.searchSuggestions, id: \.stableIdentifier) { suggestion in
+                Button(action: {
+                    Task {
+                        await viewModel.selectSuggestion(suggestion)
+                    }
+                }) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(suggestion.title)
+                            .font(AppFonts.subheadline())
+                            .foregroundColor(AppColors.text)
+
+                        if !suggestion.subtitle.isEmpty {
+                            Text(suggestion.subtitle)
+                                .font(AppFonts.caption())
+                                .foregroundColor(AppColors.text.opacity(0.6))
+                        }
+                    }
+                }
+            }
+        }
+        .onSubmit(of: .search) {
+            Task {
+                await viewModel.submitSearch()
+            }
+        }
         .sheet(item: $selectedStop) { stop in
             StopDetailView(
                 viewModel: StopDetailViewModel(
@@ -132,6 +159,14 @@ struct MapExplorerView: View {
             if showCarousel {
                 MapStopCarousel(items: nearbyItems, onSelect: { selectedStop = $0 })
             }
+        }
+        .alert("Search Error", isPresented: Binding(
+            get: { viewModel.searchErrorMessage != nil },
+            set: { if !$0 { viewModel.searchErrorMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(viewModel.searchErrorMessage ?? "")
         }
     }
 

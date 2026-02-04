@@ -2,15 +2,20 @@ import Foundation
 import Combine
 import MapKit
 
-class MapExplorerViewModel: ObservableObject {
+class MapExplorerViewModel: NSObject, ObservableObject {
     @Published var region: MKCoordinateRegion
     @Published var stops: [Stop] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     @Published var showRefreshButton: Bool = false
+    @Published var searchQuery: String = ""
+    @Published var searchSuggestions: [MKLocalSearchCompletion] = []
+    @Published var isSearchingLocation: Bool = false
+    @Published var searchErrorMessage: String?
 
     private let getNearbyStopsUseCase: GetNearbyStopsUseCase
     private let locationService: LocationServiceProtocol
+    private let searchCompleter = MKLocalSearchCompleter()
     private var cancellables = Set<AnyCancellable>()
     private var regionChangeWorkItem: DispatchWorkItem?
     private var lastLoadedRegion: MKCoordinateRegion?
@@ -24,7 +29,13 @@ class MapExplorerViewModel: ObservableObject {
             span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
         ))
 
+        super.init()
+        
         setupRegionObserver()
+        setupSearchObserver()
+        searchCompleter.delegate = self
+        searchCompleter.resultTypes = [.address, .pointOfInterest]
+        searchCompleter.region = .saoPauloMetro
     }
 
     private func setupRegionObserver() {
@@ -33,6 +44,21 @@ class MapExplorerViewModel: ObservableObject {
             .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
             .sink { [weak self] newRegion in
                 self?.handleRegionChange(newRegion)
+            }
+            .store(in: &cancellables)
+    }
+
+    private func setupSearchObserver() {
+        $searchQuery
+            .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
+            .removeDuplicates()
+            .sink { [weak self] query in
+                guard let self else { return }
+                self.searchErrorMessage = nil
+                if query.isEmpty {
+                    self.searchSuggestions = []
+                }
+                self.searchCompleter.queryFragment = query
             }
             .store(in: &cancellables)
     }
@@ -94,6 +120,79 @@ class MapExplorerViewModel: ObservableObject {
                 span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
             )
             loadStopsInVisibleRegion()
+        }
+    }
+
+    @MainActor
+    func submitSearch() async {
+        let trimmed = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        let request = MKLocalSearch.Request()
+        request.naturalLanguageQuery = trimmed
+        request.region = .saoPauloMetro
+        await performSearch(request: request)
+    }
+
+    @MainActor
+    func selectSuggestion(_ suggestion: MKLocalSearchCompletion) async {
+        let request = MKLocalSearch.Request(completion: suggestion)
+        request.region = .saoPauloMetro
+        await performSearch(request: request)
+    }
+
+    @MainActor
+    private func performSearch(request: MKLocalSearch.Request) async {
+        isSearchingLocation = true
+        searchErrorMessage = nil
+
+        do {
+            let response = try await MKLocalSearch(request: request).start()
+            guard let mapItem = response.mapItems.first else {
+                searchErrorMessage = "No locations found for that search."
+                isSearchingLocation = false
+                return
+            }
+
+            if !MKCoordinateRegion.saoPauloMetro.contains(mapItem.placemark.coordinate) {
+                searchErrorMessage = "Search is limited to the Sao Paulo metro area."
+                isSearchingLocation = false
+                return
+            }
+
+            applySearchResult(mapItem)
+            searchSuggestions = []
+        } catch {
+            searchErrorMessage = error.localizedDescription
+        }
+
+        isSearchingLocation = false
+    }
+
+    @MainActor
+    private func applySearchResult(_ mapItem: MKMapItem) {
+        let coordinate = mapItem.placemark.coordinate
+        region = MKCoordinateRegion(
+            center: coordinate,
+            span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
+        )
+        lastLoadedRegion = region
+        showRefreshButton = false
+        searchQuery = mapItem.name ?? searchQuery
+        loadStopsInVisibleRegion()
+    }
+}
+
+extension MapExplorerViewModel: MKLocalSearchCompleterDelegate {
+    func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
+        DispatchQueue.main.async {
+            self.searchSuggestions = completer.results
+        }
+    }
+
+    func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
+        DispatchQueue.main.async {
+            self.searchErrorMessage = error.localizedDescription
         }
     }
 }

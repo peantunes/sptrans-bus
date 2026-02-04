@@ -1,8 +1,10 @@
 import SwiftUI
+import MapKit
 
 struct SearchView: View {
     @StateObject private var viewModel: SearchViewModel
     let dependencies: AppDependencies
+    @State private var selectedStop: Stop?
 
     init(viewModel: SearchViewModel, dependencies: AppDependencies) {
         _viewModel = StateObject(wrappedValue: viewModel)
@@ -10,111 +12,133 @@ struct SearchView: View {
     }
 
     var body: some View {
-        VStack {
-            SearchBar(text: $viewModel.searchText)
-                .padding(.horizontal)
+        VStack(alignment: .leading, spacing: 16) {
+            if let selectedPlaceName = viewModel.selectedPlaceName {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Stops near")
+                        .font(AppFonts.caption())
+                        .foregroundColor(AppColors.text.opacity(0.6))
 
-            if viewModel.isLoading {
-                LoadingView()
-            } else if let errorMessage = viewModel.errorMessage {
-                ErrorView(message: errorMessage) { 
-                    viewModel.searchText = viewModel.searchText // Trigger re-search
+                    Text(selectedPlaceName)
+                        .font(AppFonts.title2())
+                        .foregroundColor(AppColors.text)
                 }
-            } else if viewModel.searchResults.isEmpty && !viewModel.searchText.isEmpty {
-                Text("No results found for \"\(viewModel.searchText)\"")
-                    .foregroundColor(AppColors.text.opacity(0.7))
-                    .padding()
+                .padding(.horizontal)
+                .padding(.top, 8)
             } else {
-                List(viewModel.searchResults, id: \.stopId) { stop in
-                    NavigationLink(destination: StopDetailView(viewModel: StopDetailViewModel(
-                        stop: stop,
-                        getArrivalsUseCase: dependencies.getArrivalsUseCase,
-                        getTripRouteUseCase: dependencies.getTripRouteUseCase,
-                        getRouteShapeUseCase: dependencies.getRouteShapeUseCase,
-                        storageService: dependencies.storageService
-                    ))) {
-                        SearchResultRow(stop: stop)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Search a location")
+                        .font(AppFonts.title2())
+                        .foregroundColor(AppColors.text)
+
+                    Text("Find stops around any address or landmark.")
+                        .font(AppFonts.subheadline())
+                        .foregroundColor(AppColors.text.opacity(0.6))
+                }
+                .padding(.horizontal)
+                .padding(.top, 8)
+            }
+
+            if viewModel.isSearchingLocation || viewModel.isLoadingStops {
+                HStack {
+                    Spacer()
+                    LoadingView()
+                    Spacer()
+                }
+            } else if let errorMessage = viewModel.errorMessage {
+                ErrorView(message: errorMessage) {
+                    Task {
+                        await viewModel.submitSearch()
                     }
                 }
-                .listStyle(PlainListStyle())
+            } else if viewModel.nearbyStops.isEmpty, !viewModel.searchText.isEmpty {
+                Text("No stops found near \"\(viewModel.searchText)\".")
+                    .font(AppFonts.subheadline())
+                    .foregroundColor(AppColors.text.opacity(0.7))
+                    .padding(.horizontal)
+            } else {
+                List(viewModel.nearbyStops, id: \.stopId) { stop in
+                    Button(action: {
+                        selectedStop = stop
+                    }) {
+                        SearchResultRow(stop: stop, distance: viewModel.distanceToStop(stop))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .listStyle(.plain)
             }
         }
-        .navigationTitle("Search Stops")
+        .navigationTitle("Search Places")
         .navigationBarTitleDisplayMode(.inline)
-    }
-}
+        .searchable(text: $viewModel.searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search places")
+        .searchSuggestions {
+            ForEach(viewModel.searchSuggestions, id: \.stableIdentifier) { suggestion in
+                Button(action: {
+                    Task {
+                        await viewModel.selectSuggestion(suggestion)
+                    }
+                }) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(suggestion.title)
+                            .font(AppFonts.subheadline())
+                            .foregroundColor(AppColors.text)
 
-struct SearchBar: View {
-    @Binding var text: String
-
-    var body: some View {
-        HStack {
-            TextField("Search for stops...", text: $text)
-                .padding(8)
-                .padding(.horizontal, 24)
-                .background(AppColors.lightGray)
-                .cornerRadius(8)
-                .overlay(
-                    HStack {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundColor(.gray)
-                            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-                            .padding(.leading, 8)
-                        
-                        if !text.isEmpty {
-                            Button(action: {
-                                self.text = ""
-                            }) {
-                                Image(systemName: "multiply.circle.fill")
-                                    .foregroundColor(.gray)
-                                    .padding(.trailing, 8)
-                            }
+                        if !suggestion.subtitle.isEmpty {
+                            Text(suggestion.subtitle)
+                                .font(AppFonts.caption())
+                                .foregroundColor(AppColors.text.opacity(0.6))
                         }
                     }
-                )
+                }
+            }
+        }
+        .onSubmit(of: .search) {
+            Task {
+                await viewModel.submitSearch()
+            }
+        }
+        .sheet(item: $selectedStop) { stop in
+            StopDetailView(viewModel: StopDetailViewModel(
+                stop: stop,
+                getArrivalsUseCase: dependencies.getArrivalsUseCase,
+                getTripRouteUseCase: dependencies.getTripRouteUseCase,
+                getRouteShapeUseCase: dependencies.getRouteShapeUseCase,
+                storageService: dependencies.storageService
+            ))
         }
     }
 }
 
 #Preview {
-    // Mock dependencies for Preview
     class MockTransitRepository: TransitRepositoryProtocol {
-        func getNearbyStops(location: Location, limit: Int) async throws -> [Stop] { return [] }
-        func getArrivals(stopId: Int, limit: Int) async throws -> [Arrival] { return [] }
-        func searchStops(query: String, limit: Int) async throws -> [Stop] {
-            if query.lowercased().contains("paulista") {
-                return [
-                    Stop(stopId: 1, stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561414, longitude: -46.656166), stopSequence: 1, stopCode: "SP-1234", wheelchairBoarding: 0),
-                    Stop(stopId: 2, stopName: "Av. Paulista, 2000", location: Location(latitude: -23.562414, longitude: -46.657166), stopSequence: 2, stopCode: "SP-5678", wheelchairBoarding: 0)
-                ]
-            } else {
-                return []
-            }
+        func getNearbyStops(location: Location, limit: Int) async throws -> [Stop] {
+            return [
+                Stop(stopId: 1, stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561414, longitude: -46.656166), stopSequence: 1, stopCode: "SP-1234", wheelchairBoarding: 0),
+                Stop(stopId: 2, stopName: "Av. Paulista, 2000", location: Location(latitude: -23.562414, longitude: -46.657166), stopSequence: 2, stopCode: "SP-5678", wheelchairBoarding: 0)
+            ]
         }
+        func getArrivals(stopId: Int, limit: Int) async throws -> [Arrival] { return [] }
+        func searchStops(query: String, limit: Int) async throws -> [Stop] { return [] }
         func getTrip(tripId: String) async throws -> TripStop { fatalError() }
         func getRoute(routeId: String) async throws -> Route { fatalError() }
         func getShape(shapeId: String) async throws -> [Location] { fatalError() }
         func getAllRoutes(limit: Int, offset: Int) async throws -> [Route] { return [] }
     }
 
-    class MockSearchStopsUseCase: SearchStopsUseCase {
-        init() {
-            super.init(transitRepository: MockTransitRepository())
-        }
-        override func execute(query: String, limit: Int = 10) async throws -> [Stop] {
-            if query.lowercased().contains("paulista") {
-                return [
-                    Stop(stopId: 1, stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561414, longitude: -46.656166), stopSequence: 1, stopCode: "SP-1234", wheelchairBoarding: 0),
-                    Stop(stopId: 2, stopName: "Av. Paulista, 2000", location: Location(latitude: -23.562414, longitude: -46.657166), stopSequence: 2, stopCode: "SP-5678", wheelchairBoarding: 0)
-                ]
-            } else {
-                return []
-            }
-        }
+    class MockLocationService: LocationServiceProtocol {
+        func requestLocationPermission() {}
+        func getCurrentLocation() -> Location? { Location(latitude: -23.5505, longitude: -46.6333) }
+        func startUpdatingLocation() {}
+        func stopUpdatingLocation() {}
     }
 
-    let viewModel = SearchViewModel(searchStopsUseCase: MockSearchStopsUseCase())
+    let mockRepository = MockTransitRepository()
+    let mockLocation = MockLocationService()
+    let getNearbyStopsUseCase = GetNearbyStopsUseCase(transitRepository: mockRepository, locationService: mockLocation)
+    let viewModel = SearchViewModel(getNearbyStopsUseCase: getNearbyStopsUseCase)
     let dependencies = AppDependencies()
 
-    return SearchView(viewModel: viewModel, dependencies: dependencies)
+    return NavigationView {
+        SearchView(viewModel: viewModel, dependencies: dependencies)
+    }
 }

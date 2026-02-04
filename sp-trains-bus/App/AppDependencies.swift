@@ -35,7 +35,7 @@ class AppDependencies {
 
         // Presentation Layer - ViewModels
         homeViewModel = HomeViewModel(getNearbyStopsUseCase: getNearbyStopsUseCase, locationService: locationService, storageService: storageService)
-        searchViewModel = SearchViewModel(searchStopsUseCase: searchStopsUseCase)
+        searchViewModel = SearchViewModel(getNearbyStopsUseCase: getNearbyStopsUseCase)
         systemStatusViewModel = SystemStatusViewModel(getMetroStatusUseCase: getMetroStatusUseCase)
         mapExplorerViewModel = MapExplorerViewModel(getNearbyStopsUseCase: getNearbyStopsUseCase, locationService: locationService)
     }

@@ -119,7 +119,9 @@ sp-trains-bus/
 │   │   │
 │   │   └── Extensions/
 │   │       ├── View+Extensions.swift
-│   │       └── Color+Extensions.swift
+│   │       ├── Color+Extensions.swift
+│   │       ├── MKLocalSearchCompletion+Extensions.swift
+│   │       └── MKCoordinateRegion+Extensions.swift
 │   │
 │   ├── Home/
 │   │   ├── HomeView.swift
@@ -127,9 +129,14 @@ sp-trains-bus/
 │   │   ├── Components/
 │   │   │   ├── GreetingHeader.swift
 │   │   │   ├── QuickCommuteCard.swift
+│   │   │   ├── WeatherSummaryCard.swift
+│   │   │   ├── RailStatusSection.swift
+│   │   │   ├── TravelFeaturesSection.swift
+│   │   │   ├── HomeMapPreview.swift
+│   │   │   ├── NearbyStopsSection.swift
 │   │   │   ├── MiniMapView.swift
-│   │   │   └── FavoritesSection.swift
-│   │   └── FavoriteStopCard.swift
+│   │   │   ├── FavoritesSection.swift
+│   │   │   └── FavoriteStopCard.swift
 │   │
 │   ├── StopDetail/
 │   │   ├── StopDetailView.swift
@@ -153,6 +160,8 @@ sp-trains-bus/
 │   │       ├── TransitMapView.swift
 │   │       ├── FilterChips.swift
 │   │       ├── StopAnnotation.swift
+│   │       ├── MapStopCarousel.swift
+│   │       ├── FilterNoticeCard.swift
 │   │       └── RouteOverlay.swift
 │   │
 │   ├── Search/
