@@ -72,8 +72,13 @@ struct TripPlanDetailView: View {
                 .padding(.horizontal)
 
                 if let walk = viewModel.preWalk {
-                    WalkSegmentCard(segment: walk, title: "Walk to boarding stop")
-                        .padding(.horizontal)
+                    WalkSegmentCard(segment: walk, title: "Walk to boarding stop", onFocus: {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            expandedLegId = nil
+                            viewModel.setFocusForWalk(walk)
+                        }
+                    })
+                    .padding(.horizontal)
                 }
 
                 ForEach(viewModel.legs) { leg in
@@ -99,8 +104,13 @@ struct TripPlanDetailView: View {
                 }
 
                 if let walk = viewModel.postWalk {
-                    WalkSegmentCard(segment: walk, title: "Walk to destination")
-                        .padding(.horizontal)
+                    WalkSegmentCard(segment: walk, title: "Walk to destination", onFocus: {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            expandedLegId = nil
+                            viewModel.setFocusForWalk(walk)
+                        }
+                    })
+                    .padding(.horizontal)
                 }
             }
             .padding(.vertical, 12)
@@ -204,41 +214,45 @@ private struct TripPlanSummaryCard: View {
 private struct WalkSegmentCard: View {
     let segment: TripPlanWalkSegment
     let title: String
+    let onFocus: () -> Void
 
     var body: some View {
-        GlassCard {
-            HStack(spacing: 12) {
-                Image(systemName: "figure.walk")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(AppColors.primary)
-                    .padding(10)
-                    .background(AppColors.primary.opacity(0.15))
-                    .clipShape(Circle())
+        Button(action: onFocus) {
+            GlassCard {
+                HStack(spacing: 12) {
+                    Image(systemName: "figure.walk")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(AppColors.primary)
+                        .padding(10)
+                        .background(AppColors.primary.opacity(0.15))
+                        .clipShape(Circle())
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .font(AppFonts.subheadline())
-                        .foregroundColor(AppColors.text)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(title)
+                            .font(AppFonts.subheadline())
+                            .foregroundColor(AppColors.text)
 
-                    Text("\(segment.fromLabel) → \(segment.toLabel)")
-                        .font(AppFonts.caption())
-                        .foregroundColor(AppColors.text.opacity(0.6))
-                        .lineLimit(2)
-                }
+                        Text("\(segment.fromLabel) → \(segment.toLabel)")
+                            .font(AppFonts.caption())
+                            .foregroundColor(AppColors.text.opacity(0.6))
+                            .lineLimit(2)
+                    }
 
-                Spacer()
+                    Spacer()
 
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text(segment.distanceText)
-                        .font(AppFonts.caption())
-                        .foregroundColor(AppColors.text.opacity(0.8))
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text(segment.distanceText)
+                            .font(AppFonts.caption())
+                            .foregroundColor(AppColors.text.opacity(0.8))
 
-                    Text(segment.durationText)
-                        .font(AppFonts.caption2())
-                        .foregroundColor(AppColors.text.opacity(0.6))
+                        Text(segment.durationText)
+                            .font(AppFonts.caption2())
+                            .foregroundColor(AppColors.text.opacity(0.6))
+                    }
                 }
             }
         }
+        .buttonStyle(.plain)
     }
 }
 

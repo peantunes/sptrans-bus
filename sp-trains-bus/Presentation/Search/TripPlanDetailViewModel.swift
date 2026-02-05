@@ -152,6 +152,15 @@ final class TripPlanDetailViewModel: ObservableObject {
         focusCoordinates = []
     }
 
+    func setFocusForWalk(_ walk: TripPlanWalkSegment?) {
+        selectedLegId = nil
+        guard let walk else {
+            focusCoordinates = []
+            return
+        }
+        focusCoordinates = [walk.fromLocation, walk.toLocation]
+    }
+
     private func rebuildCombinedMap() {
         combinedShape = buildCombinedShape()
         combinedStops = buildCombinedStops()
@@ -268,7 +277,7 @@ final class TripPlanDetailViewModel: ObservableObject {
         if let originLocation, let firstStop = legs.first?.originStop {
             segments.append(TripPlanMapSegment(
                 coordinates: [originLocation, firstStop.location],
-                colorHex: AppColors.primary.hexString,
+                colorHex: AppColors.darkGray.hexString,
                 isWalking: true
             ))
         }
@@ -287,7 +296,7 @@ final class TripPlanDetailViewModel: ObservableObject {
         if let destinationLocation, let lastStop = legs.last?.destinationStop {
             segments.append(TripPlanMapSegment(
                 coordinates: [lastStop.location, destinationLocation],
-                colorHex: AppColors.primary.hexString,
+                colorHex: AppColors.darkGray.hexString,
                 isWalking: true
             ))
         }
@@ -411,6 +420,8 @@ final class TripPlanDetailViewModel: ObservableObject {
         return TripPlanWalkSegment(
             fromLabel: fromLabel,
             toLabel: toLabel,
+            fromLocation: from,
+            toLocation: to,
             distanceMeters: distance,
             durationMinutes: minutes
         )
@@ -445,6 +456,8 @@ struct TripPlanWalkSegment: Identifiable {
     let id = UUID()
     let fromLabel: String
     let toLabel: String
+    let fromLocation: Location
+    let toLocation: Location
     let distanceMeters: Double
     let durationMinutes: Int
 

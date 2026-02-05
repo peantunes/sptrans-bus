@@ -152,29 +152,83 @@ struct TripPlanStopsTimeline: View {
                         .font(AppFonts.caption())
                         .foregroundColor(AppColors.text.opacity(0.6))
                 } else {
-                    ZStack(alignment: .leading) {
-                        Rectangle()
-                            .fill(routeColor.opacity(0.2))
-                            .frame(width: 2)
-                            .padding(.leading, 6)
-                            .padding(.vertical, 8)
+                    if isExpanded || stops.count <= 2 {
+                        ZStack(alignment: .leading) {
+                            Rectangle()
+                                .fill(routeColor.opacity(0.2))
+                                .frame(width: 2)
+                                .padding(.leading, 6)
+                                .padding(.vertical, 8)
 
-                        VStack(alignment: .leading, spacing: 16) {
-                            ForEach(displayedStops.indices, id: \.self) { index in
-                                TripPlanStopRow(
-                                    stop: displayedStops[index],
-                                    isStart: index == 0,
-                                    isEnd: index == displayedStops.count - 1,
-                                    routeColor: routeColor
-                                )
+                            VStack(alignment: .leading, spacing: 16) {
+                                ForEach(displayedStops.indices, id: \.self) { index in
+                                    TripPlanStopRow(
+                                        stop: displayedStops[index],
+                                        isStart: index == 0,
+                                        isEnd: index == displayedStops.count - 1,
+                                        routeColor: routeColor
+                                    )
+                                }
                             }
+                        }
+                    } else {
+                        VStack(alignment: .leading, spacing: 10) {
+                            TripPlanStopRow(
+                                stop: stops.first!,
+                                isStart: true,
+                                isEnd: false,
+                                routeColor: routeColor
+                            )
+
+                            if stops.count > 2 {
+                                Button(action: {
+                                    withAnimation(.easeInOut(duration: 0.2)) {
+                                        isExpanded = true
+                                    }
+                                }) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "ellipsis")
+                                            .font(.caption)
+                                            .foregroundColor(routeColor)
+
+                                        Text("\(stops.count - 2) stops")
+                                            .font(AppFonts.caption())
+                                            .foregroundColor(routeColor)
+
+                                        Spacer()
+
+                                        Image(systemName: "chevron.down")
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundColor(routeColor)
+                                    }
+                                    .padding(10)
+                                    .background(routeColor.opacity(0.12))
+                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                                }
+                                .buttonStyle(.plain)
+                            }
+
+                            TripPlanStopRow(
+                                stop: stops.last!,
+                                isStart: false,
+                                isEnd: true,
+                                routeColor: routeColor
+                            )
                         }
                     }
 
-                    if stops.count > collapsedCount {
-                        Button(isExpanded ? "Show fewer stops" : "Show all stops") {
+                    if isExpanded && stops.count > collapsedCount {
+                        Button("Show fewer stops") {
                             withAnimation(.easeInOut(duration: 0.2)) {
-                                isExpanded.toggle()
+                                isExpanded = false
+                            }
+                        }
+                        .font(AppFonts.caption())
+                        .foregroundColor(routeColor)
+                    } else if isExpanded && stops.count > 2 {
+                        Button("Show fewer stops") {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                isExpanded = false
                             }
                         }
                         .font(AppFonts.caption())
