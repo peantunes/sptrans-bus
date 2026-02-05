@@ -176,6 +176,9 @@ struct StopDetailView: View {
             ]
         }
         func getAllRoutes(limit: Int, offset: Int) async throws -> [Route] { return [] }
+        func planTrip(origin: Location, destination: Location, maxAlternatives: Int, rankingPriority: String) async throws -> TripPlan {
+            return TripPlan(alternatives: [], rankingPriority: rankingPriority)
+        }
     }
 
     class MockStorageService: StorageServiceProtocol {

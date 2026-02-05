@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct AppColors {
     // Primary Colors
@@ -56,5 +57,13 @@ extension Color {
             blue: Double(b) / 255,
             opacity: Double(a) / 255
         )
+    }
+
+    var hexString: String {
+        let components = UIColor(self).cgColor.components ?? [1, 1, 1, 1]
+        let r = Int((components.count > 0 ? components[0] : 1) * 255)
+        let g = Int((components.count > 1 ? components[1] : 1) * 255)
+        let b = Int((components.count > 2 ? components[2] : 1) * 255)
+        return String(format: "%02X%02X%02X", r, g, b)
     }
 }

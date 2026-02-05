@@ -1,133 +1,160 @@
 import Foundation
 import Combine
 import MapKit
-import CoreLocation
 
 class SearchViewModel: NSObject, ObservableObject {
-    @Published var searchText: String = ""
-    @Published var searchSuggestions: [MKLocalSearchCompletion] = []
-    @Published var nearbyStops: [Stop] = []
-    @Published var selectedPlaceName: String?
-    @Published var isSearchingLocation: Bool = false
-    @Published var isLoadingStops: Bool = false
+    @Published var originQuery: String = ""
+    @Published var destinationQuery: String = ""
+    @Published var originSuggestions: [MKLocalSearchCompletion] = []
+    @Published var destinationSuggestions: [MKLocalSearchCompletion] = []
+    @Published var alternatives: [TripPlanAlternative] = []
+    @Published var isPlanning: Bool = false
     @Published var errorMessage: String?
 
-    private let getNearbyStopsUseCase: GetNearbyStopsUseCase
-    private let searchCompleter = MKLocalSearchCompleter()
+    private let planTripUseCase: PlanTripUseCase
+    private let locationService: LocationServiceProtocol
+    private let originCompleter = MKLocalSearchCompleter()
+    private let destinationCompleter = MKLocalSearchCompleter()
     private var cancellables = Set<AnyCancellable>()
-    private var selectedLocation: Location?
 
-    init(getNearbyStopsUseCase: GetNearbyStopsUseCase) {
-        self.getNearbyStopsUseCase = getNearbyStopsUseCase
+    private(set) var originLocation: Location?
+    private(set) var destinationLocation: Location?
+
+    var rankingPriority: String = "arrives_first"
+
+    init(planTripUseCase: PlanTripUseCase, locationService: LocationServiceProtocol) {
+        self.planTripUseCase = planTripUseCase
+        self.locationService = locationService
 
         super.init()
 
-        searchCompleter.delegate = self
-        searchCompleter.resultTypes = [.address, .pointOfInterest]
-        searchCompleter.region = .saoPauloMetro
+        locationService.requestLocationPermission()
 
-        $searchText
+        originCompleter.delegate = self
+        destinationCompleter.delegate = self
+        originCompleter.resultTypes = [.address, .pointOfInterest]
+        destinationCompleter.resultTypes = [.address, .pointOfInterest]
+        originCompleter.region = .saoPauloMetro
+        destinationCompleter.region = .saoPauloMetro
+
+        setupSearchObservers()
+        setOriginToCurrentLocation()
+    }
+
+    func setOriginToCurrentLocation() {
+        if let location = locationService.getCurrentLocation() {
+            originLocation = location
+            originQuery = "Current location"
+        }
+    }
+
+    @MainActor
+    func selectOriginSuggestion(_ suggestion: MKLocalSearchCompletion) async {
+        await resolveSuggestion(suggestion, isOrigin: true)
+    }
+
+    @MainActor
+    func selectDestinationSuggestion(_ suggestion: MKLocalSearchCompletion) async {
+        await resolveSuggestion(suggestion, isOrigin: false)
+    }
+
+    @MainActor
+    func planTrip() async {
+        errorMessage = nil
+        alternatives = []
+
+        guard let originLocation, let destinationLocation else {
+            errorMessage = "Select both origin and destination."
+            return
+        }
+
+        isPlanning = true
+        do {
+            let plan = try await planTripUseCase.execute(
+                origin: originLocation,
+                destination: destinationLocation,
+                maxAlternatives: 5,
+                rankingPriority: rankingPriority
+            )
+            alternatives = plan.alternatives
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isPlanning = false
+    }
+
+    func clearSuggestions() {
+        originSuggestions = []
+        destinationSuggestions = []
+    }
+
+    private func setupSearchObservers() {
+        $originQuery
             .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
             .removeDuplicates()
             .sink { [weak self] query in
                 guard let self else { return }
-                self.errorMessage = nil
-                if query.isEmpty {
-                    self.searchSuggestions = []
-                    self.nearbyStops = []
-                    self.selectedPlaceName = nil
-                    self.selectedLocation = nil
-                } else {
-                    self.searchCompleter.queryFragment = query
+                if query.isEmpty || query == "Current location" {
+                    self.originSuggestions = []
+                    if query.isEmpty {
+                        self.originLocation = nil
+                    }
+                    return
                 }
+                self.originCompleter.queryFragment = query
+            }
+            .store(in: &cancellables)
+
+        $destinationQuery
+            .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
+            .removeDuplicates()
+            .sink { [weak self] query in
+                guard let self else { return }
+                if query.isEmpty {
+                    self.destinationSuggestions = []
+                    self.destinationLocation = nil
+                    return
+                }
+                self.destinationCompleter.queryFragment = query
             }
             .store(in: &cancellables)
     }
 
     @MainActor
-    func submitSearch() async {
-        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-
-        let request = MKLocalSearch.Request()
-        request.naturalLanguageQuery = trimmed
-        request.region = .saoPauloMetro
-        await performSearch(request: request)
-    }
-
-    @MainActor
-    func selectSuggestion(_ suggestion: MKLocalSearchCompletion) async {
+    private func resolveSuggestion(_ suggestion: MKLocalSearchCompletion, isOrigin: Bool) async {
         let request = MKLocalSearch.Request(completion: suggestion)
         request.region = .saoPauloMetro
-        await performSearch(request: request)
-    }
-
-    func distanceToStop(_ stop: Stop) -> Double? {
-        guard let selectedLocation else { return nil }
-        let origin = CLLocation(latitude: selectedLocation.latitude, longitude: selectedLocation.longitude)
-        let destination = CLLocation(latitude: stop.location.latitude, longitude: stop.location.longitude)
-        return origin.distance(from: destination)
-    }
-
-    @MainActor
-    private func performSearch(request: MKLocalSearch.Request) async {
-        isSearchingLocation = true
-        errorMessage = nil
 
         do {
             let response = try await MKLocalSearch(request: request).start()
-            guard let mapItem = response.mapItems.first else {
-                errorMessage = "No locations found for that search."
-                isSearchingLocation = false
-                return
-            }
+            guard let mapItem = response.mapItems.first else { return }
 
-            if !MKCoordinateRegion.saoPauloMetro.contains(mapItem.placemark.coordinate) {
-                errorMessage = "Search is limited to the Sao Paulo metro area."
-                isSearchingLocation = false
-                return
-            }
+            let location = Location(latitude: mapItem.placemark.coordinate.latitude, longitude: mapItem.placemark.coordinate.longitude)
+            let name = mapItem.name ?? suggestion.title
 
-            await applySearchResult(mapItem)
-            searchSuggestions = []
+            if isOrigin {
+                originLocation = location
+                originQuery = name
+                originSuggestions = []
+            } else {
+                destinationLocation = location
+                destinationQuery = name
+                destinationSuggestions = []
+            }
         } catch {
             errorMessage = error.localizedDescription
         }
-
-        isSearchingLocation = false
-    }
-
-    @MainActor
-    private func applySearchResult(_ mapItem: MKMapItem) async {
-        let coordinate = mapItem.placemark.coordinate
-        let location = Location(latitude: coordinate.latitude, longitude: coordinate.longitude)
-        selectedLocation = location
-        selectedPlaceName = mapItem.name ?? searchText
-//        searchText = mapItem.name ?? searchText
-
-        await loadNearbyStops(for: location)
-    }
-
-    @MainActor
-    private func loadNearbyStops(for location: Location) async {
-        isLoadingStops = true
-        errorMessage = nil
-
-        do {
-            let stops = try await getNearbyStopsUseCase.execute(limit: 20, location: location)
-            nearbyStops = stops
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-
-        isLoadingStops = false
     }
 }
 
 extension SearchViewModel: MKLocalSearchCompleterDelegate {
     func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
         DispatchQueue.main.async {
-            self.searchSuggestions = completer.results
+            if completer === self.originCompleter {
+                self.originSuggestions = completer.results
+            } else if completer === self.destinationCompleter {
+                self.destinationSuggestions = completer.results
+            }
         }
     }
 

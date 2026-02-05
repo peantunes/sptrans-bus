@@ -8,4 +8,5 @@ protocol TransitRepositoryProtocol {
     func getRoute(routeId: String) async throws -> Route
     func getShape(shapeId: String) async throws -> [Location]
     func getAllRoutes(limit: Int, offset: Int) async throws -> [Route]
+    func planTrip(origin: Location, destination: Location, maxAlternatives: Int, rankingPriority: String) async throws -> TripPlan
 }

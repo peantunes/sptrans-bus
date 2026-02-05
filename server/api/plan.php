@@ -28,6 +28,7 @@ header('Access-Control-Allow-Origin: *');
 ob_start();
 
 try {
+    include(__DIR__ . '/../config.php');
     require_once(__DIR__ . '/../inc/Conexao.class.php');
     require_once(__DIR__ . '/../inc/BusInfo.class.php');
     require_once(__DIR__ . '/../inc/TripPlanner.class.php');
@@ -55,8 +56,6 @@ try {
     $maxAlternatives = isset($_REQUEST['max_alternatives']) ? (int)$_REQUEST['max_alternatives'] : 5;
     $rankingPriority = isset($_REQUEST['ranking_priority']) ? $_REQUEST['ranking_priority'] : 'arrives_first';
 
-    date_default_timezone_set('America/Sao_Paulo');
-    $cConexao = new Conexao(INT_MYSQL, "mysql", "lolados_bus", "bus@2013", "lolados_bus");
     $cConexao->Conecta();
 
     $planner = new TripPlanner($cConexao);

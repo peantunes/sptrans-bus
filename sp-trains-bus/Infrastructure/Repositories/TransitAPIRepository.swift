@@ -42,4 +42,11 @@ class TransitAPIRepository: TransitRepositoryProtocol {
         let response: RoutesResponse = try await apiClient.request(endpoint: TransitAPIEndpoint.routes)
         return response.routes.map { $0.toDomain() }
     }
+
+    func planTrip(origin: Location, destination: Location, maxAlternatives: Int, rankingPriority: String) async throws -> TripPlan {
+        let response: PlanResponse = try await apiClient.request(
+            endpoint: TransitAPIEndpoint.plan(origin: origin, destination: destination, maxAlternatives: maxAlternatives, rankingPriority: rankingPriority)
+        )
+        return response.result.toDomain()
+    }
 }

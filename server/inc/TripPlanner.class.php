@@ -6,6 +6,8 @@ class TripPlanner {
     private $con;
     private $busInfo;
     private $transitService;
+    private $arrivalCache = [];
+    private $stopTimeCache = [];
 
     public function __construct($con) {
         $this->con = $con;
@@ -204,6 +206,8 @@ class TripPlanner {
                         'color' => $destinationLeg['destination_route_color'] ?? '',
                         'textColor' => $destinationLeg['destination_route_text_color'] ?? ''
                     ],
+                    'originTripId' => $originLeg['origin_trip_id'],
+                    'destinationTripId' => $destinationLeg['destination_trip_id'],
                     'originStopId' => $originLeg['origin_stop_id'],
                     'destinationStopId' => $destinationLeg['destination_stop_id'],
                     'transferStopId' => $transferStopId,
@@ -244,6 +248,7 @@ class TripPlanner {
                     r.route_long_name AS origin_route_long_name,
                     r.route_color AS origin_route_color,
                     r.route_text_color AS origin_route_text_color,
+                    st1.trip_id AS origin_trip_id,
                     st1.stop_id AS origin_stop_id,
                     st2.stop_id AS transfer_stop_id,
                     st1.stop_sequence AS origin_sequence,
@@ -280,6 +285,7 @@ class TripPlanner {
                     r.route_long_name AS destination_route_long_name,
                     r.route_color AS destination_route_color,
                     r.route_text_color AS destination_route_text_color,
+                    st1.trip_id AS destination_trip_id,
                     st1.stop_id AS destination_stop_id,
                     st2.stop_id AS transfer_stop_id,
                     st2.stop_sequence AS transfer_sequence,
@@ -324,6 +330,8 @@ class TripPlanner {
         foreach (array_slice($candidates, 0, $maxAlternatives) as $candidate) {
             $alternatives[] = [
                 'type' => $candidate['type'],
+                'summary' => $candidate['summary'],
+                'legs' => $candidate['legs'],
                 'data' => $candidate['data']
             ];
         }
@@ -333,14 +341,121 @@ class TripPlanner {
 
     private function buildCandidate($type, $route, $rankingPriority) {
         $metrics = $this->computeMetrics($type, $route);
+        $summary = $this->buildSummary($type, $route, $metrics, $rankingPriority);
         $sortKey = $this->buildSortKey($metrics, $rankingPriority, $route, $type);
 
         return [
             'type' => $type,
             'data' => $route,
+            'legs' => $this->buildLegs($type, $route),
+            'summary' => $summary,
             'metrics' => $metrics,
             'sortKey' => $sortKey
         ];
+    }
+
+    private function buildSummary($type, $route, $metrics, $rankingPriority) {
+        $legCount = $metrics['transferCount'] + 1;
+        $stopCount = $metrics['hopCount'] === PHP_INT_MAX ? null : $metrics['hopCount'];
+        $lineSummary = $this->buildLineSummary($type, $route);
+
+        $departureTime = null;
+        $arrivalTime = null;
+
+        if ($type === 'direct') {
+            $routeId = $route['route']['routeId'] ?? null;
+            $originStopId = $route['originStopId'] ?? null;
+            $destinationStopId = $route['destinationStopId'] ?? null;
+
+            $nextArrival = $this->getNextArrivalForRoute($originStopId, $routeId);
+            $departureTime = $nextArrival['arrivalTime'] ?? null;
+
+            $tripId = $nextArrival['tripId'] ?? $route['tripId'] ?? null;
+            if ($tripId && $destinationStopId) {
+                $stopTimes = $this->getStopTimesForTrip($tripId, $destinationStopId);
+                $arrivalTime = $stopTimes['arrivalTime'] ?? null;
+            }
+        } else {
+            $originRouteId = $route['originRoute']['routeId'] ?? null;
+            $destinationRouteId = $route['destinationRoute']['routeId'] ?? null;
+            $originStopId = $route['originStopId'] ?? null;
+            $transferStopId = $route['transferStopId'] ?? null;
+            $destinationStopId = $route['destinationStopId'] ?? null;
+
+            $originArrival = $this->getNextArrivalForRoute($originStopId, $originRouteId);
+            $departureTime = $originArrival['arrivalTime'] ?? null;
+
+            $destinationArrival = $this->getNextArrivalForRoute($transferStopId, $destinationRouteId);
+            $tripId = $destinationArrival['tripId'] ?? $route['destinationTripId'] ?? null;
+            if ($tripId && $destinationStopId) {
+                $stopTimes = $this->getStopTimesForTrip($tripId, $destinationStopId);
+                $arrivalTime = $stopTimes['arrivalTime'] ?? null;
+            }
+        }
+
+        return [
+            'departureTime' => $departureTime,
+            'arrivalTime' => $arrivalTime,
+            'legCount' => $legCount,
+            'stopCount' => $stopCount,
+            'lineSummary' => $lineSummary
+        ];
+    }
+
+
+    private function buildLegs($type, $route) {
+        if ($type === 'direct') {
+            return [[
+                'route' => $route['route'] ?? null,
+                'tripId' => $route['tripId'] ?? null,
+                'originStopId' => $route['originStopId'] ?? null,
+                'destinationStopId' => $route['destinationStopId'] ?? null,
+                'originStop' => $route['originStop'] ?? null,
+                'destinationStop' => $route['destinationStop'] ?? null
+            ]];
+        }
+
+        return [
+            [
+                'route' => $route['originRoute'] ?? null,
+                'tripId' => $route['originTripId'] ?? null,
+                'originStopId' => $route['originStopId'] ?? null,
+                'destinationStopId' => $route['transferStopId'] ?? null,
+                'originStop' => $route['originStop'] ?? null,
+                'destinationStop' => $route['transferStop'] ?? null
+            ],
+            [
+                'route' => $route['destinationRoute'] ?? null,
+                'tripId' => $route['destinationTripId'] ?? null,
+                'originStopId' => $route['transferStopId'] ?? null,
+                'destinationStopId' => $route['destinationStopId'] ?? null,
+                'originStop' => $route['transferStop'] ?? null,
+                'destinationStop' => $route['destinationStop'] ?? null
+            ]
+        ];
+    }
+
+    private function buildLineSummary($type, $route) {
+        if ($type === 'direct') {
+            $routeId = $route['route']['routeId'] ?? $route['route']['shortName'] ?? '';
+            return trim((string)$routeId);
+        }
+
+        $origin = $route['originRoute']['routeId'] ?? $route['originRoute']['shortName'] ?? '';
+        $destination = $route['destinationRoute']['routeId'] ?? $route['destinationRoute']['shortName'] ?? '';
+
+        $origin = trim((string)$origin);
+        $destination = trim((string)$destination);
+
+        if ($origin === '' && $destination === '') {
+            return '';
+        }
+
+        if ($origin !== '' && $destination !== '') {
+            return $origin . ' > ' . $destination;
+        }
+
+        return $origin !== '' ? $origin : $destination;
     }
 
     private function computeMetrics($type, $route) {
@@ -382,7 +497,8 @@ class TripPlanner {
 
         $originRouteId = $type === 'transfer' ? ($route['originRoute']['routeId'] ?? null) : ($route['route']['routeId'] ?? null);
         $originStopId = $route['originStopId'] ?? null;
-        $originWait = $this->getNextArrivalWait($originStopId, $originRouteId);
+        $originArrival = $this->getNextArrivalForRoute($originStopId, $originRouteId);
+        $originWait = $originArrival['waitTime'] ?? null;
 
         if ($type !== 'transfer') {
             return $originWait !== null ? $originWait : PHP_INT_MAX;
@@ -390,7 +506,8 @@ class TripPlanner {
 
         $transferStopId = $route['transferStopId'] ?? null;
         $destinationRouteId = $route['destinationRoute']['routeId'] ?? null;
-        $transferWait = $this->getNextArrivalWait($transferStopId, $destinationRouteId);
+        $transferArrival = $this->getNextArrivalForRoute($transferStopId, $destinationRouteId);
+        $transferWait = $transferArrival['waitTime'] ?? null;
 
         if ($originWait === null && $transferWait === null) {
             return PHP_INT_MAX;
@@ -402,22 +519,63 @@ class TripPlanner {
         return $originWait + $transferWait;
     }
 
-    private function getNextArrivalWait($stopId, $routeId) {
+    private function getNextArrivalForRoute($stopId, $routeId) {
         if (!$stopId || !$routeId) {
-            return null;
+            return ['arrivalTime' => null, 'waitTime' => null, 'tripId' => null];
+        }
+
+        $cacheKey = $stopId . '|' . $routeId;
+        if (isset($this->arrivalCache[$cacheKey])) {
+            return $this->arrivalCache[$cacheKey];
         }
 
         $arrivals = $this->transitService->getArrivalsAtStop($stopId, null, null, 12);
+        $result = ['arrivalTime' => null, 'waitTime' => null, 'tripId' => null];
+
         foreach ($arrivals as $arrival) {
-            if (!isset($arrival->routeId)) {
+            if (!isset($arrival->routeId) || $arrival->routeId != $routeId) {
                 continue;
             }
-            if ($arrival->routeId == $routeId) {
-                return isset($arrival->waitTime) ? (int)$arrival->waitTime : null;
-            }
+            $result = [
+                'arrivalTime' => $arrival->arrivalTime ?? null,
+                'waitTime' => $arrival->waitTime ?? null,
+                'tripId' => $arrival->tripId ?? null
+            ];
+            break;
         }
 
-        return null;
+        $this->arrivalCache[$cacheKey] = $result;
+        return $result;
+    }
+
+    private function getStopTimesForTrip($tripId, $stopId) {
+        if (!$tripId || !$stopId) {
+            return ['arrivalTime' => null, 'departureTime' => null];
+        }
+
+        $cacheKey = $tripId . '|' . $stopId;
+        if (isset($this->stopTimeCache[$cacheKey])) {
+            return $this->stopTimeCache[$cacheKey];
+        }
+
+        $sql = "SELECT arrival_time, departure_time
+                FROM sp_stop_times
+                WHERE trip_id = ? AND stop_id = ?
+                LIMIT 1";
+
+        $this->con->ExecutaPrepared($sql, "ss", [$tripId, $stopId]);
+        $result = ['arrivalTime' => null, 'departureTime' => null];
+
+        if ($this->con->Linha()) {
+            $rs = $this->con->rs;
+            $result = [
+                'arrivalTime' => $rs['arrival_time'] ?? null,
+                'departureTime' => $rs['departure_time'] ?? null
+            ];
+        }
+
+        $this->stopTimeCache[$cacheKey] = $result;
+        return $result;
     }
 
     private function computeHopCount($type, $route) {

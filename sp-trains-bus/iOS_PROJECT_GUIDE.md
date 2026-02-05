@@ -48,7 +48,8 @@ sp-trains-bus/
 │       ├── SearchStopsUseCase.swift
 │       ├── GetTripRouteUseCase.swift
 │       ├── GetRouteShapeUseCase.swift
-│       └── GetMetroStatusUseCase.swift
+│       ├── GetMetroStatusUseCase.swift
+│       └── PlanTripUseCase.swift
 │
 ├── Domain/
 │   ├── Entities/
@@ -58,7 +59,8 @@ sp-trains-bus/
 │   │   ├── Trip.swift
 │   │   ├── TripStop.swift
 │   │   ├── Location.swift
-│   │   └── MetroLine.swift
+│   │   ├── MetroLine.swift
+│   │   └── TripPlan.swift
 │   └── Protocols/
 │       ├── TransitRepositoryProtocol.swift
 │       ├── LocationServiceProtocol.swift
@@ -103,8 +105,13 @@ sp-trains-bus/
 │   ├── Search/
 │   │   ├── SearchView.swift
 │   │   ├── SearchViewModel.swift
+│   │   ├── TripPlanDetailView.swift
+│   │   ├── TripPlanDetailViewModel.swift
 │   │   └── Components/
-│   │       └── SearchResultRow.swift
+│   │       ├── SearchResultRow.swift
+│   │       ├── SearchLocationField.swift
+│   │       ├── JourneyOptionCard.swift
+│   │       └── TripPlanLegSection.swift
 │   ├── Map/
 │   │   ├── MapExplorerView.swift
 │   │   ├── MapExplorerViewModel.swift
@@ -203,19 +210,38 @@ Responsibilities:
 #### SearchView & SearchViewModel
 ```swift
 Published Properties:
-- searchText: String
-- searchSuggestions: [MKLocalSearchCompletion]
-- nearbyStops: [Stop]
-- selectedPlaceName: String?
-- isSearchingLocation: Bool
-- isLoadingStops: Bool
+- originQuery: String
+- destinationQuery: String
+- originSuggestions: [MKLocalSearchCompletion]
+- destinationSuggestions: [MKLocalSearchCompletion]
+- alternatives: [TripPlanAlternative]
+- isPlanning: Bool
 - errorMessage: String?
 
 Features:
-- Apple Maps local search with suggestions
-- Places-first search that loads nearby stops (Sao Paulo metro only)
-- Search results list with distance hints
-- Sheet navigation to StopDetailView
+- Origin/destination place search (MapKit suggestions)
+- Default origin to current location
+- Trip planning via /plan.php with up to 5 alternatives
+- Each alternative shows departure, arrival, legs, and stop count
+- Alternatives navigate to TripPlanDetailView with a combined overview map
+
+#### TripPlanDetailView & TripPlanDetailViewModel
+```swift
+Published Properties:
+- legs: [TripPlanLegState]
+
+Derived Data:
+- preWalk: TripPlanWalkSegment?
+- postWalk: TripPlanWalkSegment?
+
+Features:
+- Loads trip stops + shapes per leg (GetTripRouteUseCase + GetRouteShapeUseCase)
+- Builds a combined overview map (legs + walking segments)
+- Uses route colors for each leg and dashed walking paths
+- Shows boarding and drop-off stops for each leg
+- Adds walking segments before boarding and after drop-off (distance-based)
+- Leg cards expand to reveal stop timelines and focus the map
+```
 ```
 
 #### MapExplorerView & MapExplorerViewModel
@@ -329,6 +355,15 @@ Dependencies:
 - TransitRepositoryProtocol
 ```
 Searches for bus stops by name or query string.
+
+#### PlanTripUseCase
+```swift
+func execute(origin: Location, destination: Location, maxAlternatives: Int = 5, rankingPriority: String = "arrives_first") async throws -> TripPlan
+
+Dependencies:
+- TransitRepositoryProtocol
+```
+Builds a lightweight trip plan between two coordinates using the /plan.php endpoint.
 
 #### GetTripRouteUseCase
 ```swift
@@ -724,7 +759,7 @@ if let error = viewModel.errorMessage {
 ### 7. Debouncing
 Search and map region changes are debounced to reduce API calls:
 ```swift
-// SearchViewModel: 300ms debounce on search text (MapKit suggestions)
+// SearchViewModel: 300ms debounce on origin/destination search text (MapKit suggestions)
 // MapExplorerViewModel: 500ms debounce on region changes
 ```
 

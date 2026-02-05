@@ -159,12 +159,16 @@ class ViewModelsTests: XCTestCase {
     // MARK: - SearchViewModel Tests
 
     func testSearchViewModelInitialState() {
-        let mockGetNearbyStopsUseCase = MockGetNearbyStopsUseCase()
-        let viewModel = SearchViewModel(getNearbyStopsUseCase: mockGetNearbyStopsUseCase)
+        let locationService = MockLocationService()
+        locationService.currentLocation = Location(latitude: -23.55, longitude: -46.63)
+        let viewModel = SearchViewModel(
+            planTripUseCase: MockPlanTripUseCase(),
+            locationService: locationService
+        )
 
-        XCTAssertEqual(viewModel.searchText, "")
-        XCTAssertTrue(viewModel.nearbyStops.isEmpty)
-        XCTAssertNil(viewModel.selectedPlaceName)
+        XCTAssertEqual(viewModel.originQuery, "Current location")
+        XCTAssertEqual(viewModel.destinationQuery, "")
+        XCTAssertTrue(viewModel.alternatives.isEmpty)
     }
 
     // MARK: - Mock Use Cases for ViewModel Testing
@@ -227,6 +231,16 @@ class ViewModelsTests: XCTestCase {
         }
     }
 
+    class MockPlanTripUseCase: PlanTripUseCase {
+        init() {
+            super.init(transitRepository: MockTransitRepository())
+        }
+
+        override func execute(origin: Location, destination: Location, maxAlternatives: Int = 5, rankingPriority: String = "arrives_first") async throws -> TripPlan {
+            return TripPlan(alternatives: [], rankingPriority: rankingPriority)
+        }
+    }
+
     class MockGetTripRouteUseCase: GetTripRouteUseCase {
         init() {
             super.init(transitRepository: MockTransitRepository())
@@ -251,6 +265,9 @@ class ViewModelsTests: XCTestCase {
         }
         func getShape(shapeId: String) async throws -> [Location] { [] }
         func getAllRoutes(limit: Int, offset: Int) async throws -> [Route] { [] }
+        func planTrip(origin: Location, destination: Location, maxAlternatives: Int, rankingPriority: String) async throws -> TripPlan {
+            TripPlan(alternatives: [], rankingPriority: rankingPriority)
+        }
     }
 
     class MockGetMetroStatusUseCase: GetMetroStatusUseCase {

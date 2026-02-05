@@ -24,13 +24,14 @@ A modern iOS app for São Paulo public transit information, featuring real-time 
 │  - GetTripRouteUseCase                                      │
 │  - GetRouteShapeUseCase                                     │
 │  - GetMetroStatusUseCase                                    │
+│  - PlanTripUseCase                                          │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                      Domain Layer                            │
 │  (Entities, Protocols/Ports)                                │
-│  - Stop, Arrival, Route, Trip, Line                         │
+│  - Stop, Arrival, Route, Trip, TripPlan, Line               │
 │  - TransitRepositoryProtocol                                │
 │  - LocationServiceProtocol                                  │
 │  - StorageServiceProtocol                                   │
@@ -65,7 +66,8 @@ sp-trains-bus/
 │   │   ├── Trip.swift
 │   │   ├── TripStop.swift
 │   │   ├── MetroLine.swift
-│   │   └── Location.swift
+│   │   ├── Location.swift
+│   │   └── TripPlan.swift
 │   │
 │   └── Protocols/
 │       ├── TransitRepositoryProtocol.swift
@@ -79,7 +81,8 @@ sp-trains-bus/
 │       ├── SearchStopsUseCase.swift
 │       ├── GetTripRouteUseCase.swift
 │       ├── GetRouteShapeUseCase.swift
-│       └── GetMetroStatusUseCase.swift
+│       ├── GetMetroStatusUseCase.swift
+│       └── PlanTripUseCase.swift
 │
 ├── Infrastructure/
 │   ├── Network/
@@ -91,7 +94,8 @@ sp-trains-bus/
 │   │       ├── ArrivalDTO.swift
 │   │       ├── TripDTO.swift
 │   │       ├── RouteDTO.swift
-│   │       └── LocationDTO.swift
+│   │       ├── LocationDTO.swift
+│   │       └── PlanDTO.swift
 │   │
 │   ├── Repositories/
 │   │   └── TransitAPIRepository.swift
@@ -167,8 +171,13 @@ sp-trains-bus/
 │   ├── Search/
 │   │   ├── SearchView.swift
 │   │   ├── SearchViewModel.swift
+│   │   ├── TripPlanDetailView.swift
+│   │   ├── TripPlanDetailViewModel.swift
 │   │   └── Components/
-│   │       └── SearchResultRow.swift
+│   │       ├── SearchResultRow.swift
+│   │       ├── SearchLocationField.swift
+│   │       ├── JourneyOptionCard.swift
+│   │       └── TripPlanLegSection.swift
 │   │
 │   └── TabBar/
 │       └── MainTabView.swift

@@ -26,6 +26,7 @@ enum TransitAPIEndpoint {
     case shape(shapeId: String)
     case stop(stopId: Int)
     case routes
+    case plan(origin: Location, destination: Location, maxAlternatives: Int, rankingPriority: String)
 }
 
 extension TransitAPIEndpoint: APIEndpoint {
@@ -45,6 +46,8 @@ extension TransitAPIEndpoint: APIEndpoint {
             return "/stop.php"
         case .routes:
             return "/routes.php"
+        case .plan:
+            return "/plan.php"
         }
     }
 
@@ -83,6 +86,15 @@ extension TransitAPIEndpoint: APIEndpoint {
             ]
         case .routes:
             return []
+        case .plan(let origin, let destination, let maxAlternatives, let rankingPriority):
+            return [
+                URLQueryItem(name: "origin_lat", value: "\(origin.latitude)"),
+                URLQueryItem(name: "origin_lon", value: "\(origin.longitude)"),
+                URLQueryItem(name: "dest_lat", value: "\(destination.latitude)"),
+                URLQueryItem(name: "dest_lon", value: "\(destination.longitude)"),
+                URLQueryItem(name: "max_alternatives", value: "\(maxAlternatives)"),
+                URLQueryItem(name: "ranking_priority", value: rankingPriority)
+            ]
         }
     }
 }

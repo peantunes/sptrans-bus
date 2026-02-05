@@ -4,7 +4,13 @@ import MapKit
 struct SearchView: View {
     @StateObject private var viewModel: SearchViewModel
     let dependencies: AppDependencies
-    @State private var selectedStop: Stop?
+    @State private var activeField: ActiveField? = nil
+    @State private var isCollapsed: Bool = false
+
+    enum ActiveField {
+        case origin
+        case destination
+    }
 
     init(viewModel: SearchViewModel, dependencies: AppDependencies) {
         _viewModel = StateObject(wrappedValue: viewModel)
@@ -12,117 +18,222 @@ struct SearchView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            if let selectedPlaceName = viewModel.selectedPlaceName {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Stops near")
-                        .font(AppFonts.caption())
-                        .foregroundColor(AppColors.text.opacity(0.6))
-
-                    Text(selectedPlaceName)
-                        .font(AppFonts.title2())
-                        .foregroundColor(AppColors.text)
-                }
-                .padding(.horizontal)
-                .padding(.top, 8)
-            } else {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Search a location")
-                        .font(AppFonts.title2())
-                        .foregroundColor(AppColors.text)
-
-                    Text("Find stops around any address or landmark.")
-                        .font(AppFonts.subheadline())
-                        .foregroundColor(AppColors.text.opacity(0.6))
-                }
-                .padding(.horizontal)
-                .padding(.top, 8)
-            }
-
-            if viewModel.isSearchingLocation || viewModel.isLoadingStops {
-                HStack {
-                    Spacer()
-                    LoadingView()
-                    Spacer()
-                }
-            } else if let errorMessage = viewModel.errorMessage {
-                ErrorView(message: errorMessage) {
-                    Task {
-                        await viewModel.submitSearch()
-                    }
-                }
-            } else if viewModel.nearbyStops.isEmpty, !viewModel.searchText.isEmpty {
-                Text("No stops found near \"\(viewModel.searchText)\".")
-                    .font(AppFonts.subheadline())
-                    .foregroundColor(AppColors.text.opacity(0.7))
-                    .padding(.horizontal)
-            } else {
-                List(viewModel.nearbyStops, id: \.stopId) { stop in
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                if isCollapsed {
                     Button(action: {
-                        selectedStop = stop
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isCollapsed = false
+                        }
                     }) {
-                        SearchResultRow(stop: stop, distance: viewModel.distanceToStop(stop))
+                        GlassCard {
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Text("Route")
+                                        .font(AppFonts.caption())
+                                        .foregroundColor(AppColors.text.opacity(0.6))
+
+                                    Spacer()
+
+                                    Image(systemName: "chevron.down")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundColor(AppColors.text.opacity(0.6))
+                                }
+
+                                Text("\(viewModel.originQuery) → \(viewModel.destinationQuery)")
+                                    .font(AppFonts.subheadline())
+                                    .foregroundColor(AppColors.text)
+                                    .lineLimit(1)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                     }
                     .buttonStyle(.plain)
-                }
-                .listStyle(.plain)
-            }
-        }
-        .navigationTitle("Search Places")
-        .navigationBarTitleDisplayMode(.inline)
-        .searchable(text: $viewModel.searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search places")
-        .searchSuggestions {
-            ForEach(viewModel.searchSuggestions, id: \.stableIdentifier) { suggestion in
-                Button(action: {
-                    Task {
-                        await viewModel.selectSuggestion(suggestion)
-                    }
-                }) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(suggestion.title)
-                            .font(AppFonts.subheadline())
-                            .foregroundColor(AppColors.text)
+                    .padding(.horizontal)
+                } else {
+                    GlassCard {
+                        VStack(alignment: .leading, spacing: 14) {
+                            SearchLocationField(
+                                title: "Origin",
+                                placeholder: "Current location",
+                                systemImage: "location.fill",
+                                text: $viewModel.originQuery,
+                                trailingTitle: "Use"
+                            ) {
+                                viewModel.setOriginToCurrentLocation()
+                                hideKeyboard()
+                            }
+                            .onTapGesture { activeField = .origin }
+                            .onChange(of: viewModel.originQuery) { _, _ in
+                                activeField = .origin
+                            }
 
-                        if !suggestion.subtitle.isEmpty {
-                            Text(suggestion.subtitle)
-                                .font(AppFonts.caption())
-                                .foregroundColor(AppColors.text.opacity(0.6))
+                            SearchLocationField(
+                                title: "Destination",
+                                placeholder: "Search destination",
+                                systemImage: "mappin.and.ellipse",
+                                text: $viewModel.destinationQuery
+                            )
+                            .onTapGesture { activeField = .destination }
+                            .onChange(of: viewModel.destinationQuery) { _, _ in
+                                activeField = .destination
+                            }
+
+                            Button(action: {
+                                hideKeyboard()
+                                activeField = nil
+                                viewModel.clearSuggestions()
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    isCollapsed = true
+                                }
+                                Task {
+                                    await viewModel.planTrip()
+                                }
+                            }) {
+                                HStack {
+                                    Image(systemName: "arrow.triangle.branch")
+                                    Text("Plan route")
+                                }
+                                .font(AppFonts.callout())
+                                .foregroundColor(.white)
+                                .padding(.vertical, 10)
+                                .frame(maxWidth: .infinity)
+                                .background(AppColors.primary)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+
+                if !isCollapsed, activeField == .origin, !viewModel.originSuggestions.isEmpty {
+                    suggestionList(
+                        title: "Origin suggestions",
+                        suggestions: viewModel.originSuggestions,
+                        onSelect: { suggestion in
+                            Task {
+                                await viewModel.selectOriginSuggestion(suggestion)
+                                hideKeyboard()
+                                activeField = nil
+                            }
+                        }
+                    )
+                }
+
+                if !isCollapsed, activeField == .destination, !viewModel.destinationSuggestions.isEmpty {
+                    suggestionList(
+                        title: "Destination suggestions",
+                        suggestions: viewModel.destinationSuggestions,
+                        onSelect: { suggestion in
+                            Task {
+                                await viewModel.selectDestinationSuggestion(suggestion)
+                                hideKeyboard()
+                                activeField = nil
+                            }
+                        }
+                    )
+                }
+
+                if viewModel.isPlanning {
+                    HStack {
+                        Spacer()
+                        LoadingView()
+                        Spacer()
+                    }
+                } else if let errorMessage = viewModel.errorMessage {
+                    ErrorView(message: errorMessage) {
+                        Task {
+                            await viewModel.planTrip()
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+
+                if !viewModel.alternatives.isEmpty {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Best options")
+                            .font(AppFonts.headline())
+                            .foregroundColor(AppColors.text)
+                            .padding(.horizontal)
+
+                        ForEach(viewModel.alternatives) { alternative in
+                            NavigationLink {
+                                TripPlanDetailView(
+                                    alternative: alternative,
+                                    originLocation: viewModel.originLocation,
+                                    destinationLocation: viewModel.destinationLocation,
+                                    originLabel: viewModel.originQuery,
+                                    destinationLabel: viewModel.destinationQuery,
+                                    dependencies: dependencies
+                                )
+                            } label: {
+                                JourneyOptionCard(alternative: alternative)
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.horizontal)
                         }
                     }
                 }
             }
+            .padding(.vertical, 12)
         }
-        .onSubmit(of: .search) {
-            Task {
-                await viewModel.submitSearch()
+        .navigationTitle("Search")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func suggestionList(
+        title: String,
+        suggestions: [MKLocalSearchCompletion],
+        onSelect: @escaping (MKLocalSearchCompletion) -> Void
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(AppFonts.caption())
+                .foregroundColor(AppColors.text.opacity(0.6))
+                .padding(.horizontal)
+
+            GlassCard {
+                VStack(spacing: 10) {
+                    ForEach(suggestions, id: \.stableIdentifier) { suggestion in
+                        Button(action: { onSelect(suggestion) }) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(suggestion.title)
+                                    .font(AppFonts.subheadline())
+                                    .foregroundColor(AppColors.text)
+
+                                if !suggestion.subtitle.isEmpty {
+                                    Text(suggestion.subtitle)
+                                        .font(AppFonts.caption())
+                                        .foregroundColor(AppColors.text.opacity(0.6))
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.plain)
+
+                        if suggestion.stableIdentifier != suggestions.last?.stableIdentifier {
+                            Divider()
+                                .background(AppColors.text.opacity(0.1))
+                        }
+                    }
+                }
             }
-        }
-        .sheet(item: $selectedStop) { stop in
-            StopDetailView(viewModel: StopDetailViewModel(
-                stop: stop,
-                getArrivalsUseCase: dependencies.getArrivalsUseCase,
-                getTripRouteUseCase: dependencies.getTripRouteUseCase,
-                getRouteShapeUseCase: dependencies.getRouteShapeUseCase,
-                storageService: dependencies.storageService
-            ))
+            .padding(.horizontal)
         }
     }
 }
 
 #Preview {
-    class MockTransitRepository: TransitRepositoryProtocol {
-        func getNearbyStops(location: Location, limit: Int) async throws -> [Stop] {
-            return [
-                Stop(stopId: 1, stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561414, longitude: -46.656166), stopSequence: 1, stopCode: "SP-1234", wheelchairBoarding: 0),
-                Stop(stopId: 2, stopName: "Av. Paulista, 2000", location: Location(latitude: -23.562414, longitude: -46.657166), stopSequence: 2, stopCode: "SP-5678", wheelchairBoarding: 0)
-            ]
+    class MockPlanTripUseCase: PlanTripUseCase {
+        init() {
+            super.init(transitRepository: MockTransitRepository())
         }
-        func getArrivals(stopId: Int, limit: Int) async throws -> [Arrival] { return [] }
-        func searchStops(query: String, limit: Int) async throws -> [Stop] { return [] }
-        func getTrip(tripId: String) async throws -> TripStop { fatalError() }
-        func getRoute(routeId: String) async throws -> Route { fatalError() }
-        func getShape(shapeId: String) async throws -> [Location] { fatalError() }
-        func getAllRoutes(limit: Int, offset: Int) async throws -> [Route] { return [] }
+        override func execute(origin: Location, destination: Location, maxAlternatives: Int = 5, rankingPriority: String = "arrives_first") async throws -> TripPlan {
+            TripPlan(alternatives: [
+                TripPlanAlternative(type: .direct, departureTime: "08:10", arrivalTime: "08:55", legCount: 1, stopCount: 12, lineSummary: "1080-0"),
+                TripPlanAlternative(type: .transfer, departureTime: "08:20", arrivalTime: "09:12", legCount: 2, stopCount: 18, lineSummary: "1080-0 > 9033-1")
+            ], rankingPriority: "arrives_first")
+        }
     }
 
     class MockLocationService: LocationServiceProtocol {
@@ -132,10 +243,20 @@ struct SearchView: View {
         func stopUpdatingLocation() {}
     }
 
-    let mockRepository = MockTransitRepository()
-    let mockLocation = MockLocationService()
-    let getNearbyStopsUseCase = GetNearbyStopsUseCase(transitRepository: mockRepository, locationService: mockLocation)
-    let viewModel = SearchViewModel(getNearbyStopsUseCase: getNearbyStopsUseCase)
+    class MockTransitRepository: TransitRepositoryProtocol {
+        func getNearbyStops(location: Location, limit: Int) async throws -> [Stop] { [] }
+        func getArrivals(stopId: Int, limit: Int) async throws -> [Arrival] { [] }
+        func searchStops(query: String, limit: Int) async throws -> [Stop] { [] }
+        func getTrip(tripId: String) async throws -> TripStop { fatalError() }
+        func getRoute(routeId: String) async throws -> Route { fatalError() }
+        func getShape(shapeId: String) async throws -> [Location] { [] }
+        func getAllRoutes(limit: Int, offset: Int) async throws -> [Route] { [] }
+        func planTrip(origin: Location, destination: Location, maxAlternatives: Int, rankingPriority: String) async throws -> TripPlan {
+            TripPlan(alternatives: [], rankingPriority: rankingPriority)
+        }
+    }
+
+    let viewModel = SearchViewModel(planTripUseCase: MockPlanTripUseCase(), locationService: MockLocationService())
     let dependencies = AppDependencies()
 
     return NavigationView {

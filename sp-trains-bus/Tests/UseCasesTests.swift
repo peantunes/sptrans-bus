@@ -13,6 +13,7 @@ class UseCasesTests: XCTestCase {
         var routeResult: Result<Route, Error> = .failure(TestError.notImplemented)
         var shapeResult: Result<[Location], Error> = .success([])
         var allRoutesResult: Result<[Route], Error> = .success([])
+        var planResult: Result<TripPlan, Error> = .success(TripPlan(alternatives: [], rankingPriority: "arrives_first"))
 
         func getNearbyStops(location: Location, limit: Int) async throws -> [Stop] {
             return try nearbyStopsResult.get()
@@ -34,6 +35,9 @@ class UseCasesTests: XCTestCase {
         }
         func getAllRoutes(limit: Int, offset: Int) async throws -> [Route] {
             return try allRoutesResult.get()
+        }
+        func planTrip(origin: Location, destination: Location, maxAlternatives: Int, rankingPriority: String) async throws -> TripPlan {
+            return try planResult.get()
         }
     }
 

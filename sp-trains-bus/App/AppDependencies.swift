@@ -12,6 +12,7 @@ class AppDependencies {
     let getTripRouteUseCase: GetTripRouteUseCase
     let getRouteShapeUseCase: GetRouteShapeUseCase
     let getMetroStatusUseCase: GetMetroStatusUseCase
+    let planTripUseCase: PlanTripUseCase
 
     let homeViewModel: HomeViewModel
     let searchViewModel: SearchViewModel
@@ -32,10 +33,11 @@ class AppDependencies {
         getTripRouteUseCase = GetTripRouteUseCase(transitRepository: transitRepository)
         getRouteShapeUseCase = GetRouteShapeUseCase(transitRepository: transitRepository)
         getMetroStatusUseCase = GetMetroStatusUseCase()
+        planTripUseCase = PlanTripUseCase(transitRepository: transitRepository)
 
         // Presentation Layer - ViewModels
         homeViewModel = HomeViewModel(getNearbyStopsUseCase: getNearbyStopsUseCase, locationService: locationService, storageService: storageService)
-        searchViewModel = SearchViewModel(getNearbyStopsUseCase: getNearbyStopsUseCase)
+        searchViewModel = SearchViewModel(planTripUseCase: planTripUseCase, locationService: locationService)
         systemStatusViewModel = SystemStatusViewModel(getMetroStatusUseCase: getMetroStatusUseCase)
         mapExplorerViewModel = MapExplorerViewModel(getNearbyStopsUseCase: getNearbyStopsUseCase, locationService: locationService)
     }

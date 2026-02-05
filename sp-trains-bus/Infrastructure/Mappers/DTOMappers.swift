@@ -81,3 +81,83 @@ extension RouteDTO {
                      routeTextColor: routeTextColor)
     }
 }
+
+extension PlanResultDTO {
+    func toDomain() -> TripPlan {
+        let mappedAlternatives = alternatives.map { $0.toDomain() }
+        return TripPlan(alternatives: mappedAlternatives, rankingPriority: rankingPriority ?? "arrives_first")
+    }
+}
+
+extension PlanAlternativeDTO {
+    func toDomain() -> TripPlanAlternative {
+        let typeValue = TripPlanAlternativeType(rawValue: type) ?? .unknown
+        let dataRoute = data?.route?.toDomain()
+        let originRoute = data?.originRoute?.toDomain()
+        let destinationRoute = data?.destinationRoute?.toDomain()
+        let originStop = data?.originStop?.toDomain()
+        let destinationStop = data?.destinationStop?.toDomain()
+        let transferStop = data?.transferStop?.toDomain()
+
+        let mappedLegs = legs?.map { $0.toDomain() } ?? []
+        return TripPlanAlternative(
+            type: typeValue,
+            departureTime: summary?.departureTime,
+            arrivalTime: summary?.arrivalTime,
+            legCount: summary?.legCount ?? (typeValue == .transfer ? 2 : 1),
+            stopCount: summary?.stopCount,
+            lineSummary: summary?.lineSummary ?? "",
+            legs: mappedLegs,
+            tripId: data?.tripId,
+            originTripId: data?.originTripId,
+            destinationTripId: data?.destinationTripId,
+            originStopId: data?.originStopId,
+            destinationStopId: data?.destinationStopId,
+            transferStopId: data?.transferStopId,
+            route: dataRoute,
+            originRoute: originRoute,
+            destinationRoute: destinationRoute,
+            originStop: originStop,
+            destinationStop: destinationStop,
+            transferStop: transferStop
+        )
+    }
+}
+
+extension PlanRouteDTO {
+    func toDomain() -> TripPlanRoute {
+        return TripPlanRoute(
+            routeId: routeId ?? "",
+            shortName: shortName ?? routeId ?? "",
+            longName: longName ?? "",
+            color: color ?? "",
+            textColor: textColor ?? ""
+        )
+    }
+}
+
+extension PlanStopDTO {
+    func toDomain() -> Stop {
+        return Stop(
+            stopId: id ?? 0,
+            stopName: name ?? "Unknown stop",
+            location: Location(latitude: lat ?? 0, longitude: lon ?? 0),
+            stopSequence: 0,
+            stopCode: "",
+            wheelchairBoarding: 0
+        )
+    }
+}
+
+extension PlanLegDTO {
+    func toDomain() -> TripPlanLeg {
+        return TripPlanLeg(
+            route: route?.toDomain(),
+            tripId: tripId,
+            originStopId: originStopId,
+            destinationStopId: destinationStopId,
+            originStop: originStop?.toDomain(),
+            destinationStop: destinationStop?.toDomain()
+        )
+    }
+}

@@ -155,6 +155,9 @@ struct HomeView: View {
         func getRoute(routeId: String) async throws -> Route { fatalError() }
         func getShape(shapeId: String) async throws -> [Location] { fatalError() }
         func getAllRoutes(limit: Int, offset: Int) async throws -> [Route] { return [] }
+        func planTrip(origin: Location, destination: Location, maxAlternatives: Int, rankingPriority: String) async throws -> TripPlan {
+            return TripPlan(alternatives: [], rankingPriority: rankingPriority)
+        }
     }
 
     class MockLocationService: LocationServiceProtocol {

@@ -76,6 +76,8 @@ A comprehensive São Paulo public transit information system for bus arrivals, r
 - Direct route discovery via stop sequence
 - Transfer options via common stops
 - Ranking by priority (default arrives_first)
+- Alternative summaries (departure/arrival, legs, stop count, lines)
+- Per-leg details for map building (route, trip, boarding/drop-off stops)
 
 **Conexao.class.php** - Database abstraction layer
 - Multi-database support: MySQL, Oracle, PostgreSQL, MSSQL
