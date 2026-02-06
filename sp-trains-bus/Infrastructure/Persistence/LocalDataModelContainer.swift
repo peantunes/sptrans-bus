@@ -12,6 +12,12 @@ enum LocalDataModelContainer {
                 for: FavoriteStopModel.self,
                 UserPlaceModel.self,
                 GTFSFeedMetadataModel.self,
+                GTFSStopModel.self,
+                GTFSRouteModel.self,
+                GTFSTripModel.self,
+                GTFSStopTimeModel.self,
+                GTFSShapePointModel.self,
+                GTFSCalendarModel.self,
                 configurations: configuration
             )
         } catch {

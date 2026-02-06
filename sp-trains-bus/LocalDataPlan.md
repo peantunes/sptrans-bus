@@ -30,16 +30,20 @@
 - [x] Multi-place storage API added to domain protocol.
 - [x] GTFS feed metadata service added with weekly policy.
 - [x] App dependency wiring switched to SwiftData services.
-- [ ] GTFS zip parser/importer implementation.
-- [ ] Local transit repository queries (nearby/search/arrivals from local DB).
+- [x] GTFS importer implementation for extracted GTFS `.txt` files.
+- [x] Local transit repository queries (nearby/search/arrivals/trip/shape from local DB).
+- [x] Source selector repository (`local` vs `api`) with automatic fallback.
+- [x] Use cases for GTFS import and weekly-check policy.
+- [ ] Zip extraction support in-app (current importer expects extracted folder).
 - [ ] UI for managing saved places and local-data mode.
 - [ ] Background weekly sync job integration.
 
 ## Next Implementation Steps
-1. Define full GTFS SwiftData schema (`stops`, `routes`, `trips`, `stop_times`, `calendar`, `shapes`).
-2. Implement zip extraction + streaming CSV parser with batched inserts.
-3. Build `LocalTransitRepository` that conforms to `TransitRepositoryProtocol`.
-4. Add a source selector (`api` vs `local`) with fallback if local feed is missing.
-5. Add screens/components:
+1. Add zip extraction implementation before import (import service currently reads extracted folder).
+2. Hook importer + local mode into UI settings:
+   - Import CTA
+   - Last import/feed version
+   - Local/API toggle
+3. Add screens/components:
    - Import status + last update date
    - Place management (add/edit/delete with category chips)

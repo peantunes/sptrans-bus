@@ -8,6 +8,8 @@ class AppDependencies {
     let locationService: LocationServiceProtocol
     let storageService: StorageServiceProtocol
     let gtfsFeedService: GTFSFeedServiceProtocol
+    let gtfsImportService: GTFSImportServiceProtocol
+    let transitDataModeService: TransitDataModeServiceProtocol
 
     let getNearbyStopsUseCase: GetNearbyStopsUseCase
     let getArrivalsUseCase: GetArrivalsUseCase
@@ -16,6 +18,8 @@ class AppDependencies {
     let getRouteShapeUseCase: GetRouteShapeUseCase
     let getMetroStatusUseCase: GetMetroStatusUseCase
     let planTripUseCase: PlanTripUseCase
+    let importGTFSDataUseCase: ImportGTFSDataUseCase
+    let checkGTFSRefreshUseCase: CheckGTFSRefreshUseCase
 
     let homeViewModel: HomeViewModel
     let searchViewModel: SearchViewModel
@@ -27,10 +31,19 @@ class AppDependencies {
 
         // Infrastructure Layer
         apiClient = APIClient()
-        transitRepository = TransitAPIRepository(apiClient: apiClient)
+        let remoteRepository = TransitAPIRepository(apiClient: apiClient)
+        let localRepository = LocalTransitRepository(modelContainer: modelContainer)
         locationService = CoreLocationService()
         storageService = SwiftDataStorageService(modelContainer: modelContainer)
         gtfsFeedService = GTFSFeedService(modelContainer: modelContainer)
+        gtfsImportService = GTFSImporterService(modelContainer: modelContainer, feedService: gtfsFeedService)
+        transitDataModeService = UserDefaultsTransitDataModeService()
+        transitRepository = ConfigurableTransitRepository(
+            remoteRepository: remoteRepository,
+            localRepository: localRepository,
+            modeService: transitDataModeService,
+            feedService: gtfsFeedService
+        )
 
         // Application Layer - Use Cases
         getNearbyStopsUseCase = GetNearbyStopsUseCase(transitRepository: transitRepository, locationService: locationService)
@@ -40,6 +53,8 @@ class AppDependencies {
         getRouteShapeUseCase = GetRouteShapeUseCase(transitRepository: transitRepository)
         getMetroStatusUseCase = GetMetroStatusUseCase()
         planTripUseCase = PlanTripUseCase(transitRepository: transitRepository)
+        importGTFSDataUseCase = ImportGTFSDataUseCase(importService: gtfsImportService, modeService: transitDataModeService)
+        checkGTFSRefreshUseCase = CheckGTFSRefreshUseCase(feedService: gtfsFeedService)
 
         // Presentation Layer - ViewModels
         homeViewModel = HomeViewModel(getNearbyStopsUseCase: getNearbyStopsUseCase, locationService: locationService, storageService: storageService)
