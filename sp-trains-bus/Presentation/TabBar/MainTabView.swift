@@ -9,6 +9,7 @@ struct MainTabView: View {
         case search
         case status
         case map
+        case settings
     }
     
     @State private var tabSelection: TabOption = .home
@@ -24,15 +25,6 @@ struct MainTabView: View {
                 )
             }
 
-            // Placeholder for NearbyView
-            Tab("Nearby", systemImage: "location.fill", value: .nearby) {
-                Text("Nearby View")
-            }
-            
-            Tab("Status", systemImage: "waveform.path.ecg", value: .status) {
-                SystemStatusView(viewModel: dependencies.systemStatusViewModel) // Assuming SystemStatusViewModel exists in dependencies
-            }
-
             Tab("Map", systemImage: "map.fill", value: .map) {
                 NavigationStack {
                     MapExplorerView(viewModel: dependencies.mapExplorerViewModel, dependencies: dependencies) // Assuming MapExplorerViewModel exists in dependencies
@@ -42,6 +34,21 @@ struct MainTabView: View {
             Tab("Search", systemImage: "magnifyingglass", value: .search, role: .search) {
                 NavigationStack {
                     SearchView(viewModel: dependencies.searchViewModel, dependencies: dependencies) // Assuming SearchViewModel exists in dependencies
+                }
+            }
+
+            Tab("Settings", systemImage: "gearshape.fill", value: .settings) {
+                NavigationStack {
+                    LocalDataSettingsView(
+                        viewModel: LocalDataSettingsViewModel(
+                            modeService: dependencies.transitDataModeService,
+                            feedService: dependencies.gtfsFeedService,
+                            importUseCase: dependencies.importGTFSDataUseCase,
+                            checkRefreshUseCase: dependencies.checkGTFSRefreshUseCase,
+                            storageService: dependencies.storageService
+                        ),
+                        dependencies: dependencies
+                    )
                 }
             }
 

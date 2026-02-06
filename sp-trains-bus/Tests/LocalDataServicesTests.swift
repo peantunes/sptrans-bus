@@ -1,5 +1,6 @@
 import XCTest
 @testable import sp_trains_bus
+import zlib
 
 final class LocalDataServicesTests: XCTestCase {
 
@@ -150,8 +151,34 @@ final class LocalDataServicesTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: fixtureDirectory) }
 
         XCTAssertFalse(modeService.useLocalData)
-        _ = try await useCase.execute(from: fixtureDirectory, sourceURL: nil)
+        _ = try await useCase.execute(from: fixtureDirectory, feedSourceURL: nil)
         XCTAssertTrue(modeService.useLocalData)
+    }
+
+    func testImportUseCaseAcceptsZipArchive() async throws {
+        let container = LocalDataModelContainer.make(inMemory: true)
+        let feedService = GTFSFeedService(modelContainer: container)
+        let importer = GTFSImporterService(modelContainer: container, feedService: feedService, batchSize: 1)
+        let suiteName = "TransitImportZip-\(UUID().uuidString)"
+        let userDefaults = UserDefaults(suiteName: suiteName)!
+        defer { userDefaults.removePersistentDomain(forName: suiteName) }
+
+        let modeService = UserDefaultsTransitDataModeService(userDefaults: userDefaults)
+        let useCase = ImportGTFSDataUseCase(importService: importer, modeService: modeService)
+        let fixtureDirectory = try makeGTFSFixtureDirectory()
+        let archiveURL = try makeZipArchive(from: fixtureDirectory)
+        defer {
+            try? FileManager.default.removeItem(at: fixtureDirectory)
+            try? FileManager.default.removeItem(at: archiveURL)
+        }
+
+        XCTAssertFalse(modeService.useLocalData)
+        _ = try await useCase.execute(from: archiveURL, feedSourceURL: archiveURL.absoluteString)
+        XCTAssertTrue(modeService.useLocalData)
+
+        let repository = LocalTransitRepository(modelContainer: container)
+        let searchedStops = try await repository.searchStops(query: "Central", limit: 10)
+        XCTAssertEqual(searchedStops.first?.stopId, 100)
     }
 
     private func makeGTFSFixtureDirectory() throws -> URL {
@@ -210,6 +237,124 @@ final class LocalDataServicesTests: XCTestCase {
         )
 
         return directoryURL
+    }
+
+    private func makeZipArchive(from directoryURL: URL) throws -> URL {
+        let fileNames = [
+            "stops.txt",
+            "routes.txt",
+            "trips.txt",
+            "stop_times.txt",
+            "shapes.txt",
+            "calendar.txt"
+        ]
+
+        let entries = try fileNames.map { fileName in
+            let fileURL = directoryURL.appendingPathComponent(fileName)
+            return (fileName, try Data(contentsOf: fileURL))
+        }
+
+        let archiveData = try makeStoredZipArchive(entries: entries)
+        let archiveURL = FileManager.default.temporaryDirectory.appendingPathComponent("gtfs-fixture-\(UUID().uuidString).zip")
+        try archiveData.write(to: archiveURL, options: .atomic)
+        return archiveURL
+    }
+
+    private func makeStoredZipArchive(entries: [(String, Data)]) throws -> Data {
+        struct CentralEntry {
+            let nameData: Data
+            let crc: UInt32
+            let size: UInt32
+            let localHeaderOffset: UInt32
+        }
+
+        var archive = Data()
+        var centralEntries: [CentralEntry] = []
+        centralEntries.reserveCapacity(entries.count)
+
+        for (name, content) in entries {
+            guard let nameData = name.data(using: .utf8) else {
+                throw NSError(domain: "LocalDataServicesTests", code: 1)
+            }
+
+            let localOffset = UInt32(archive.count)
+            let size = UInt32(content.count)
+            let crc = content.withUnsafeBytes { buffer -> UInt32 in
+                guard let baseAddress = buffer.baseAddress else { return 0 }
+                return UInt32(crc32(0, baseAddress.assumingMemoryBound(to: Bytef.self), uInt(buffer.count)))
+            }
+
+            appendUInt32LE(0x04034B50, to: &archive)
+            appendUInt16LE(20, to: &archive) // version needed
+            appendUInt16LE(0, to: &archive) // flags
+            appendUInt16LE(0, to: &archive) // compression method (stored)
+            appendUInt16LE(0, to: &archive) // mod time
+            appendUInt16LE(0, to: &archive) // mod date
+            appendUInt32LE(crc, to: &archive)
+            appendUInt32LE(size, to: &archive)
+            appendUInt32LE(size, to: &archive)
+            appendUInt16LE(UInt16(nameData.count), to: &archive)
+            appendUInt16LE(0, to: &archive) // extra length
+            archive.append(nameData)
+            archive.append(content)
+
+            centralEntries.append(
+                CentralEntry(
+                    nameData: nameData,
+                    crc: crc,
+                    size: size,
+                    localHeaderOffset: localOffset
+                )
+            )
+        }
+
+        let centralDirectoryOffset = UInt32(archive.count)
+
+        for entry in centralEntries {
+            appendUInt32LE(0x02014B50, to: &archive)
+            appendUInt16LE(20, to: &archive) // version made by
+            appendUInt16LE(20, to: &archive) // version needed
+            appendUInt16LE(0, to: &archive) // flags
+            appendUInt16LE(0, to: &archive) // compression method
+            appendUInt16LE(0, to: &archive) // mod time
+            appendUInt16LE(0, to: &archive) // mod date
+            appendUInt32LE(entry.crc, to: &archive)
+            appendUInt32LE(entry.size, to: &archive)
+            appendUInt32LE(entry.size, to: &archive)
+            appendUInt16LE(UInt16(entry.nameData.count), to: &archive)
+            appendUInt16LE(0, to: &archive) // extra length
+            appendUInt16LE(0, to: &archive) // comment length
+            appendUInt16LE(0, to: &archive) // disk number start
+            appendUInt16LE(0, to: &archive) // internal attrs
+            appendUInt32LE(0, to: &archive) // external attrs
+            appendUInt32LE(entry.localHeaderOffset, to: &archive)
+            archive.append(entry.nameData)
+        }
+
+        let centralDirectorySize = UInt32(archive.count) - centralDirectoryOffset
+
+        appendUInt32LE(0x06054B50, to: &archive)
+        appendUInt16LE(0, to: &archive) // number of this disk
+        appendUInt16LE(0, to: &archive) // start disk
+        appendUInt16LE(UInt16(centralEntries.count), to: &archive)
+        appendUInt16LE(UInt16(centralEntries.count), to: &archive)
+        appendUInt32LE(centralDirectorySize, to: &archive)
+        appendUInt32LE(centralDirectoryOffset, to: &archive)
+        appendUInt16LE(0, to: &archive) // comment length
+
+        return archive
+    }
+
+    private func appendUInt16LE(_ value: UInt16, to data: inout Data) {
+        data.append(UInt8(value & 0x00FF))
+        data.append(UInt8((value & 0xFF00) >> 8))
+    }
+
+    private func appendUInt32LE(_ value: UInt32, to data: inout Data) {
+        data.append(UInt8(value & 0x000000FF))
+        data.append(UInt8((value & 0x0000FF00) >> 8))
+        data.append(UInt8((value & 0x00FF0000) >> 16))
+        data.append(UInt8((value & 0xFF000000) >> 24))
     }
 
     private func write(_ content: String, to fileURL: URL) throws {

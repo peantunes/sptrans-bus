@@ -188,11 +188,16 @@ class ViewModelsTests: XCTestCase {
 
     class MockStorageService: StorageServiceProtocol {
         private var favorites: [Stop] = []
+        private var places: [UserPlace] = []
 
         func saveFavorite(stop: Stop) { favorites.append(stop) }
         func removeFavorite(stop: Stop) { favorites.removeAll { $0.stopId == stop.stopId } }
         func isFavorite(stopId: Int) -> Bool { favorites.contains { $0.stopId == stopId } }
         func getFavoriteStops() -> [Stop] { favorites }
+        func savePlace(_ place: UserPlace) { places.append(place) }
+        func removePlace(id: UUID) { places.removeAll { $0.id == id } }
+        func getSavedPlaces() -> [UserPlace] { places }
+        func getPlaces(type: UserPlaceType) -> [UserPlace] { places.filter { $0.type == type } }
         func saveHome(location: Location) {}
         func getHomeLocation() -> Location? { nil }
         func saveWork(location: Location) {}

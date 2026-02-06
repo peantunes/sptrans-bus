@@ -34,16 +34,11 @@
 - [x] Local transit repository queries (nearby/search/arrivals/trip/shape from local DB).
 - [x] Source selector repository (`local` vs `api`) with automatic fallback.
 - [x] Use cases for GTFS import and weekly-check policy.
-- [ ] Zip extraction support in-app (current importer expects extracted folder).
-- [ ] UI for managing saved places and local-data mode.
+- [x] Zip extraction support in-app (folder and `.zip` import paths).
+- [x] UI for managing saved places and local-data mode.
 - [ ] Background weekly sync job integration.
 
 ## Next Implementation Steps
-1. Add zip extraction implementation before import (import service currently reads extracted folder).
-2. Hook importer + local mode into UI settings:
-   - Import CTA
-   - Last import/feed version
-   - Local/API toggle
-3. Add screens/components:
-   - Import status + last update date
-   - Place management (add/edit/delete with category chips)
+1. Add remote metadata check (ETag/Last-Modified) for weekly checks before download.
+2. Add background weekly sync task integration (BGTaskScheduler) with user notifications.
+3. Connect quick actions (e.g., Home screen shortcuts) to saved place flows.

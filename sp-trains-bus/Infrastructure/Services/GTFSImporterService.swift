@@ -74,10 +74,11 @@ final class GTFSImporterService: GTFSImportServiceProtocol {
 
         let versionIdentifier = (try feedVersion(from: feedInfoURL)) ?? fallbackVersionIdentifier()
         let importedAt = Date()
+        let persistedArchivePath = resolvedArchivePath(sourceURL: sourceURL, fallbackDirectoryURL: directoryURL)
         let feed = GTFSFeedInfo(
             versionIdentifier: versionIdentifier,
             sourceURL: sourceURL,
-            localArchivePath: directoryURL.path,
+            localArchivePath: persistedArchivePath,
             downloadedAt: importedAt,
             lastCheckedAt: importedAt,
             etag: nil,
@@ -86,6 +87,16 @@ final class GTFSImporterService: GTFSImportServiceProtocol {
         feedService.updateFeed(feed)
 
         return feed
+    }
+
+    private func resolvedArchivePath(sourceURL: String?, fallbackDirectoryURL: URL) -> String {
+        guard let sourceURL,
+              let parsedURL = URL(string: sourceURL),
+              parsedURL.isFileURL else {
+            return fallbackDirectoryURL.path
+        }
+
+        return parsedURL.path
     }
 
     private func clearExistingGTFSData(in context: ModelContext) throws {
