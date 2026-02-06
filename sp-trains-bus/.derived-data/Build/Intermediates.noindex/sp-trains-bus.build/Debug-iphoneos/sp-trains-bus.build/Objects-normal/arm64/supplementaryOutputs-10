@@ -1,0 +1,51 @@
+{
+  "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "const-values" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftconstvalues",
+    "dependencies" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/GeneratedAssetSymbols.d",
+    "diagnostics" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/GeneratedAssetSymbols.dia",
+    "object" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "swift-dependencies" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftdeps"
+  },
+  "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/App/sp_trains_busApp.swift" : {
+    "const-values" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/sp_trains_busApp.swiftconstvalues",
+    "dependencies" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/sp_trains_busApp.d",
+    "diagnostics" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/sp_trains_busApp.dia",
+    "object" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/sp_trains_busApp.o",
+    "swift-dependencies" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/sp_trains_busApp.swiftdeps"
+  },
+  "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/Application/UseCases/SearchStopsUseCase.swift" : {
+    "const-values" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/SearchStopsUseCase.swiftconstvalues",
+    "dependencies" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/SearchStopsUseCase.d",
+    "diagnostics" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/SearchStopsUseCase.dia",
+    "object" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/SearchStopsUseCase.o",
+    "swift-dependencies" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/SearchStopsUseCase.swiftdeps"
+  },
+  "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/Infrastructure/Services/CoreLocationService.swift" : {
+    "const-values" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/CoreLocationService.swiftconstvalues",
+    "dependencies" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/CoreLocationService.d",
+    "diagnostics" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/CoreLocationService.dia",
+    "object" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/CoreLocationService.o",
+    "swift-dependencies" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/CoreLocationService.swiftdeps"
+  },
+  "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/Infrastructure/Services/GTFSFeedService.swift" : {
+    "const-values" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/GTFSFeedService.swiftconstvalues",
+    "dependencies" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/GTFSFeedService.d",
+    "diagnostics" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/GTFSFeedService.dia",
+    "object" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/GTFSFeedService.o",
+    "swift-dependencies" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/GTFSFeedService.swiftdeps"
+  },
+  "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/Infrastructure/Services/SwiftDataStorageService.swift" : {
+    "const-values" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/SwiftDataStorageService.swiftconstvalues",
+    "dependencies" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/SwiftDataStorageService.d",
+    "diagnostics" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/SwiftDataStorageService.dia",
+    "object" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/SwiftDataStorageService.o",
+    "swift-dependencies" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/SwiftDataStorageService.swiftdeps"
+  },
+  "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/Infrastructure/Services/UserDefaultsStorageService.swift" : {
+    "const-values" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/UserDefaultsStorageService.swiftconstvalues",
+    "dependencies" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/UserDefaultsStorageService.d",
+    "diagnostics" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/UserDefaultsStorageService.dia",
+    "object" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/UserDefaultsStorageService.o",
+    "swift-dependencies" : "/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/.derived-data/Build/Intermediates.noindex/sp-trains-bus.build/Debug-iphoneos/sp-trains-bus.build/Objects-normal/arm64/UserDefaultsStorageService.swiftdeps"
+  }
+}

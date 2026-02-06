@@ -4,6 +4,7 @@ import Combine
 class HomeViewModel: ObservableObject {
     @Published var nearbyStops: [Stop] = []
     @Published var favoriteStops: [Stop] = []
+    @Published var savedPlaces: [UserPlace] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     @Published var userLocation: Location?
@@ -49,12 +50,19 @@ class HomeViewModel: ObservableObject {
                     self.isLoading = false
                 }
             }
-            loadFavoriteStops()
+            await MainActor.run {
+                self.loadFavoriteStops()
+                self.loadSavedPlaces()
+            }
         }
     }
 
     func loadFavoriteStops() {
         favoriteStops = storageService.getFavoriteStops()
+    }
+
+    func loadSavedPlaces() {
+        savedPlaces = storageService.getSavedPlaces()
     }
 
     func addFavoriteStop(stop: Stop) {
@@ -65,6 +73,16 @@ class HomeViewModel: ObservableObject {
     func removeFavoriteStop(stop: Stop) {
         storageService.removeFavorite(stop: stop)
         loadFavoriteStops()
+    }
+
+    func savePlace(_ place: UserPlace) {
+        storageService.savePlace(place)
+        loadSavedPlaces()
+    }
+
+    func removePlace(id: UUID) {
+        storageService.removePlace(id: id)
+        loadSavedPlaces()
     }
 
     func getGreeting() -> String {

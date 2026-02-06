@@ -183,6 +183,10 @@ struct HomeView: View {
                 Stop(stopId: 1, stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561414, longitude: -46.656166), stopSequence: 1, stopCode: "SP1", wheelchairBoarding: 0)
             ]
         }
+        func savePlace(_ place: UserPlace) {}
+        func removePlace(id: UUID) {}
+        func getSavedPlaces() -> [UserPlace] { return [] }
+        func getPlaces(type: UserPlaceType) -> [UserPlace] { return [] }
         func saveHome(location: Location) {}
         func getHomeLocation() -> Location? { return nil }
         func saveWork(location: Location) {}

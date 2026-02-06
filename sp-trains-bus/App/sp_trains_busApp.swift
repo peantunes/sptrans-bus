@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct sp_trains_busApp: App {
@@ -14,6 +15,7 @@ struct sp_trains_busApp: App {
     var body: some Scene {
         WindowGroup {
             MainTabView(dependencies: dependencies)
+                .modelContainer(dependencies.modelContainer)
         }
     }
 }

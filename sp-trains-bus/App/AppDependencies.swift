@@ -1,10 +1,13 @@
 import Foundation
+import SwiftData
 
 class AppDependencies {
+    let modelContainer: ModelContainer
     let apiClient: APIClient
     let transitRepository: TransitRepositoryProtocol
     let locationService: LocationServiceProtocol
     let storageService: StorageServiceProtocol
+    let gtfsFeedService: GTFSFeedServiceProtocol
 
     let getNearbyStopsUseCase: GetNearbyStopsUseCase
     let getArrivalsUseCase: GetArrivalsUseCase
@@ -20,11 +23,14 @@ class AppDependencies {
     let mapExplorerViewModel: MapExplorerViewModel
 
     init() {
+        modelContainer = LocalDataModelContainer.shared
+
         // Infrastructure Layer
         apiClient = APIClient()
         transitRepository = TransitAPIRepository(apiClient: apiClient)
         locationService = CoreLocationService()
-        storageService = UserDefaultsStorageService()
+        storageService = SwiftDataStorageService(modelContainer: modelContainer)
+        gtfsFeedService = GTFSFeedService(modelContainer: modelContainer)
 
         // Application Layer - Use Cases
         getNearbyStopsUseCase = GetNearbyStopsUseCase(transitRepository: transitRepository, locationService: locationService)

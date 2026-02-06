@@ -187,6 +187,10 @@ struct StopDetailView: View {
         func removeFavorite(stop: Stop) { favorites.removeAll { $0.stopId == stop.stopId } }
         func isFavorite(stopId: Int) -> Bool { favorites.contains { $0.stopId == stopId } }
         func getFavoriteStops() -> [Stop] { favorites }
+        func savePlace(_ place: UserPlace) {}
+        func removePlace(id: UUID) {}
+        func getSavedPlaces() -> [UserPlace] { [] }
+        func getPlaces(type: UserPlaceType) -> [UserPlace] { [] }
         func saveHome(location: Location) {}
         func getHomeLocation() -> Location? { nil }
         func saveWork(location: Location) {}

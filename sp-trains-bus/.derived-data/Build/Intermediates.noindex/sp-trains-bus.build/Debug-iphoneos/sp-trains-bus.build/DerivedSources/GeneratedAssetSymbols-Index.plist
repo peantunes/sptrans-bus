@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>colors</key>
+	<array>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/Resources/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACColorNameAccentColor</string>
+			<key>relativePath</key>
+			<string>./AccentColor.colorset</string>
+			<key>swiftSymbol</key>
+			<string>accent</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/Resources/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACColorNameBackgroundColor</string>
+			<key>relativePath</key>
+			<string>./BackgroundColor.colorset</string>
+			<key>swiftSymbol</key>
+			<string>background</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/Resources/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACColorNameLightGray</string>
+			<key>relativePath</key>
+			<string>./LightGray.colorset</string>
+			<key>swiftSymbol</key>
+			<string>lightGray</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/Resources/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACColorNamePrimaryColor</string>
+			<key>relativePath</key>
+			<string>./PrimaryColor.colorset</string>
+			<key>swiftSymbol</key>
+			<string>primary</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/Resources/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACColorNameTextColor</string>
+			<key>relativePath</key>
+			<string>./TextColor.colorset</string>
+			<key>swiftSymbol</key>
+			<string>text</string>
+		</dict>
+	</array>
+	<key>images</key>
+	<array/>
+	<key>symbols</key>
+	<array/>
+</dict>
+</plist>

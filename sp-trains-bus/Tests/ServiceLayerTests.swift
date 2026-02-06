@@ -63,4 +63,42 @@ class ServiceLayerTests: XCTestCase {
         XCTAssertEqual(retrievedLocation?.latitude, 5.0)
         XCTAssertEqual(retrievedLocation?.longitude, 6.0)
     }
+
+    func testSaveAndQueryUserPlaces() {
+        let studyPlace = UserPlace(
+            name: "University",
+            location: Location(latitude: -23.56, longitude: -46.65),
+            type: .study
+        )
+        let customPlace = UserPlace(
+            name: "Gym",
+            location: Location(latitude: -23.57, longitude: -46.66),
+            type: .custom,
+            customLabel: "Health"
+        )
+
+        userDefaultsStorageService.savePlace(studyPlace)
+        userDefaultsStorageService.savePlace(customPlace)
+
+        let allPlaces = userDefaultsStorageService.getSavedPlaces()
+        let studyPlaces = userDefaultsStorageService.getPlaces(type: .study)
+        let customPlaces = userDefaultsStorageService.getPlaces(type: .custom)
+
+        XCTAssertEqual(allPlaces.count, 2)
+        XCTAssertEqual(studyPlaces.count, 1)
+        XCTAssertEqual(customPlaces.first?.customLabel, "Health")
+    }
+
+    func testRemoveUserPlace() {
+        let homePlace = UserPlace(
+            name: "Home",
+            location: Location(latitude: 1.0, longitude: 2.0),
+            type: .home
+        )
+        userDefaultsStorageService.savePlace(homePlace)
+
+        userDefaultsStorageService.removePlace(id: homePlace.id)
+
+        XCTAssertTrue(userDefaultsStorageService.getSavedPlaces().isEmpty)
+    }
 }
