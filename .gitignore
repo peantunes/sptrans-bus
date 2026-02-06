@@ -4,6 +4,7 @@
 
 ## User settings
 xcuserdata/
+*.xcuserstate
 
 ## Obj-C/Swift specific
 *.hmap
@@ -14,6 +15,19 @@ xcuserdata/
 *.dSYM
 
 server/data_import/gtfs_to_import/*
+
+# macOS
+.DS_Store
+
+# Xcode build folders
+DerivedData/
+**/DerivedData/
+build/
+sp-trains-bus/.derived-data/
+*.xcresult
+*.moved-aside
+*.xccheckout
+*.xcscmblueprint
 
 ## Playgrounds
 timeline.xctimeline
@@ -32,6 +46,7 @@ playground.xcworkspace
 # .swiftpm
 
 .build/
+.swiftpm/
 
 # CocoaPods
 #
