@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 # Mapping of database tables to GTFS files
 TABLE_FILE_MAPPING = {
     'sp_calendar': 'calendar.txt',
+    'sp_calendar_dates': 'calendar_dates.txt',
     'sp_fare_att': 'fare_attributes.txt',
     'sp_fare_rules': 'fare_rules.txt',
     'sp_frequencies': 'frequencies.txt',
@@ -51,6 +52,9 @@ COLUMN_TYPES = {
     'sunday': 'TINYINT',
     'start_date': 'VARCHAR(8)',
     'end_date': 'VARCHAR(8)',
+    # calendar_dates.txt
+    'date': 'VARCHAR(8)',
+    'exception_type': 'TINYINT',
     # fare_attributes.txt
     'price': 'DECIMAL(10,6)',
     'payment_method': 'TINYINT',

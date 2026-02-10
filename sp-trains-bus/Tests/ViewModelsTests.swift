@@ -104,6 +104,54 @@ class ViewModelsTests: XCTestCase {
         XCTAssertNil(viewModel.errorMessage)
     }
 
+    func testStopDetailViewModelFormatsTimeAndExpandsFrequency() async throws {
+        let mockGetArrivalsUseCase = MockGetArrivalsUseCase()
+        let mockStorageService = MockStorageService()
+        mockGetArrivalsUseCase.arrivalsToReturn = [
+            Arrival(
+                tripId: "T2",
+                routeId: "R2",
+                routeShortName: "R2",
+                routeLongName: "Route 2",
+                headsign: "Downtown",
+                arrivalTime: "08:37:04.000000",
+                departureTime: "08:37:04.000000",
+                stopId: 1,
+                stopSequence: 1,
+                routeType: 3,
+                routeColor: "00AA00",
+                routeTextColor: "FFFFFF",
+                frequency: 5,
+                waitTime: 2
+            )
+        ]
+
+        let stop = Stop(stopId: 1, stopName: "Test Stop", location: Location(latitude: 0, longitude: 0), stopSequence: 0, stopCode: "", wheelchairBoarding: 0)
+        let viewModel = StopDetailViewModel(
+            stop: stop,
+            getArrivalsUseCase: mockGetArrivalsUseCase,
+            getTripRouteUseCase: MockGetTripRouteUseCase(),
+            getRouteShapeUseCase: MockGetRouteShapeUseCase(),
+            storageService: mockStorageService
+        )
+
+        let expectation = XCTestExpectation(description: "StopDetailViewModel expands frequency arrivals")
+        viewModel.$arrivals
+            .dropFirst()
+            .sink { arrivals in
+                XCTAssertEqual(arrivals.count, 10)
+                XCTAssertTrue(arrivals.allSatisfy { $0.arrivalTime.count == 5 && $0.arrivalTime.contains(":") })
+                XCTAssertEqual(arrivals[0].waitTime, 2)
+                XCTAssertEqual(arrivals[1].waitTime, 7)
+                expectation.fulfill()
+            }
+            .store(in: &cancellables)
+
+        viewModel.loadArrivals()
+
+        await fulfillment(of: [expectation], timeout: 1.0)
+    }
+
     // MARK: - SystemStatusViewModel Tests
 
     func testSystemStatusViewModelLoadMetroStatus() {

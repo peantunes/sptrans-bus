@@ -2,7 +2,7 @@ import SwiftUI
 
 struct UpcomingBusList: View {
     let arrivals: [Arrival]
-    let selectedTripId: String?
+    let selectedArrivalKey: String?
     var onArrivalTap: ((Arrival) -> Void)?
 
     var body: some View {
@@ -13,11 +13,11 @@ struct UpcomingBusList: View {
                     .foregroundColor(AppColors.text)
                     .padding(.horizontal)
 
-                ForEach(Array(arrivals.dropFirst().enumerated()), id: \.element.id) { index, arrival in
+                ForEach(Array(arrivals.enumerated()), id: \.element.id) { index, arrival in
                     UpcomingBusRow(
                         arrival: arrival,
                         index: index + 1,
-                        isSelected: arrival.tripId == selectedTripId
+                        isSelected: arrival.selectionKey == selectedArrivalKey
                     )
                         .padding(.horizontal)
                         .onTapGesture {
@@ -53,30 +53,28 @@ struct UpcomingBusRow: View {
     var body: some View {
         GlassCard {
             HStack(spacing: 12) {
-                // Route badge
-                RouteBadge(
-                    routeShortName: arrival.routeShortName,
-                    routeColor: arrival.routeColor,
-                    routeTextColor: arrival.routeTextColor
-                )
-
-                // Route info
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading) {
+                    
                     Text(arrival.headsign)
                         .font(AppFonts.subheadline())
                         .fontWeight(.medium)
                         .foregroundColor(AppColors.text)
                         .lineLimit(1)
-
-                    HStack(spacing: 8) {
-                        Label(arrival.arrivalTime, systemImage: "clock")
-                            .font(AppFonts.caption())
-                            .foregroundColor(AppColors.text.opacity(0.6))
-
-                        if let frequency = arrival.frequency {
-                            Text("• Every \(frequency) min")
-                                .font(AppFonts.caption())
-                                .foregroundColor(AppColors.text.opacity(0.5))
+                    
+                    HStack {
+                        // Route badge
+                        RouteBadge(
+                            routeShortName: arrival.routeShortName,
+                            routeColor: arrival.routeColor,
+                            routeTextColor: arrival.routeTextColor
+                        )
+                        
+                        HStack(spacing: 8) {
+                            if let frequency = arrival.frequency {
+                                Text("Every \(frequency) min")
+                                    .font(AppFonts.caption())
+                                    .foregroundColor(AppColors.text.opacity(0.5))
+                            }
                         }
                     }
                 }
@@ -85,16 +83,13 @@ struct UpcomingBusRow: View {
 
                 // Wait time
                 VStack(alignment: .trailing, spacing: 2) {
+                    Text(arrival.arrivalTime)
+                        .font(AppFonts.body().bold())
+                        .foregroundColor(AppColors.text.opacity(0.6))
+                    
                     Text(arrival.formattedWaitTime)
-                        .font(AppFonts.title3())
-                        .fontWeight(.bold)
+                        .font(AppFonts.caption().bold())
                         .foregroundColor(waitTimeColor)
-
-                    if arrival.waitTime > 0 {
-                        Text("min")
-                            .font(AppFonts.caption())
-                            .foregroundColor(AppColors.text.opacity(0.5))
-                    }
                 }
 
                 // Chevron
@@ -132,7 +127,7 @@ struct UpcomingBusRow: View {
                 Arrival(tripId: "124", routeId: "609P-10", routeShortName: "609P-10", routeLongName: "Lapa - Centro", headsign: "Jardim Paulista", arrivalTime: "10:34", departureTime: "10:34", stopId: 1, stopSequence: 2, routeType: 3, routeColor: "2196F3", routeTextColor: "FFFFFF", frequency: nil, waitTime: 4),
                 Arrival(tripId: "125", routeId: "508M-10", routeShortName: "508M-10", routeLongName: "Vila Mariana", headsign: "Parque Ibirapuera", arrivalTime: "10:39", departureTime: "10:39", stopId: 1, stopSequence: 3, routeType: 3, routeColor: "9C27B0", routeTextColor: "FFFFFF", frequency: 20, waitTime: 9),
                 Arrival(tripId: "126", routeId: "8707-10", routeShortName: "8707-10", routeLongName: "Santo Amaro", headsign: "Term. Santo Amaro", arrivalTime: "10:50", departureTime: "10:50", stopId: 1, stopSequence: 4, routeType: 3, routeColor: "FF5722", routeTextColor: "FFFFFF", frequency: nil, waitTime: 20)
-            ], selectedTripId: "124")
+            ], selectedArrivalKey: "124|10:34|4")
         }
     }
 }

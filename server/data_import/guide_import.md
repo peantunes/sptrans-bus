@@ -1,4 +1,5 @@
 sp_calendar -> calendar.txt
+sp_calendar_dates -> calendar_dates.txt
 sp_fare_att -> fare_attributes.txt
 sp_fare_rules -> fare_rules.txt
 sp_frequencies -> frequencies.txt

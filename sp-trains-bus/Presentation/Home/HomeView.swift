@@ -27,17 +27,18 @@ struct HomeView: View {
                     .padding(.top)
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
-                    WeatherSummaryCard(
-                        city: "São Paulo",
-                        temperature: 26,
-                        condition: "Partly Cloudy",
-                        high: 28,
-                        low: 20,
-                        precipitationChance: 20,
-                        feelsLike: 27
-                    )
+//                    WeatherSummaryCard(
+//                        city: "São Paulo",
+//                        temperature: 26,
+//                        condition: "Partly Cloudy",
+//                        high: 28,
+//                        low: 20,
+//                        precipitationChance: 20,
+//                        feelsLike: 27
+//                    )
 
                     QuickCommuteCard()
+                        .gridCellColumns(2)
                 }
                 .padding(.horizontal)
 

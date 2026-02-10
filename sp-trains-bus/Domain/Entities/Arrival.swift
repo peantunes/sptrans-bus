@@ -36,6 +36,11 @@ struct Arrival: Identifiable {
             return "\(waitTime) min"
         }
     }
+
+    /// Stable key for UI selection comparisons.
+    var selectionKey: String {
+        "\(tripId)|\(arrivalTime)|\(waitTime)"
+    }
 }
 
 enum WaitTimeStatus {

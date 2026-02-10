@@ -86,6 +86,7 @@ class FareInfo {
 class TransitService {
 
     private $con;
+    private $hasCalendarDatesTable = null;
 
     public function __construct($con) {
         $this->con = $con;
@@ -113,6 +114,50 @@ class TransitService {
     private function safeEncode($value) {
         if ($value === null) return '';
         return $value;
+    }
+
+    /**
+     * Parse GTFS/SQL time string to total seconds.
+     * Supports values with fractional seconds and hours >= 24.
+     */
+    private function timeToSeconds($timeValue) {
+        if ($timeValue === null) {
+            return null;
+        }
+
+        $raw = trim((string)$timeValue);
+        if ($raw === '') {
+            return null;
+        }
+
+        // Drop fractional part, e.g. 08:37:04.000000 -> 08:37:04
+        $raw = preg_replace('/\..*$/', '', $raw);
+        $parts = explode(':', $raw);
+
+        if (count($parts) < 2) {
+            return null;
+        }
+
+        $hour = (int)$parts[0];
+        $minute = (int)$parts[1];
+        $second = isset($parts[2]) ? (int)$parts[2] : 0;
+
+        return ($hour * 3600) + ($minute * 60) + $second;
+    }
+
+    /**
+     * Check if calendar_dates exceptions table is available.
+     * Uses lazy caching to avoid checking schema on every query.
+     */
+    private function supportsCalendarDateExceptions() {
+        if ($this->hasCalendarDatesTable !== null) {
+            return $this->hasCalendarDatesTable;
+        }
+
+        $this->con->ExecutaPrepared("SHOW TABLES LIKE ?", "s", ["sp_calendar_dates"]);
+        $this->hasCalendarDatesTable = $this->con->Linha() ? true : false;
+
+        return $this->hasCalendarDatesTable;
     }
 
     /**
@@ -144,6 +189,55 @@ class TransitService {
             return [];
         }
 
+        $supportsCalendarDates = $this->supportsCalendarDateExceptions();
+
+        $calendarJoinSql = "LEFT JOIN sp_calendar c ON c.service_id = t.service_id";
+        $serviceCalendarConditionSql = "c.$dayColumn = 1
+            AND c.start_date <= ?
+            AND c.end_date >= ?";
+        $types = "sssssssi";
+        $params = [
+            $currentTime,
+            $stopId,
+            $currentTime,
+            $currentTime,
+            $currentDate,
+            $currentDate,
+            $currentTime,
+            $limit
+        ];
+
+        if ($supportsCalendarDates) {
+            $calendarJoinSql .= "
+            LEFT JOIN sp_calendar_dates cd
+            ON cd.service_id = t.service_id
+            AND cd.`date` = ?";
+
+            $serviceCalendarConditionSql = "(
+                    cd.exception_type = 1
+                    OR (
+                        cd.exception_type IS NULL
+                        AND c.$dayColumn = 1
+                        AND c.start_date <= ?
+                        AND c.end_date >= ?
+                    )
+                )
+                AND (cd.exception_type IS NULL OR cd.exception_type <> 2)";
+
+            $types = "ssssssssi";
+            $params = [
+                $currentTime,
+                $stopId,
+                $currentTime,
+                $currentTime,
+                $currentDate,
+                $currentDate,
+                $currentDate,
+                $currentTime,
+                $limit
+            ];
+        }
+
         $sql = "SELECT
                 st.trip_id,
                 t.route_id,
@@ -161,7 +255,7 @@ class TransitService {
                         CEIL(
                             GREATEST(
                                 0,
-                                TIME_TO_SEC(?) - TIME_TO_SEC(f.start_time)
+                                TIME_TO_SEC(?) - TIME_TO_SEC(f.start_time) - stop_offset.offset_secs
                             ) / f.headway_secs
                         ) * f.headway_secs
                     )
@@ -190,32 +284,22 @@ class TransitService {
 
             JOIN sp_trip t ON t.trip_id = st.trip_id
             JOIN sp_routes r ON r.route_id = t.route_id
-            JOIN sp_calendar c ON c.service_id = t.service_id
+            $calendarJoinSql
 
             WHERE st.stop_id = ?
             AND f.start_time <= ?
             AND f.end_time >= ?
-            AND c.$dayColumn = 1
-            AND c.start_date <= ?
-            AND c.end_date >= ?
+            AND $serviceCalendarConditionSql
 
             HAVING arrival_time >= ?
 
             ORDER BY arrival_time
             LIMIT ?";
 
-        $this->con->ExecutaPrepared($sql, "sssssssi", [
-            $currentTime,
-            $stopId,
-            $currentTime,
-            $currentTime,
-            $currentDate,
-            $currentDate,
-            $currentTime,
-            $limit
-        ]);
+        $this->con->ExecutaPrepared($sql, $types, $params);
 
         $arrivals = [];
+        $currentSeconds = $this->timeToSeconds($currentTime);
         while ($this->con->Linha()) {
             $rs = $this->con->rs;
 
@@ -234,9 +318,12 @@ class TransitService {
             $arrival->frequency = $rs['frequency_minutes'] ? (int)$rs['frequency_minutes'] : null;
 
             // Calculate wait time in minutes
-            $arrivalTimestamp = strtotime($rs['arrival_time']);
-            $currentTimestamp = strtotime($currentTime);
-            $arrival->waitTime = max(0, round(($arrivalTimestamp - $currentTimestamp) / 60));
+            $arrivalSeconds = $this->timeToSeconds($rs['arrival_time']);
+            if ($arrivalSeconds !== null && $currentSeconds !== null) {
+                $arrival->waitTime = max(0, (int)ceil(($arrivalSeconds - $currentSeconds) / 60));
+            } else {
+                $arrival->waitTime = 0;
+            }
 
             $arrivals[] = $arrival;
         }

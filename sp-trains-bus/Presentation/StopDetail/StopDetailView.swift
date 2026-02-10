@@ -40,21 +40,10 @@ struct StopDetailView: View {
                                 viewModel.loadArrivals()
                             }
                         } else if let nextArrival = viewModel.arrivals.first {
-                            // Next bus card
-                            NextBusCard(arrival: nextArrival)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 15)
-                                        .stroke(viewModel.selectedArrival?.tripId == nextArrival.tripId ? Color(hex: nextArrival.routeColor).opacity(0.6) : Color.clear, lineWidth: 1.5)
-                                )
-                                .padding(.horizontal)
-                                .onTapGesture {
-                                    viewModel.selectArrival(nextArrival)
-                                }
-
                             // Upcoming arrivals list
                             UpcomingBusList(
                                 arrivals: viewModel.arrivals,
-                                selectedTripId: viewModel.selectedArrival?.tripId,
+                                selectedArrivalKey: viewModel.selectedArrival?.selectionKey,
                                 onArrivalTap: { arrival in
                                     viewModel.selectArrival(arrival)
                                 }
