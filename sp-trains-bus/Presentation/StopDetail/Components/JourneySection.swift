@@ -9,6 +9,7 @@ struct JourneySection: View {
     let currentStopId: Int
     let onClear: () -> Void
     let onRetry: () -> Void
+    @State private var focusedStopId: Int?
 
     private var journeyColor: Color {
         guard let selection else { return AppColors.accent }
@@ -127,7 +128,8 @@ struct JourneySection: View {
                         shape: shape,
                         stops: stops,
                         routeColor: journeyColor,
-                        highlightStopId: currentStopId
+                        highlightStopId: focusedStopId ?? currentStopId,
+                        focusedStopId: $focusedStopId
                     )
                     .frame(height: 180)
                     .clipShape(RoundedRectangle(cornerRadius: 14))
@@ -137,7 +139,11 @@ struct JourneySection: View {
             JourneyStopsTimeline(
                 stops: stops,
                 routeColor: journeyColor,
-                currentStopId: currentStopId
+                currentStopId: currentStopId,
+                focusedStopId: focusedStopId,
+                onSelectStop: { stop in
+                    focusedStopId = stop.stopId
+                }
             )
         }
     }
@@ -206,6 +212,8 @@ private struct JourneyStopsTimeline: View {
     let stops: [Stop]
     let routeColor: Color
     let currentStopId: Int
+    let focusedStopId: Int?
+    let onSelectStop: (Stop) -> Void
 
     @State private var isExpanded: Bool = false
 
@@ -252,13 +260,19 @@ private struct JourneyStopsTimeline: View {
 
                         VStack(alignment: .leading, spacing: 16) {
                             ForEach(displayedStops.indices, id: \.self) { index in
-                                JourneyStopRow(
-                                    stop: displayedStops[index],
-                                    isCurrent: displayedStops[index].stopId == currentStopId,
-                                    isStart: index == 0,
-                                    isEnd: index == displayedStops.count - 1,
-                                    routeColor: routeColor
-                                )
+                                Button {
+                                    onSelectStop(displayedStops[index])
+                                } label: {
+                                    JourneyStopRow(
+                                        stop: displayedStops[index],
+                                        isCurrent: displayedStops[index].stopId == currentStopId,
+                                        isSelected: displayedStops[index].stopId == focusedStopId,
+                                        isStart: index == 0,
+                                        isEnd: index == displayedStops.count - 1,
+                                        routeColor: routeColor
+                                    )
+                                }
+                                .buttonStyle(.plain)
                             }
                         }
                     }
@@ -281,6 +295,7 @@ private struct JourneyStopsTimeline: View {
 private struct JourneyStopRow: View {
     let stop: Stop
     let isCurrent: Bool
+    let isSelected: Bool
     let isStart: Bool
     let isEnd: Bool
     let routeColor: Color
@@ -290,11 +305,11 @@ private struct JourneyStopRow: View {
 
         HStack(alignment: .top, spacing: 12) {
             Circle()
-                .fill(isCurrent || isStart || isEnd ? routeColor : routeColor.opacity(0.4))
+                .fill(isSelected || isCurrent || isStart || isEnd ? routeColor : routeColor.opacity(0.4))
                 .frame(width: isCurrent ? 14 : 10, height: isCurrent ? 14 : 10)
                 .overlay(
                     Circle()
-                        .stroke(routeColor.opacity(isCurrent ? 0.9 : 0.0), lineWidth: isCurrent ? 4 : 0)
+                        .stroke(routeColor.opacity(isSelected || isCurrent ? 0.9 : 0.0), lineWidth: isCurrent ? 4 : 2)
                 )
                 .padding(.top, 4)
 
@@ -326,11 +341,24 @@ private struct JourneyStopRow: View {
                             .background(routeColor.opacity(0.12))
                             .clipShape(Capsule())
                     }
+
+                    if isSelected && !isCurrent {
+                        Text("Focused")
+                            .font(AppFonts.caption2())
+                            .fontWeight(.semibold)
+                            .foregroundColor(routeColor)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(routeColor.opacity(0.12))
+                            .clipShape(Capsule())
+                    }
                 }
             }
 
             Spacer(minLength: 0)
         }
+        .padding(.vertical, 2)
+        .contentShape(Rectangle())
     }
 }
 

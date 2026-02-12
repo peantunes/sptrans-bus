@@ -6,12 +6,13 @@ struct JourneyMapView: UIViewRepresentable {
     let stops: [Stop]
     let routeColor: Color
     let highlightStopId: Int?
+    @Binding var focusedStopId: Int?
 
     func makeUIView(context: Context) -> MKMapView {
         let mapView = MKMapView(frame: .zero)
         mapView.delegate = context.coordinator
-        mapView.isScrollEnabled = false
-        mapView.isZoomEnabled = false
+        mapView.isScrollEnabled = true
+        mapView.isZoomEnabled = true
         mapView.isRotateEnabled = false
         mapView.isPitchEnabled = false
         mapView.showsCompass = false
@@ -32,13 +33,24 @@ struct JourneyMapView: UIViewRepresentable {
         if coordinates.count > 1 {
             let polyline = MKPolyline(coordinates: coordinates, count: coordinates.count)
             uiView.addOverlay(polyline)
-            uiView.setVisibleMapRect(polyline.boundingMapRect, edgePadding: UIEdgeInsets(top: 30, left: 24, bottom: 30, right: 24), animated: false)
-        } else if let firstStop = stops.first {
-            let region = MKCoordinateRegion(
-                center: firstStop.location.toCLLocationCoordinate2D(),
-                span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
-            )
-            uiView.setRegion(region, animated: false)
+        }
+
+        if !context.coordinator.didSetInitialViewport {
+            if coordinates.count > 1 {
+                let polyline = MKPolyline(coordinates: coordinates, count: coordinates.count)
+                uiView.setVisibleMapRect(
+                    polyline.boundingMapRect,
+                    edgePadding: UIEdgeInsets(top: 30, left: 24, bottom: 30, right: 24),
+                    animated: false
+                )
+            } else if let firstStop = stops.first {
+                let region = MKCoordinateRegion(
+                    center: firstStop.location.toCLLocationCoordinate2D(),
+                    span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+                )
+                uiView.setRegion(region, animated: false)
+            }
+            context.coordinator.didSetInitialViewport = true
         }
 
         var annotations: [JourneyStopAnnotation] = []
@@ -64,11 +76,23 @@ struct JourneyMapView: UIViewRepresentable {
             annotations.append(JourneyStopAnnotation(
                 coordinate: currentStop.location.toCLLocationCoordinate2D(),
                 title: currentStop.stopName,
-                kind: .current
+                kind: focusedStopId == currentStop.stopId ? .focused : .current
             ))
         }
 
         uiView.addAnnotations(annotations)
+
+        if context.coordinator.lastFocusedStopId != focusedStopId,
+           let focusedStopId,
+           let focusedStop = stops.first(where: { $0.stopId == focusedStopId }) {
+            let region = MKCoordinateRegion(
+                center: focusedStop.location.toCLLocationCoordinate2D(),
+                span: MKCoordinateSpan(latitudeDelta: 0.004, longitudeDelta: 0.004)
+            )
+            uiView.setRegion(region, animated: true)
+        }
+
+        context.coordinator.lastFocusedStopId = focusedStopId
     }
 
     func makeCoordinator() -> Coordinator {
@@ -77,6 +101,8 @@ struct JourneyMapView: UIViewRepresentable {
 
     final class Coordinator: NSObject, MKMapViewDelegate {
         private let parent: JourneyMapView
+        var didSetInitialViewport = false
+        var lastFocusedStopId: Int?
 
         init(_ parent: JourneyMapView) {
             self.parent = parent
@@ -116,6 +142,9 @@ struct JourneyMapView: UIViewRepresentable {
             case .current:
                 view.glyphImage = UIImage(systemName: "location.fill")
                 view.displayPriority = .required
+            case .focused:
+                view.glyphImage = UIImage(systemName: "scope")
+                view.displayPriority = .required
             }
 
             return view
@@ -128,6 +157,7 @@ final class JourneyStopAnnotation: NSObject, MKAnnotation {
         case start
         case end
         case current
+        case focused
     }
 
     let coordinate: CLLocationCoordinate2D
@@ -154,7 +184,13 @@ final class JourneyStopAnnotation: NSObject, MKAnnotation {
         Location(latitude: -23.5526, longitude: -46.6362)
     ]
 
-    return JourneyMapView(shape: shape, stops: stops, routeColor: AppColors.accent, highlightStopId: 102)
+    return JourneyMapView(
+        shape: shape,
+        stops: stops,
+        routeColor: AppColors.accent,
+        highlightStopId: 102,
+        focusedStopId: .constant(nil)
+    )
         .frame(height: 200)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .padding()
