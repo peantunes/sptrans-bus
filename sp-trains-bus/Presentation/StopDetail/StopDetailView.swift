@@ -3,6 +3,7 @@ import SwiftUI
 struct StopDetailView: View {
     @StateObject private var viewModel: StopDetailViewModel
     @Environment(\.dismiss) private var dismiss
+    @State private var isShowingJourneyDetail: Bool = false
 
     init(viewModel: StopDetailViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
@@ -46,24 +47,9 @@ struct StopDetailView: View {
                                 selectedArrivalKey: viewModel.selectedArrival?.selectionKey,
                                 onArrivalTap: { arrival in
                                     viewModel.selectArrival(arrival)
+                                    isShowingJourneyDetail = true
                                 }
                             )
-
-                            JourneySection(
-                                selection: viewModel.selectedArrival,
-                                stops: viewModel.journeyStops,
-                                shape: viewModel.journeyShape,
-                                isLoading: viewModel.isLoadingJourney,
-                                errorMessage: viewModel.journeyErrorMessage,
-                                currentStopId: viewModel.stop.stopId,
-                                onClear: viewModel.clearJourneySelection,
-                                onRetry: {
-                                    if let selectedArrival = viewModel.selectedArrival {
-                                        viewModel.selectArrival(selectedArrival)
-                                    }
-                                }
-                            )
-                            .padding(.horizontal)
                         } else {
                             // Empty state
                             VStack(spacing: 16) {
@@ -129,6 +115,9 @@ struct StopDetailView: View {
             .onAppear(perform: viewModel.loadArrivals)
             .onAppear(perform: viewModel.startRefreshingArrivals)
             .onDisappear(perform: viewModel.stopRefreshingArrivals)
+            .navigationDestination(isPresented: $isShowingJourneyDetail) {
+                JourneyDetailView(viewModel: viewModel)
+            }
         }
     }
 }

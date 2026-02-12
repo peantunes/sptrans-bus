@@ -8,20 +8,29 @@ final class PlacesManagerViewModel: ObservableObject {
 
     private let storageService: StorageServiceProtocol
     private let locationService: LocationServiceProtocol
+    private let featureToggles: FeatureToggles.Type
 
-    init(storageService: StorageServiceProtocol, locationService: LocationServiceProtocol) {
+    init(
+        storageService: StorageServiceProtocol,
+        locationService: LocationServiceProtocol,
+        featureToggles: FeatureToggles.Type = FeatureToggles.self
+    ) {
         self.storageService = storageService
         self.locationService = locationService
+        self.featureToggles = featureToggles
     }
 
     func load() {
         locationService.requestLocationPermission()
         currentLocation = locationService.getCurrentLocation()
         places = storageService.getSavedPlaces()
+            .filter { featureToggles.isUserPlaceTypeEnabled($0.type) }
             .sorted { $0.updatedAt > $1.updatedAt }
     }
 
     func savePlace(from draft: UserPlaceDraft) {
+        guard featureToggles.isUserPlaceTypeEnabled(draft.type) else { return }
+
         let now = Date()
         let place = UserPlace(
             id: draft.placeId ?? UUID(),
@@ -47,6 +56,10 @@ final class PlacesManagerViewModel: ObservableObject {
             currentLocation = location
         }
         return location
+    }
+
+    var availablePlaceTypes: [UserPlaceType] {
+        featureToggles.availableUserPlaceTypes
     }
 }
 

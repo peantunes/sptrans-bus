@@ -30,10 +30,12 @@ struct MainTabView: View {
                     MapExplorerView(viewModel: dependencies.mapExplorerViewModel, dependencies: dependencies) // Assuming MapExplorerViewModel exists in dependencies
                 }
             }
-            
-            Tab("Search", systemImage: "magnifyingglass", value: .search, role: .search) {
-                NavigationStack {
-                    SearchView(viewModel: dependencies.searchViewModel, dependencies: dependencies) // Assuming SearchViewModel exists in dependencies
+
+            if FeatureToggles.isSearchEnabled {
+                Tab("Search", systemImage: "magnifyingglass", value: .search, role: .search) {
+                    NavigationStack {
+                        SearchView(viewModel: dependencies.searchViewModel, dependencies: dependencies)
+                    }
                 }
             }
 
@@ -45,7 +47,8 @@ struct MainTabView: View {
                             feedService: dependencies.gtfsFeedService,
                             importUseCase: dependencies.importGTFSDataUseCase,
                             checkRefreshUseCase: dependencies.checkGTFSRefreshUseCase,
-                            storageService: dependencies.storageService
+                            storageService: dependencies.storageService,
+                            featureToggles: FeatureToggles.self
                         ),
                         dependencies: dependencies
                     )

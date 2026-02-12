@@ -16,19 +16,22 @@ final class LocalDataSettingsViewModel: ObservableObject {
     private let importUseCase: ImportGTFSDataUseCase
     private let checkRefreshUseCase: CheckGTFSRefreshUseCase
     private let storageService: StorageServiceProtocol
+    private let featureToggles: FeatureToggles.Type
 
     init(
         modeService: TransitDataModeServiceProtocol,
         feedService: GTFSFeedServiceProtocol,
         importUseCase: ImportGTFSDataUseCase,
         checkRefreshUseCase: CheckGTFSRefreshUseCase,
-        storageService: StorageServiceProtocol
+        storageService: StorageServiceProtocol,
+        featureToggles: FeatureToggles.Type = FeatureToggles.self
     ) {
         self.modeService = modeService
         self.feedService = feedService
         self.importUseCase = importUseCase
         self.checkRefreshUseCase = checkRefreshUseCase
         self.storageService = storageService
+        self.featureToggles = featureToggles
         self.useLocalData = modeService.useLocalData
         self.currentFeed = feedService.getCurrentFeed()
         refreshStatus()
@@ -76,10 +79,23 @@ final class LocalDataSettingsViewModel: ObservableObject {
     }
 
     var placeSummary: String {
-        let homeCount = savedPlaces.filter { $0.type == .home }.count
-        let workCount = savedPlaces.filter { $0.type == .work }.count
+        var parts: [String] = []
+
+        if featureToggles.isHomeWorkLocationsEnabled {
+            let homeCount = savedPlaces.filter { $0.type == .home }.count
+            let workCount = savedPlaces.filter { $0.type == .work }.count
+            parts.append("Home \(homeCount)")
+            parts.append("Work \(workCount)")
+        }
+
         let studyCount = savedPlaces.filter { $0.type == .study }.count
         let customCount = savedPlaces.filter { $0.type == .custom }.count
-        return "Home \(homeCount) | Work \(workCount) | Study \(studyCount) | Custom \(customCount)"
+        parts.append("Study \(studyCount)")
+        parts.append("Custom \(customCount)")
+        return parts.joined(separator: " | ")
+    }
+
+    var visiblePlacesCount: Int {
+        savedPlaces.filter { featureToggles.isUserPlaceTypeEnabled($0.type) }.count
     }
 }

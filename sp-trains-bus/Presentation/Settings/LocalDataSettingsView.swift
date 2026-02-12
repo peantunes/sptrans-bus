@@ -165,7 +165,7 @@ struct LocalDataSettingsView: View {
                         .font(AppFonts.headline())
                         .foregroundColor(AppColors.text)
                     Spacer()
-                    statusBadge(text: "\(viewModel.savedPlaces.count)", tint: AppColors.accent)
+                    statusBadge(text: "\(viewModel.visiblePlacesCount)", tint: AppColors.accent)
                 }
 
                 Text(viewModel.placeSummary)
@@ -176,7 +176,8 @@ struct LocalDataSettingsView: View {
                     PlacesManagerView(
                         viewModel: PlacesManagerViewModel(
                             storageService: dependencies.storageService,
-                            locationService: dependencies.locationService
+                            locationService: dependencies.locationService,
+                            featureToggles: FeatureToggles.self
                         )
                     )
                 } label: {

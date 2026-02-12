@@ -41,10 +41,16 @@ struct PlacesManagerView: View {
             }
         }
         .onAppear(perform: viewModel.load)
+        .onAppear {
+            if !availableFilters.contains(selectedFilter) {
+                selectedFilter = .all
+            }
+        }
         .sheet(item: $draftForSheet) { draft in
             PlaceEditorSheet(
                 title: draft.placeId == nil ? "Add Place" : "Edit Place",
                 initialDraft: draft,
+                availablePlaceTypes: viewModel.availablePlaceTypes,
                 onUseCurrentLocation: { viewModel.getCurrentLocation() },
                 onSave: { updatedDraft in
                     viewModel.savePlace(from: updatedDraft)
@@ -69,7 +75,7 @@ struct PlacesManagerView: View {
     private var filterBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                ForEach(PlacesFilter.allCases) { filter in
+                ForEach(availableFilters) { filter in
                     Button(action: { selectedFilter = filter }) {
                         Text(filter.title)
                             .font(AppFonts.caption())
@@ -86,6 +92,10 @@ struct PlacesManagerView: View {
         }
     }
 
+    private var availableFilters: [PlacesFilter] {
+        PlacesFilter.availableCases(homeWorkEnabled: FeatureToggles.isHomeWorkLocationsEnabled)
+    }
+
     private var filteredPlaces: [UserPlace] {
         viewModel.places.filter { selectedFilter.matches($0) }
     }
@@ -97,7 +107,7 @@ struct PlacesManagerView: View {
                     .font(AppFonts.subheadline())
                     .foregroundColor(AppColors.text)
 
-                Text("Add home, work, study, or custom places to speed up trip planning.")
+                Text(emptyStateMessage)
                     .font(AppFonts.caption())
                     .foregroundColor(AppColors.text.opacity(0.65))
 
@@ -110,6 +120,13 @@ struct PlacesManagerView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    private var emptyStateMessage: String {
+        if FeatureToggles.isHomeWorkLocationsEnabled {
+            return "Add home, work, study, or custom places to speed up trip planning."
+        }
+        return "Add study or custom places to speed up trip planning."
     }
 
     private func placeCard(_ place: UserPlace) -> some View {
@@ -167,7 +184,7 @@ struct PlacesManagerView: View {
     }
 }
 
-private enum PlacesFilter: String, CaseIterable, Identifiable {
+private enum PlacesFilter: String, Identifiable {
     case all
     case home
     case work
@@ -175,6 +192,13 @@ private enum PlacesFilter: String, CaseIterable, Identifiable {
     case custom
 
     var id: String { rawValue }
+
+    static func availableCases(homeWorkEnabled: Bool) -> [PlacesFilter] {
+        if homeWorkEnabled {
+            return [.all, .home, .work, .study, .custom]
+        }
+        return [.all, .study, .custom]
+    }
 
     var title: String {
         switch self {
@@ -201,6 +225,7 @@ private struct PlaceEditorSheet: View {
     @Environment(\.dismiss) private var dismiss
     let title: String
     let initialDraft: UserPlaceDraft
+    let availablePlaceTypes: [UserPlaceType]
     let onUseCurrentLocation: () -> Location?
     let onSave: (UserPlaceDraft) -> Void
 
@@ -220,15 +245,18 @@ private struct PlaceEditorSheet: View {
     init(
         title: String,
         initialDraft: UserPlaceDraft,
+        availablePlaceTypes: [UserPlaceType],
         onUseCurrentLocation: @escaping () -> Location?,
         onSave: @escaping (UserPlaceDraft) -> Void
     ) {
         self.title = title
         self.initialDraft = initialDraft
+        self.availablePlaceTypes = availablePlaceTypes
         self.onUseCurrentLocation = onUseCurrentLocation
         self.onSave = onSave
+        let initialType = availablePlaceTypes.contains(initialDraft.type) ? initialDraft.type : .custom
         _name = State(initialValue: initialDraft.name)
-        _selectedType = State(initialValue: initialDraft.type)
+        _selectedType = State(initialValue: initialType)
         _customLabel = State(initialValue: initialDraft.customLabel ?? "")
         _searchQuery = State(initialValue: "")
         _isSearching = State(initialValue: false)
@@ -250,10 +278,9 @@ private struct PlaceEditorSheet: View {
                 Section("Details") {
                     TextField("Name", text: $name)
                     Picker("Type", selection: $selectedType) {
-                        Text("Home").tag(UserPlaceType.home)
-                        Text("Work").tag(UserPlaceType.work)
-                        Text("Study").tag(UserPlaceType.study)
-                        Text("Custom").tag(UserPlaceType.custom)
+                        ForEach(availablePlaceTypes, id: \.rawValue) { type in
+                            Text(placeTypeTitle(for: type)).tag(type)
+                        }
                     }
                     .pickerStyle(.menu)
 
@@ -395,6 +422,7 @@ private struct PlaceEditorSheet: View {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty,
               locationConfirmed,
+              availablePlaceTypes.contains(selectedType),
               (-90...90).contains(confirmedLocation.latitude),
               (-180...180).contains(confirmedLocation.longitude) else {
             return false
@@ -405,6 +433,10 @@ private struct PlaceEditorSheet: View {
         }
 
         return true
+    }
+
+    private func placeTypeTitle(for type: UserPlaceType) -> String {
+        type.rawValue.capitalized
     }
 
     private var previewPins: [MapConfirmationPin] {

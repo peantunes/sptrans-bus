@@ -8,7 +8,6 @@ struct MiniMapView: View {
     @Binding var userLocation: Location?
     @State private var region: MKCoordinateRegion
     @State private var selectedStop: Stop? = nil
-    @State private var isShowingStopDetail: Bool = false
 
     init(userLocation: Binding<Location?>, stops: [Stop], dependencies: AppDependencies) {
         self._userLocation = userLocation
@@ -27,7 +26,6 @@ struct MiniMapView: View {
                 StopAnnotation(stop: stop)
                 .onTapGesture {
                     self.selectedStop = stop
-                    self.isShowingStopDetail = true
                 }
             }
         }
@@ -38,16 +36,14 @@ struct MiniMapView: View {
                 region.center = newLocation.toCLLocationCoordinate2D()
             }
         }
-        .sheet(isPresented: $isShowingStopDetail) {
-            if let selectedStop = selectedStop {
-                StopDetailView(viewModel: StopDetailViewModel(
-                    stop: selectedStop,
-                    getArrivalsUseCase: dependencies.getArrivalsUseCase,
-                    getTripRouteUseCase: dependencies.getTripRouteUseCase,
-                    getRouteShapeUseCase: dependencies.getRouteShapeUseCase,
-                    storageService: dependencies.storageService
-                ))
-            }
+        .fullScreenCover(item: $selectedStop) { selectedStop in
+            StopDetailView(viewModel: StopDetailViewModel(
+                stop: selectedStop,
+                getArrivalsUseCase: dependencies.getArrivalsUseCase,
+                getTripRouteUseCase: dependencies.getTripRouteUseCase,
+                getRouteShapeUseCase: dependencies.getRouteShapeUseCase,
+                storageService: dependencies.storageService
+            ))
         }
     }
 }

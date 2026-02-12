@@ -144,7 +144,7 @@ struct MapExplorerView: View {
                 await viewModel.submitSearch()
             }
         }
-        .sheet(item: $selectedStop) { stop in
+        .fullScreenCover(item: $selectedStop) { stop in
             StopDetailView(
                 viewModel: StopDetailViewModel(
                     stop: stop,

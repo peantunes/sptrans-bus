@@ -27,15 +27,17 @@ struct HomeView: View {
                     .padding(.top)
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
-//                    WeatherSummaryCard(
-//                        city: "São Paulo",
-//                        temperature: 26,
-//                        condition: "Partly Cloudy",
-//                        high: 28,
-//                        low: 20,
-//                        precipitationChance: 20,
-//                        feelsLike: 27
-//                    )
+                    if FeatureToggles.isWeatherEnabled {
+                        WeatherSummaryCard(
+                            city: "São Paulo",
+                            temperature: 26,
+                            condition: "Partly Cloudy",
+                            high: 28,
+                            low: 20,
+                            precipitationChance: 20,
+                            feelsLike: 27
+                        )
+                    }
 
                     QuickCommuteCard()
                         .gridCellColumns(2)
@@ -116,7 +118,7 @@ struct HomeView: View {
                 viewModel.userLocation = location
             }
         }
-        .sheet(item: $selectedStop) { stop in
+        .fullScreenCover(item: $selectedStop) { stop in
             StopDetailView(
                 viewModel: StopDetailViewModel(
                     stop: stop,
