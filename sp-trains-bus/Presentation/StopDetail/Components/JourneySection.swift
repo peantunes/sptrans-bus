@@ -105,8 +105,6 @@ struct JourneySection: View {
                 }
             }
         } else if let selection {
-            JourneySummaryCard(selection: selection, stops: stops)
-
             GlassCard {
                 if shape.isEmpty && stops.isEmpty {
                     VStack(spacing: 12) {
@@ -131,20 +129,28 @@ struct JourneySection: View {
                         highlightStopId: focusedStopId ?? currentStopId,
                         focusedStopId: $focusedStopId
                     )
-                    .frame(height: 180)
+                    .frame(height: 200)
                     .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
             }
 
-            JourneyStopsTimeline(
-                stops: stops,
-                routeColor: journeyColor,
-                currentStopId: currentStopId,
-                focusedStopId: focusedStopId,
-                onSelectStop: { stop in
-                    focusedStopId = stop.stopId
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    JourneySummaryCard(selection: selection, stops: stops)
+
+                    JourneyStopsTimeline(
+                        stops: stops,
+                        routeColor: journeyColor,
+                        currentStopId: currentStopId,
+                        focusedStopId: focusedStopId,
+                        onSelectStop: { stop in
+                            focusedStopId = stop.stopId
+                        }
+                    )
                 }
-            )
+                .padding(.bottom, 8)
+            }
+            .frame(maxHeight: .infinity)
         }
     }
 }

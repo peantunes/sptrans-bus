@@ -87,9 +87,63 @@ class TransitService {
 
     private $con;
     private $hasCalendarDatesTable = null;
+    private $serviceTimezone;
 
     public function __construct($con) {
         $this->con = $con;
+        $this->serviceTimezone = new DateTimeZone('America/Sao_Paulo');
+    }
+
+    /**
+     * Build DateTimeImmutable in service timezone.
+     */
+    private function getServiceDateTime($timestamp = null) {
+        if ($timestamp === null) {
+            return new DateTimeImmutable('now', $this->serviceTimezone);
+        }
+
+        return (new DateTimeImmutable('@' . (int)$timestamp))
+            ->setTimezone($this->serviceTimezone);
+    }
+
+    /**
+     * Parse YYYY-MM-DD in service timezone and return timestamp at 00:00:00.
+     */
+    private function parseServiceDateTimestamp($date) {
+        if ($date === null) {
+            return null;
+        }
+
+        $dateValue = trim((string)$date);
+        if ($dateValue === '') {
+            return null;
+        }
+
+        $dateTime = DateTimeImmutable::createFromFormat('Y-m-d', $dateValue, $this->serviceTimezone);
+        if (!$dateTime || $dateTime->format('Y-m-d') !== $dateValue) {
+            return null;
+        }
+
+        return $dateTime->setTime(0, 0, 0)->getTimestamp();
+    }
+
+    /**
+     * Return current time string in service timezone.
+     */
+    private function getCurrentTimeInServiceTimezone() {
+        return $this->getServiceDateTime()->format('H:i:s');
+    }
+
+    /**
+     * Convert seconds to GTFS time format HH:MM:SS (hours may exceed 24).
+     */
+    private function secondsToGtfsTime($seconds) {
+        $seconds = max(0, (int)$seconds);
+        $hours = (int)floor($seconds / 3600);
+        $minutes = (int)floor(($seconds % 3600) / 60);
+        $remainingSeconds = $seconds % 60;
+
+        return sprintf('%02d:%02d:%02d', $hours, $minutes, $remainingSeconds);
     }
 
     /**
@@ -97,7 +151,7 @@ class TransitService {
      */
     private function getDayOfWeekColumn($timestamp = null) {
         $days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-        $dayIndex = (int)date('w', $timestamp ?? time());
+        $dayIndex = (int)$this->getServiceDateTime($timestamp)->format('w');
         return $days[$dayIndex];
     }
 
@@ -105,7 +159,7 @@ class TransitService {
      * Get current date in GTFS format (YYYYMMDD)
      */
     private function getCurrentDateGtfs($timestamp = null) {
-        return date('Ymd', $timestamp ?? time());
+        return $this->getServiceDateTime($timestamp)->format('Ymd');
     }
 
     /**
@@ -175,17 +229,79 @@ class TransitService {
      * @return array List of Arrival objects
      */
     public function getArrivalsAtStop($stopId, $time = null, $date = null, $limit = 20) {
-        // Parse date and time
-        $timestamp = $date ? strtotime($date) : time();
-        $currentTime = $time ?? date('H:i:s');
+        $limit = (int)$limit;
+        if ($limit <= 0) {
+            return [];
+        }
+
+        $timestamp = $date ? $this->parseServiceDateTimestamp($date) : null;
+        if ($date !== null && $timestamp === null) {
+            return [];
+        }
+        if ($timestamp === null) {
+            $timestamp = $this->getServiceDateTime()->getTimestamp();
+        }
+
+        $currentTime = $time ?? $this->getCurrentTimeInServiceTimezone();
+        $currentSeconds = $this->timeToSeconds($currentTime);
+        if ($currentSeconds === null) {
+            return [];
+        }
+
         $currentDate = $this->getCurrentDateGtfs($timestamp);
         $dayColumn = $this->getDayOfWeekColumn($timestamp);
-        $limit = (int)$limit;
+        $arrivals = $this->fetchFrequencyArrivalsAtStop($stopId, $currentTime, $currentDate, $dayColumn, $limit);
 
-        // Note: Day column cannot be parameterized as it's a column name
-        // We validate it's one of the allowed values
+        // Early morning needs previous service day with GTFS times >= 24:00:00.
+        $overnightCutoffSeconds = 6 * 3600;
+        if ($currentSeconds < $overnightCutoffSeconds) {
+            $previousTimestamp = $this->getServiceDateTime($timestamp)->modify('-1 day')->getTimestamp();
+            $previousDate = $this->getCurrentDateGtfs($previousTimestamp);
+            $previousDayColumn = $this->getDayOfWeekColumn($previousTimestamp);
+            $overnightTime = $this->secondsToGtfsTime($currentSeconds + 86400);
+
+            $arrivals = array_merge(
+                $arrivals,
+                $this->fetchFrequencyArrivalsAtStop($stopId, $overnightTime, $previousDate, $previousDayColumn, $limit)
+            );
+        }
+
+        // Remove duplicates after combining today's and previous service-day queries.
+        $uniqueArrivals = [];
+        foreach ($arrivals as $arrival) {
+            $key = $arrival->tripId . '|' . $arrival->arrivalTime . '|' . $arrival->stopSequence;
+            $uniqueArrivals[$key] = $arrival;
+        }
+        $arrivals = array_values($uniqueArrivals);
+
+        usort($arrivals, function($a, $b) {
+            $waitDiff = ((int)$a->waitTime) <=> ((int)$b->waitTime);
+            if ($waitDiff !== 0) {
+                return $waitDiff;
+            }
+
+            $aArrival = $this->timeToSeconds($a->arrivalTime) ?? PHP_INT_MAX;
+            $bArrival = $this->timeToSeconds($b->arrivalTime) ?? PHP_INT_MAX;
+            if ($aArrival !== $bArrival) {
+                return $aArrival <=> $bArrival;
+            }
+
+            return strcmp((string)$a->routeShortName, (string)$b->routeShortName);
+        });
+
+        if (count($arrivals) > $limit) {
+            $arrivals = array_slice($arrivals, 0, $limit);
+        }
+
+        return $arrivals;
+    }
+
+    /**
+     * Internal frequency-based arrivals query for a specific service day.
+     */
+    private function fetchFrequencyArrivalsAtStop($stopId, $currentTime, $currentDate, $dayColumn, $limit) {
         $allowedDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-        if (!in_array($dayColumn, $allowedDays)) {
+        if (!in_array($dayColumn, $allowedDays, true)) {
             return [];
         }
 
@@ -317,7 +433,6 @@ class TransitService {
             $arrival->routeTextColor = $rs['route_text_color'];
             $arrival->frequency = $rs['frequency_minutes'] ? (int)$rs['frequency_minutes'] : null;
 
-            // Calculate wait time in minutes
             $arrivalSeconds = $this->timeToSeconds($rs['arrival_time']);
             if ($arrivalSeconds !== null && $currentSeconds !== null) {
                 $arrival->waitTime = max(0, (int)ceil(($arrivalSeconds - $currentSeconds) / 60));

@@ -4,24 +4,23 @@ struct JourneyDetailView: View {
     @ObservedObject var viewModel: StopDetailViewModel
 
     var body: some View {
-        ScrollView {
-            JourneySection(
-                selection: viewModel.selectedArrival,
-                stops: viewModel.journeyStops,
-                shape: viewModel.journeyShape,
-                isLoading: viewModel.isLoadingJourney,
-                errorMessage: viewModel.journeyErrorMessage,
-                currentStopId: viewModel.stop.stopId,
-                onClear: viewModel.clearJourneySelection,
-                onRetry: {
-                    if let selectedArrival = viewModel.selectedArrival {
-                        viewModel.selectArrival(selectedArrival)
-                    }
+        JourneySection(
+            selection: viewModel.selectedArrival,
+            stops: viewModel.journeyStops,
+            shape: viewModel.journeyShape,
+            isLoading: viewModel.isLoadingJourney,
+            errorMessage: viewModel.journeyErrorMessage,
+            currentStopId: viewModel.stop.stopId,
+            onClear: viewModel.clearJourneySelection,
+            onRetry: {
+                if let selectedArrival = viewModel.selectedArrival {
+                    viewModel.selectArrival(selectedArrival)
                 }
-            )
-            .padding(.horizontal)
-            .padding(.top, 12)
-        }
+            }
+        )
+        .padding(.horizontal)
+        .padding(.top, 12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .navigationTitle("Journey")
         .navigationBarTitleDisplayMode(.inline)
     }
