@@ -38,7 +38,7 @@ struct NextBusCard: View {
                 // Countdown and time info
                 HStack(alignment: .bottom) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Next Bus")
+                        Text(localized("stop_detail.next_bus"))
                             .font(AppFonts.caption())
                             .foregroundColor(AppColors.text.opacity(0.6))
 
@@ -50,7 +50,7 @@ struct NextBusCard: View {
                             HStack(spacing: 4) {
                                 Image(systemName: "clock.arrow.circlepath")
                                     .font(.caption2)
-                                Text("Every \(frequency) min")
+                                Text(String(format: localized("stop_detail.every_minutes_format"), frequency))
                                     .font(AppFonts.caption())
                             }
                             .foregroundColor(AppColors.text.opacity(0.6))
@@ -66,7 +66,7 @@ struct NextBusCard: View {
                             .foregroundColor(waitTimeColor)
 
                         if arrival.waitTime > 0 {
-                            Text("until arrival")
+                            Text(localized("stop_detail.until_arrival"))
                                 .font(AppFonts.caption())
                                 .foregroundColor(AppColors.text.opacity(0.6))
                         }
@@ -86,6 +86,10 @@ struct NextBusCard: View {
         case .scheduled:
             return AppColors.statusNormal
         }
+    }
+
+    private func localized(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 }
 

@@ -8,7 +8,7 @@ struct UpcomingBusList: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             if arrivals.count > 1 {
-                Text("Upcoming Arrivals")
+                Text(localized("stop_detail.upcoming_arrivals"))
                     .font(AppFonts.headline())
                     .foregroundColor(AppColors.text)
                     .padding(.horizontal)
@@ -31,11 +31,11 @@ struct UpcomingBusList: View {
                         .font(.system(size: 40))
                         .foregroundColor(AppColors.text.opacity(0.3))
 
-                    Text("No upcoming arrivals")
+                    Text(localized("stop_detail.no_upcoming_arrivals"))
                         .font(AppFonts.body())
                         .foregroundColor(AppColors.text.opacity(0.6))
 
-                    Text("Pull down to refresh")
+                    Text(localized("stop_detail.pull_refresh"))
                         .font(AppFonts.caption())
                         .foregroundColor(AppColors.text.opacity(0.4))
                 }
@@ -43,6 +43,10 @@ struct UpcomingBusList: View {
                 .padding(.vertical, 40)
             }
         }
+    }
+
+    private func localized(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 }
 
@@ -72,7 +76,7 @@ struct UpcomingBusRow: View {
                         
                         HStack(spacing: 8) {
                             if let frequency = arrival.frequency {
-                                Text("Every \(frequency) min")
+                                Text(String(format: localized("stop_detail.every_minutes_format"), frequency))
                                     .font(AppFonts.caption())
                                     .foregroundColor(AppColors.text.opacity(0.5))
                             }
@@ -114,6 +118,10 @@ struct UpcomingBusRow: View {
         case .scheduled:
             return AppColors.statusNormal
         }
+    }
+
+    private func localized(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 }
 

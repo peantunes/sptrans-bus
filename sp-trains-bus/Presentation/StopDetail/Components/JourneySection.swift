@@ -1,5 +1,9 @@
 import SwiftUI
 
+private func stopDetailLocalized(_ key: String) -> String {
+    NSLocalizedString(key, comment: "")
+}
+
 struct JourneySection: View {
     let selection: Arrival?
     let stops: [Stop]
@@ -19,7 +23,7 @@ struct JourneySection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Journey")
+                Text(stopDetailLocalized("stop_detail.journey.title"))
                     .font(AppFonts.headline())
                     .foregroundColor(AppColors.text)
 
@@ -49,12 +53,12 @@ struct JourneySection: View {
                         .foregroundColor(AppColors.text.opacity(0.5))
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Select a route to preview")
+                        Text(stopDetailLocalized("stop_detail.journey.select_route"))
                             .font(AppFonts.subheadline())
                             .fontWeight(.semibold)
                             .foregroundColor(AppColors.text)
 
-                        Text("Tap any arrival above to see the full journey path and stops.")
+                        Text(stopDetailLocalized("stop_detail.journey.tap_arrival"))
                             .font(AppFonts.caption())
                             .foregroundColor(AppColors.text.opacity(0.6))
                             .lineLimit(2)
@@ -71,11 +75,11 @@ struct JourneySection: View {
                         .scaleEffect(1.1)
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Loading journey")
+                        Text(stopDetailLocalized("stop_detail.journey.loading"))
                             .font(AppFonts.subheadline())
                             .foregroundColor(AppColors.text)
 
-                        Text("Fetching shape and stops…")
+                        Text(stopDetailLocalized("stop_detail.journey.fetching_shape_stops"))
                             .font(AppFonts.caption())
                             .foregroundColor(AppColors.text.opacity(0.6))
                     }
@@ -87,7 +91,7 @@ struct JourneySection: View {
         } else if let errorMessage {
             GlassCard {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Could not load journey")
+                    Text(stopDetailLocalized("stop_detail.journey.error_title"))
                         .font(AppFonts.subheadline())
                         .fontWeight(.semibold)
                         .foregroundColor(AppColors.text)
@@ -97,7 +101,7 @@ struct JourneySection: View {
                         .foregroundColor(AppColors.text.opacity(0.6))
                         .lineLimit(3)
 
-                    Button("Try Again") {
+                    Button(stopDetailLocalized("stop_detail.try_again")) {
                         onRetry()
                     }
                     .font(AppFonts.caption())
@@ -114,11 +118,11 @@ struct JourneySection: View {
                             .font(.system(size: 28))
                             .foregroundColor(AppColors.text.opacity(0.4))
 
-                        Text("Map preview unavailable")
+                        Text(stopDetailLocalized("stop_detail.journey.map_unavailable"))
                             .font(AppFonts.subheadline())
                             .foregroundColor(AppColors.text)
 
-                        Text("We couldn't find the route shape for this trip.")
+                        Text(stopDetailLocalized("stop_detail.journey.route_shape_missing"))
                             .font(AppFonts.caption())
                             .foregroundColor(AppColors.text.opacity(0.6))
                     }
@@ -193,7 +197,7 @@ private struct JourneySummaryCard: View {
                             .fontWeight(.bold)
                             .foregroundColor(AppColors.text)
 
-                        Text("stops")
+                        Text(stopDetailLocalized("stop_detail.journey.stops_count_label"))
                             .font(AppFonts.caption2())
                             .foregroundColor(AppColors.text.opacity(0.6))
                     }
@@ -205,7 +209,7 @@ private struct JourneySummaryCard: View {
                         .foregroundColor(AppColors.text.opacity(0.6))
 
                     if let frequency = selection.frequency {
-                        Text("Every \(frequency) min")
+                        Text(String(format: stopDetailLocalized("stop_detail.every_minutes_format"), frequency))
                             .font(AppFonts.caption())
                             .foregroundColor(AppColors.text.opacity(0.6))
                     }
@@ -234,7 +238,7 @@ private struct JourneyStopsTimeline: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("Stops")
+                Text(stopDetailLocalized("stop_detail.stops.title"))
                     .font(AppFonts.subheadline())
                     .fontWeight(.semibold)
                     .foregroundColor(AppColors.text)
@@ -253,7 +257,7 @@ private struct JourneyStopsTimeline: View {
             .padding(.vertical, 12)
             
             if stops.isEmpty {
-                Text("No stops available for this trip.")
+                Text(stopDetailLocalized("stop_detail.journey.no_stops"))
                     .font(AppFonts.caption())
                     .foregroundColor(AppColors.text.opacity(0.6))
             } else {
@@ -285,7 +289,7 @@ private struct JourneyStopsTimeline: View {
                 .padding()
                 
                 if stops.count > collapsedCount {
-                    Button(isExpanded ? "Show fewer stops" : "Show all stops") {
+                    Button(isExpanded ? stopDetailLocalized("stop_detail.stops.show_fewer") : stopDetailLocalized("stop_detail.stops.show_all")) {
                         withAnimation(.easeInOut(duration: 0.2)) {
                             isExpanded.toggle()
                         }
@@ -308,7 +312,9 @@ private struct JourneyStopRow: View {
     let routeColor: Color
 
     var body: some View {
-        let sequenceText = stop.stopSequence > 0 ? "Stop \(stop.stopSequence)" : "Stop"
+        let sequenceText = stop.stopSequence > 0
+            ? String(format: stopDetailLocalized("stop_detail.stop_sequence_format"), stop.stopSequence)
+            : stopDetailLocalized("stop_detail.stop_label")
 
         HStack(alignment: .top, spacing: 12) {
             Circle()
@@ -339,7 +345,7 @@ private struct JourneyStopRow: View {
                     }
 
                     if isCurrent {
-                        Text("Current stop")
+                        Text(stopDetailLocalized("stop_detail.current_stop"))
                             .font(AppFonts.caption2())
                             .fontWeight(.semibold)
                             .foregroundColor(routeColor)
@@ -350,7 +356,7 @@ private struct JourneyStopRow: View {
                     }
 
                     if isSelected && !isCurrent {
-                        Text("Focused")
+                        Text(stopDetailLocalized("stop_detail.focused"))
                             .font(AppFonts.caption2())
                             .fontWeight(.semibold)
                             .foregroundColor(routeColor)

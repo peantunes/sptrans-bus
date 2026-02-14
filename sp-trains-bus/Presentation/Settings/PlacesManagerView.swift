@@ -28,7 +28,7 @@ struct PlacesManagerView: View {
             .padding(.horizontal)
             .padding(.vertical, 12)
         }
-        .navigationTitle("Saved Places")
+        .navigationTitle(localized("places.title"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -48,7 +48,7 @@ struct PlacesManagerView: View {
         }
         .sheet(item: $draftForSheet) { draft in
             PlaceEditorSheet(
-                title: draft.placeId == nil ? "Add Place" : "Edit Place",
+                title: draft.placeId == nil ? localized("places.add") : localized("places.edit"),
                 initialDraft: draft,
                 availablePlaceTypes: viewModel.availablePlaceTypes,
                 onUseCurrentLocation: { viewModel.getCurrentLocation() },
@@ -57,18 +57,18 @@ struct PlacesManagerView: View {
                 }
             )
         }
-        .alert("Delete Place", isPresented: $showDeleteAlert) {
-            Button("Delete", role: .destructive) {
+        .alert(localized("places.delete.title"), isPresented: $showDeleteAlert) {
+            Button(localized("places.delete.confirm"), role: .destructive) {
                 if let placePendingDelete {
                     viewModel.removePlace(placePendingDelete)
                 }
                 placePendingDelete = nil
             }
-            Button("Cancel", role: .cancel) {
+            Button(localized("common.cancel"), role: .cancel) {
                 placePendingDelete = nil
             }
         } message: {
-            Text("This place will be removed from your saved commute locations.")
+            Text(localized("places.delete.message"))
         }
     }
 
@@ -103,7 +103,7 @@ struct PlacesManagerView: View {
     private var emptyState: some View {
         GlassCard {
             VStack(alignment: .leading, spacing: 10) {
-                Text("No places in this category")
+                Text(localized("places.empty.title"))
                     .font(AppFonts.subheadline())
                     .foregroundColor(AppColors.text)
 
@@ -111,7 +111,7 @@ struct PlacesManagerView: View {
                     .font(AppFonts.caption())
                     .foregroundColor(AppColors.text.opacity(0.65))
 
-                Button("Add Place") {
+                Button(localized("places.add")) {
                     let defaultLocation = viewModel.currentLocation ?? .saoPaulo
                     draftForSheet = .empty(defaultLocation: defaultLocation)
                 }
@@ -124,9 +124,9 @@ struct PlacesManagerView: View {
 
     private var emptyStateMessage: String {
         if FeatureToggles.isHomeWorkLocationsEnabled {
-            return "Add home, work, study, or custom places to speed up trip planning."
+            return localized("places.empty.message.full")
         }
-        return "Add study or custom places to speed up trip planning."
+        return localized("places.empty.message.limited")
     }
 
     private func placeCard(_ place: UserPlace) -> some View {
@@ -159,7 +159,7 @@ struct PlacesManagerView: View {
                     .font(AppFonts.headline())
                     .foregroundColor(AppColors.text)
 
-                Text("Lat \(place.location.latitude, specifier: "%.5f") | Lon \(place.location.longitude, specifier: "%.5f")")
+                Text(String(format: localized("places.coordinates_format"), place.location.latitude, place.location.longitude))
                     .font(AppFonts.caption())
                     .foregroundColor(AppColors.text.opacity(0.65))
             }
@@ -171,7 +171,7 @@ struct PlacesManagerView: View {
         if place.type == .custom, let customLabel = place.customLabel, !customLabel.isEmpty {
             return customLabel
         }
-        return place.type.rawValue.capitalized
+        return placeTypeTitle(for: place.type)
     }
 
     private func placeTypeIcon(for place: UserPlace) -> String {
@@ -181,6 +181,19 @@ struct PlacesManagerView: View {
         case .study: return "book.fill"
         case .custom: return "mappin.circle.fill"
         }
+    }
+
+    private func placeTypeTitle(for type: UserPlaceType) -> String {
+        switch type {
+        case .home: return localized("places.type.home")
+        case .work: return localized("places.type.work")
+        case .study: return localized("places.type.study")
+        case .custom: return localized("places.type.custom")
+        }
+    }
+
+    private func localized(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 }
 
@@ -202,11 +215,11 @@ private enum PlacesFilter: String, Identifiable {
 
     var title: String {
         switch self {
-        case .all: return "All"
-        case .home: return "Home"
-        case .work: return "Work"
-        case .study: return "Study"
-        case .custom: return "Custom"
+        case .all: return NSLocalizedString("places.filter.all", comment: "")
+        case .home: return NSLocalizedString("places.filter.home", comment: "")
+        case .work: return NSLocalizedString("places.filter.work", comment: "")
+        case .study: return NSLocalizedString("places.filter.study", comment: "")
+        case .custom: return NSLocalizedString("places.filter.custom", comment: "")
         }
     }
 
@@ -275,9 +288,9 @@ private struct PlaceEditorSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Details") {
-                    TextField("Name", text: $name)
-                    Picker("Type", selection: $selectedType) {
+                Section(localized("places.editor.details.section")) {
+                    TextField(localized("places.editor.name.placeholder"), text: $name)
+                    Picker(localized("places.editor.type.title"), selection: $selectedType) {
                         ForEach(availablePlaceTypes, id: \.rawValue) { type in
                             Text(placeTypeTitle(for: type)).tag(type)
                         }
@@ -285,13 +298,13 @@ private struct PlaceEditorSheet: View {
                     .pickerStyle(.menu)
 
                     if selectedType == .custom {
-                        TextField("Custom label", text: $customLabel)
+                        TextField(localized("places.editor.custom_label.placeholder"), text: $customLabel)
                     }
                 }
 
-                Section("Search Location") {
+                Section(localized("places.editor.search.section")) {
                     HStack(spacing: 8) {
-                        TextField("Search address or place", text: $searchQuery)
+                        TextField(localized("places.editor.search.placeholder"), text: $searchQuery)
                             .textInputAutocapitalization(.words)
                             .disableAutocorrection(true)
                             .onSubmit {
@@ -338,21 +351,21 @@ private struct PlaceEditorSheet: View {
                         }
                     }
 
-                    Button("Use Current Location") {
+                    Button(localized("places.editor.use_current_location")) {
                         guard let currentLocation = onUseCurrentLocation() else {
-                            locationMessage = "Current location is unavailable."
+                            locationMessage = localized("places.editor.current_location_unavailable")
                             return
                         }
                         pendingLocation = currentLocation
-                        pendingTitle = "Current Location"
+                        pendingTitle = localized("places.editor.current_location_title")
                         locationConfirmed = false
                         previewRegion.center = currentLocation.toCLLocationCoordinate2D()
                         previewRegion.span = MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
-                        locationMessage = "Location selected. Confirm it on the map."
+                        locationMessage = localized("places.editor.location_selected")
                     }
                 }
 
-                Section("Map Confirmation") {
+                Section(localized("places.editor.map_confirmation.section")) {
                     Map(
                         coordinateRegion: $previewRegion,
                         interactionModes: [.zoom, .pan],
@@ -372,7 +385,7 @@ private struct PlaceEditorSheet: View {
                         Button {
                             confirmPendingLocation()
                         } label: {
-                            Text("Confirm This Location")
+                            Text(localized("places.editor.confirm_location"))
                                 .font(AppFonts.callout())
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
@@ -381,11 +394,11 @@ private struct PlaceEditorSheet: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 10))
                         }
 
-                        Text("Pending: \(pendingLocation.latitude, specifier: "%.5f"), \(pendingLocation.longitude, specifier: "%.5f")")
+                        Text(String(format: localized("places.editor.pending_coordinates_format"), pendingLocation.latitude, pendingLocation.longitude))
                             .font(AppFonts.caption())
                             .foregroundColor(AppColors.text.opacity(0.65))
                     } else {
-                        Text("Confirmed: \(confirmedLocation.latitude, specifier: "%.5f"), \(confirmedLocation.longitude, specifier: "%.5f")")
+                        Text(String(format: localized("places.editor.confirmed_coordinates_format"), confirmedLocation.latitude, confirmedLocation.longitude))
                             .font(AppFonts.caption())
                             .foregroundColor(AppColors.statusNormal)
                     }
@@ -395,10 +408,10 @@ private struct PlaceEditorSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { dismiss() }
+                    Button(localized("common.cancel")) { dismiss() }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Save") {
+                    Button(localized("common.save")) {
                         onSave(
                             UserPlaceDraft(
                                 id: initialDraft.id,
@@ -436,7 +449,12 @@ private struct PlaceEditorSheet: View {
     }
 
     private func placeTypeTitle(for type: UserPlaceType) -> String {
-        type.rawValue.capitalized
+        switch type {
+        case .home: return localized("places.type.home")
+        case .work: return localized("places.type.work")
+        case .study: return localized("places.type.study")
+        case .custom: return localized("places.type.custom")
+        }
     }
 
     private var previewPins: [MapConfirmationPin] {
@@ -469,7 +487,7 @@ private struct PlaceEditorSheet: View {
                 .map(PlaceSearchResult.init)
 
             if searchResults.isEmpty {
-                locationMessage = "No locations found in the Sao Paulo metro area."
+                locationMessage = localized("places.editor.search.no_results")
             }
         } catch {
             locationMessage = error.localizedDescription
@@ -486,7 +504,7 @@ private struct PlaceEditorSheet: View {
         locationConfirmed = false
         previewRegion.center = result.location.toCLLocationCoordinate2D()
         previewRegion.span = MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
-        locationMessage = "Location selected. Confirm it on the map."
+        locationMessage = localized("places.editor.location_selected")
     }
 
     private func confirmPendingLocation() {
@@ -503,6 +521,10 @@ private struct PlaceEditorSheet: View {
             name = pendingTitle
         }
     }
+
+    private func localized(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
+    }
 }
 
 private struct PlaceSearchResult: Identifiable {
@@ -513,7 +535,7 @@ private struct PlaceSearchResult: Identifiable {
 
     init(mapItem: MKMapItem) {
         let coordinate = mapItem.placemark.coordinate
-        let name = mapItem.name ?? mapItem.placemark.title ?? "Selected place"
+        let name = mapItem.name ?? mapItem.placemark.title ?? NSLocalizedString("places.editor.selected_place", comment: "")
         let subtitleValue = mapItem.placemark.title ?? ""
 
         title = name

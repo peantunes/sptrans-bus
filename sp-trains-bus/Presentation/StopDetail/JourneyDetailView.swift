@@ -21,8 +21,12 @@ struct JourneyDetailView: View {
         .padding(.horizontal)
         .padding(.top, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .navigationTitle("Journey")
+        .navigationTitle(localized("stop_detail.journey.title"))
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func localized(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 }
 

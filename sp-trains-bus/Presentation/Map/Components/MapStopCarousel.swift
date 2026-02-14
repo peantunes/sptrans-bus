@@ -7,7 +7,7 @@ struct MapStopCarousel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Nearby to map center")
+                Text(localized("map.carousel.nearby_center"))
                     .font(AppFonts.subheadline())
                     .foregroundColor(AppColors.text)
 
@@ -48,6 +48,10 @@ struct MapStopCarousel: View {
 //            )
 //            .ignoresSafeArea()
 //        )
+    }
+
+    private func localized(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 }
 
@@ -92,13 +96,13 @@ private struct MapStopCard: View {
                     }
 
                     if item.stop.wheelchairBoarding == 1 {
-                        Label("Accessible", systemImage: "figure.roll")
+                        Label(localized("map.carousel.accessible"), systemImage: "figure.roll")
                             .font(AppFonts.caption2())
                             .foregroundColor(AppColors.text.opacity(0.6))
                     }
                 }
 
-                Text("Tap for arrivals")
+                Text(localized("map.carousel.tap_arrivals"))
                     .font(AppFonts.caption2())
                     .foregroundColor(AppColors.text.opacity(0.5))
             }
@@ -108,10 +112,14 @@ private struct MapStopCard: View {
 
     private var distanceText: String {
         if item.distanceMeters < 1000 {
-            return "\(Int(item.distanceMeters)) m"
+            return String(format: localized("map.carousel.distance_m_format"), Int(item.distanceMeters))
         }
 
-        return String(format: "%.1f km", item.distanceMeters / 1000)
+        return String(format: localized("map.carousel.distance_km_format"), item.distanceMeters / 1000)
+    }
+
+    private func localized(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 }
 

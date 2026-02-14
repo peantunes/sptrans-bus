@@ -68,7 +68,7 @@ struct MapExplorerView: View {
                             HStack(spacing: 8) {
                                 Image(systemName: "arrow.clockwise")
                                     .font(.system(size: 14, weight: .semibold))
-                                Text("Search this area")
+                                Text(localized("map.search_this_area"))
                                     .font(AppFonts.subheadline())
                                     .fontWeight(.medium)
                             }
@@ -116,7 +116,7 @@ struct MapExplorerView: View {
             }
         }
         .toolbarVisibility(.hidden, for: .navigationBar)
-        .navigationTitle("Map Explorer")
+        .navigationTitle(localized("map.title"))
 //        .navigationBarTitleDisplayMode()
         .onAppear(perform: viewModel.loadStopsInVisibleRegion)
         .animation(.easeInOut(duration: 0.3), value: viewModel.showRefreshButton)
@@ -163,11 +163,11 @@ struct MapExplorerView: View {
                 MapStopCarousel(items: nearbyItems, onSelect: { selectedStop = $0 })
             }
         }
-        .alert("Search Error", isPresented: Binding(
+        .alert(localized("map.search_error.title"), isPresented: Binding(
             get: { viewModel.searchErrorMessage != nil },
             set: { if !$0 { viewModel.searchErrorMessage = nil } }
         )) {
-            Button("OK", role: .cancel) {}
+            Button(localized("common.ok"), role: .cancel) {}
         } message: {
             Text(viewModel.searchErrorMessage ?? "")
         }
@@ -192,6 +192,10 @@ struct MapExplorerView: View {
 
     private var showCarousel: Bool {
         !nearbyItems.isEmpty
+    }
+
+    private func localized(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 }
 

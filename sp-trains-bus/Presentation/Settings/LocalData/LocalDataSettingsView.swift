@@ -29,7 +29,7 @@ struct LocalDataSettingsView: View {
             .padding(.horizontal)
             .padding(.vertical, 12)
         }
-        .navigationTitle("Settings")
+        .navigationTitle(localized("settings.title"))
         .navigationBarTitleDisplayMode(.inline)
         .onAppear(perform: viewModel.refreshStatus)
         .fileImporter(
@@ -39,11 +39,11 @@ struct LocalDataSettingsView: View {
         ) { result in
             handleImportSelection(result)
         }
-        .alert("Import Error", isPresented: Binding(
+        .alert(localized("local_data.import_error.title"), isPresented: Binding(
             get: { viewModel.errorMessage != nil },
             set: { if !$0 { viewModel.clearMessages() } }
         )) {
-            Button("OK", role: .cancel) {}
+            Button(localized("common.ok"), role: .cancel) {}
         } message: {
             Text(viewModel.errorMessage ?? "")
         }
@@ -51,11 +51,11 @@ struct LocalDataSettingsView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Local Transit Data")
+            Text(localized("local_data.header.title"))
                 .font(AppFonts.title2())
                 .foregroundColor(AppColors.text)
 
-            Text("Import GTFS files for offline-friendly stop search, nearby stops, and arrivals.")
+            Text(localized("local_data.header.subtitle"))
                 .font(AppFonts.subheadline())
                 .foregroundColor(AppColors.text.opacity(0.65))
         }
@@ -65,25 +65,25 @@ struct LocalDataSettingsView: View {
         GlassCard {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Label("Data Source", systemImage: "externaldrive.connected.to.line.below.fill")
+                    Label(localized("local_data.source.title"), systemImage: "externaldrive.connected.to.line.below.fill")
                         .font(AppFonts.headline())
                         .foregroundColor(AppColors.text)
                     Spacer()
-                    statusBadge(text: viewModel.useLocalData ? "Local" : "API", tint: viewModel.useLocalData ? AppColors.statusNormal : AppColors.secondary)
+                    statusBadge(text: localized(viewModel.useLocalData ? "local_data.source.mode.local" : "local_data.source.mode.api"), tint: viewModel.useLocalData ? AppColors.statusNormal : AppColors.secondary)
                 }
 
                 Toggle(isOn: Binding(
                     get: { viewModel.useLocalData },
                     set: { viewModel.setLocalDataEnabled($0) }
                 )) {
-                    Text("Use Local Data")
+                    Text(localized("local_data.source.toggle"))
                         .font(AppFonts.subheadline())
                         .foregroundColor(AppColors.text)
                 }
                 .toggleStyle(.switch)
 
                 if viewModel.useLocalData && viewModel.currentFeed == nil {
-                    Text("No local feed imported yet. The app will automatically use API data until import is completed.")
+                    Text(localized("local_data.source.missing_feed_warning"))
                         .font(AppFonts.caption())
                         .foregroundColor(AppColors.statusWarning)
                 }
@@ -95,7 +95,7 @@ struct LocalDataSettingsView: View {
         GlassCard {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Label("GTFS Import", systemImage: "square.and.arrow.down")
+                    Label(localized("local_data.import.title"), systemImage: "square.and.arrow.down")
                         .font(AppFonts.headline())
                         .foregroundColor(AppColors.text)
                     Spacer()
@@ -105,22 +105,22 @@ struct LocalDataSettingsView: View {
                 }
 
                 if let feed = viewModel.currentFeed {
-                    Text("Version: \(feed.versionIdentifier)")
+                    Text(String(format: localized("local_data.import.version_format"), feed.versionIdentifier))
                         .font(AppFonts.subheadline())
                         .foregroundColor(AppColors.text)
 
-                    Text("Last import: \(format(date: feed.downloadedAt))")
+                    Text(String(format: localized("local_data.import.last_import_format"), format(date: feed.downloadedAt)))
                         .font(AppFonts.caption())
                         .foregroundColor(AppColors.text.opacity(0.65))
 
                     if let sourceURL = feed.sourceURL, !sourceURL.isEmpty {
-                        Text("Source: \(sourceURL)")
+                        Text(String(format: localized("local_data.import.source_format"), sourceURL))
                             .font(AppFonts.caption2())
                             .foregroundColor(AppColors.text.opacity(0.55))
                             .lineLimit(2)
                     }
                 } else {
-                    Text("No feed imported")
+                    Text(localized("local_data.import.no_feed"))
                         .font(AppFonts.subheadline())
                         .foregroundColor(AppColors.text.opacity(0.7))
                 }
@@ -128,7 +128,7 @@ struct LocalDataSettingsView: View {
                 Button(action: { isShowingImporter = true }) {
                     HStack {
                         Image(systemName: "folder.badge.plus")
-                        Text(viewModel.isImporting ? "Importing..." : "Import GTFS Folder or ZIP")
+                        Text(viewModel.isImporting ? localized("local_data.import.button.importing") : localized("local_data.import.button.import"))
                     }
                     .font(AppFonts.callout())
                     .foregroundColor(.white)
@@ -141,12 +141,12 @@ struct LocalDataSettingsView: View {
 
                 HStack(spacing: 8) {
                     statusBadge(
-                        text: viewModel.shouldCheckForUpdates ? "Update Check Due" : "Weekly Check Up-to-date",
+                        text: localized(viewModel.shouldCheckForUpdates ? "local_data.import.update_due" : "local_data.import.update_up_to_date"),
                         tint: viewModel.shouldCheckForUpdates ? AppColors.statusWarning : AppColors.statusNormal
                     )
 
                     if viewModel.shouldCheckForUpdates {
-                        Button("Mark checked") {
+                        Button(localized("local_data.import.mark_checked")) {
                             viewModel.markUpdateCheckNow()
                         }
                         .font(AppFonts.caption())
@@ -161,7 +161,7 @@ struct LocalDataSettingsView: View {
         GlassCard {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Label("Saved Places", systemImage: "house.and.flag.fill")
+                    Label(localized("local_data.places.title"), systemImage: "house.and.flag.fill")
                         .font(AppFonts.headline())
                         .foregroundColor(AppColors.text)
                     Spacer()
@@ -182,7 +182,7 @@ struct LocalDataSettingsView: View {
                     )
                 } label: {
                     HStack {
-                        Text("Manage Places")
+                        Text(localized("local_data.places.manage"))
                         Spacer()
                         Image(systemName: "chevron.right")
                     }
@@ -192,6 +192,10 @@ struct LocalDataSettingsView: View {
                 }
             }
         }
+    }
+
+    private func localized(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 
     private func statusBadge(text: String, tint: Color) -> some View {

@@ -11,10 +11,14 @@ struct BusProgressIndicator: View {
                 .frame(height: 10)
                 .cornerRadius(5)
 
-            Text("ETA: \(estimatedTime)")
+            Text(String(format: localized("stop_detail.eta_format"), estimatedTime))
                 .font(AppFonts.caption())
                 .foregroundColor(AppColors.text.opacity(0.7))
         }
+    }
+
+    private func localized(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 }
 

@@ -14,7 +14,7 @@ struct SystemStatusView: View {
                     .padding(.horizontal)
 
                 if let generatedAt = viewModel.generatedAt {
-                    Text("Última atualização geral: \(generatedAt)")
+                    Text(String(format: localized("status.generated_at_format"), generatedAt))
                         .font(AppFonts.caption())
                         .foregroundColor(AppColors.text.opacity(0.7))
                         .padding(.horizontal)
@@ -34,24 +34,24 @@ struct SystemStatusView: View {
                     .padding(.top, 10)
                 } else {
                     lineSection(
-                        title: "Favoritas",
-                        subtitle: "Linhas fixadas no topo",
+                        title: localized("status.section.favorites"),
+                        subtitle: localized("status.section.favorites.subtitle"),
                         lines: viewModel.favoriteLineStatuses
                     )
                     lineSection(
-                        title: "Metrô",
-                        subtitle: viewModel.metroLastUpdatedAt.map { "Atualizado às \($0)" },
+                        title: localized("status.section.metro"),
+                        subtitle: viewModel.metroLastUpdatedAt.map { String(format: localized("status.updated_at_format"), $0) },
                         lines: viewModel.metroNonFavoriteLineStatuses
                     )
                     lineSection(
-                        title: "CPTM",
-                        subtitle: viewModel.cptmLastUpdatedAt.map { "Atualizado às \($0)" },
+                        title: localized("status.section.cptm"),
+                        subtitle: viewModel.cptmLastUpdatedAt.map { String(format: localized("status.updated_at_format"), $0) },
                         lines: viewModel.cptmNonFavoriteLineStatuses
                     )
                 }
             }
         }
-        .navigationTitle("System Status")
+        .navigationTitle(localized("status.title"))
         .onAppear {
             viewModel.loadMetroStatus()
         }
@@ -82,6 +82,10 @@ struct SystemStatusView: View {
                     .padding(.horizontal)
             }
         }
+    }
+
+    private func localized(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 }
 

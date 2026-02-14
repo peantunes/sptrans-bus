@@ -42,33 +42,37 @@ struct MainTabView: View {
 //                )
 //            }
 
-            Tab("Map", systemImage: "map.fill", value: .map, role: .search) {
+            Tab(localized("tab.map"), systemImage: "map.fill", value: .map, role: .search) {
                 NavigationStack {
                     MapExplorerView(viewModel: dependencies.mapExplorerViewModel, dependencies: dependencies) // Assuming MapExplorerViewModel exists in dependencies
                 }
             }
 
             if FeatureToggles.isSearchEnabled {
-                Tab("Search", systemImage: "magnifyingglass", value: .search, role: .search) {
+                Tab(localized("tab.search"), systemImage: "magnifyingglass", value: .search, role: .search) {
                     NavigationStack {
                         SearchView(viewModel: dependencies.searchViewModel, dependencies: dependencies)
                     }
                 }
             }
             
-            Tab("Status", systemImage: "tram", value: .status) {
+            Tab(localized("tab.status"), systemImage: "tram", value: .status) {
                 NavigationStack {
                     SystemStatusView(viewModel: dependencies.systemStatusViewModel)
                 }
             }
 
-            Tab("Settings", systemImage: "gearshape.fill", value: .settings) {
+            Tab(localized("tab.settings"), systemImage: "gearshape.fill", value: .settings) {
                 NavigationStack {
                     GeneralSettingsView()
                 }
             }
 
         }
+    }
+
+    private func localized(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 }
 

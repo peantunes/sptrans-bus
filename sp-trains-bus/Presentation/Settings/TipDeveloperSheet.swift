@@ -12,18 +12,18 @@ struct TipDeveloperSheet: View {
     private let options: [TipOption] = [
         TipOption(
             id: "app.lolados.sptrans.tip.small",
-            title: "Small Tip",
-            subtitle: "Help keep updates coming."
+            titleKey: "settings.tip.option.small.title",
+            subtitleKey: "settings.tip.option.small.subtitle"
         ),
         TipOption(
             id: "app.lolados.sptrans.tip.medium",
-            title: "Medium Tip",
-            subtitle: "Support development and server costs."
+            titleKey: "settings.tip.option.medium.title",
+            subtitleKey: "settings.tip.option.medium.subtitle"
         ),
         TipOption(
             id: "app.lolados.sptrans.tip.large",
-            title: "Big Tip",
-            subtitle: "A huge thanks for supporting the app."
+            titleKey: "settings.tip.option.large.title",
+            subtitleKey: "settings.tip.option.large.subtitle"
         )
     ]
 
@@ -31,13 +31,13 @@ struct TipDeveloperSheet: View {
         NavigationStack {
             List {
                 Section {
-                    Text("Choose a one-time tip to support development.")
+                    Text(localized("settings.tip.description"))
                         .font(AppFonts.callout())
                         .foregroundColor(AppColors.text.opacity(0.8))
                         .padding(.vertical, 4)
                 }
 
-                Section("Tip Options") {
+                Section(localized("settings.tip.options.title")) {
                     ForEach(options) { option in
                         tipOptionRow(option)
                     }
@@ -45,16 +45,16 @@ struct TipDeveloperSheet: View {
             }
             .overlay {
                 if isLoadingProducts {
-                    ProgressView("Loading products...")
+                    ProgressView(localized("settings.tip.loading_products"))
                         .padding()
                         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
                 }
             }
-            .navigationTitle("Tip the Developer")
+            .navigationTitle(localized("settings.tip.title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") {
+                    Button(localized("common.done")) {
                         dismiss()
                     }
                 }
@@ -62,8 +62,8 @@ struct TipDeveloperSheet: View {
             .task {
                 await loadProducts()
             }
-            .alert("Purchase", isPresented: Binding(get: { alertMessage != nil }, set: { _ in alertMessage = nil })) {
-                Button("OK", role: .cancel) {}
+            .alert(localized("settings.tip.purchase.alert.title"), isPresented: Binding(get: { alertMessage != nil }, set: { _ in alertMessage = nil })) {
+                Button(localized("common.ok"), role: .cancel) {}
             } message: {
                 Text(alertMessage ?? "")
             }
@@ -73,7 +73,7 @@ struct TipDeveloperSheet: View {
     @ViewBuilder
     private func tipOptionRow(_ option: TipOption) -> some View {
         let isPurchasing = activePurchaseID == option.id
-        let priceText = productsByID[option.id]?.displayPrice ?? "Unavailable"
+        let priceText = productsByID[option.id]?.displayPrice ?? localized("settings.tip.unavailable")
 
         Button {
             Task {
@@ -82,11 +82,11 @@ struct TipDeveloperSheet: View {
         } label: {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(option.title)
+                    Text(localized(option.titleKey))
                         .font(AppFonts.body())
                         .foregroundColor(AppColors.text)
 
-                    Text(option.subtitle)
+                    Text(localized(option.subtitleKey))
                         .font(AppFonts.caption())
                         .foregroundColor(AppColors.text.opacity(0.7))
                 }
@@ -117,13 +117,13 @@ struct TipDeveloperSheet: View {
             let products = try await Product.products(for: ids)
             productsByID = Dictionary(uniqueKeysWithValues: products.map { ($0.id, $0) })
         } catch {
-            alertMessage = "Could not load tip products. Please try again later."
+            alertMessage = localized("settings.tip.error.load_products")
         }
     }
 
     private func purchase(_ option: TipOption) async {
         guard let product = productsByID[option.id] else {
-            alertMessage = "This tip option is not available right now."
+            alertMessage = localized("settings.tip.error.option_unavailable")
             return
         }
 
@@ -137,27 +137,31 @@ struct TipDeveloperSheet: View {
                 switch verification {
                 case .verified(let transaction):
                     await transaction.finish()
-                    alertMessage = "Thank you for your support!"
+                    alertMessage = localized("settings.tip.purchase.thank_you")
                 case .unverified:
-                    alertMessage = "Purchase could not be verified."
+                    alertMessage = localized("settings.tip.purchase.unverified")
                 }
             case .pending:
-                alertMessage = "Purchase is pending approval."
+                alertMessage = localized("settings.tip.purchase.pending")
             case .userCancelled:
                 break
             @unknown default:
-                alertMessage = "Purchase failed. Please try again."
+                alertMessage = localized("settings.tip.error.purchase_failed")
             }
         } catch {
-            alertMessage = "Purchase failed. Please try again."
+            alertMessage = localized("settings.tip.error.purchase_failed")
         }
+    }
+
+    private func localized(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 }
 
 private struct TipOption: Identifiable {
     let id: String
-    let title: String
-    let subtitle: String
+    let titleKey: String
+    let subtitleKey: String
 }
 
 #Preview {

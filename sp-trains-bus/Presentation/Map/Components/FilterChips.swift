@@ -8,11 +8,11 @@ enum TransitFilter: String, CaseIterable {
     var title: String {
         switch self {
         case .bus:
-            return "Bus"
+            return localized("map.filter.bus")
         case .metro:
-            return "Metrô"
+            return localized("map.filter.metro")
         case .train:
-            return "CPTM"
+            return localized("map.filter.cptm")
         }
     }
 
@@ -34,12 +34,16 @@ enum TransitFilter: String, CaseIterable {
     var helperText: String {
         switch self {
         case .bus:
-            return "Showing bus stops and corridors."
+            return localized("map.filter.helper.bus")
         case .metro:
-            return "Metro mapping is coming soon."
+            return localized("map.filter.helper.metro")
         case .train:
-            return "CPTM mapping is coming soon."
+            return localized("map.filter.helper.cptm")
         }
+    }
+
+    private func localized(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 }
 
@@ -61,7 +65,7 @@ struct FilterChips: View {
                                 .font(AppFonts.subheadline())
 
                             if !filter.isAvailable {
-                                Text("Soon")
+                                Text(localized("map.filter.soon"))
                                     .font(AppFonts.caption2())
                                     .padding(.horizontal, 6)
                                     .padding(.vertical, 2)
@@ -79,6 +83,10 @@ struct FilterChips: View {
             }
             .padding(.horizontal)
         }
+    }
+
+    private func localized(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 }
 

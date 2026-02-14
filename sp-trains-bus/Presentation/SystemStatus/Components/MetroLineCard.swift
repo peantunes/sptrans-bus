@@ -23,9 +23,9 @@ struct MetroLineCard: View {
 
     private var updatedText: String {
         if let sourceUpdatedAt = line.sourceUpdatedAt, !sourceUpdatedAt.isEmpty {
-            return "Atualizado: \(sourceUpdatedAt)"
+            return String(format: localized("status.line.updated_format"), sourceUpdatedAt)
         }
-        return "Atualizado: agora"
+        return localized("status.line.updated_now")
     }
 
     var body: some View {
@@ -86,6 +86,10 @@ struct MetroLineCard: View {
                 .stroke(lineColor.opacity(0.55), lineWidth: 1)
         )
         .shadow(color: lineColor.opacity(0.2), radius: 8, x: 0, y: 4)
+    }
+
+    private func localized(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 }
 

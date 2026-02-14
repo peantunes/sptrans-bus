@@ -30,7 +30,7 @@ struct StopDetailView: View {
                             VStack(spacing: 16) {
                                 ProgressView()
                                     .scaleEffect(1.2)
-                                Text("Loading arrivals...")
+                                Text(localized("stop_detail.loading_arrivals"))
                                     .font(AppFonts.body())
                                     .foregroundColor(AppColors.text.opacity(0.6))
                             }
@@ -57,11 +57,11 @@ struct StopDetailView: View {
                                     .font(.system(size: 50))
                                     .foregroundColor(AppColors.text.opacity(0.3))
 
-                                Text("No upcoming arrivals")
+                                Text(localized("stop_detail.no_upcoming_arrivals"))
                                     .font(AppFonts.headline())
                                     .foregroundColor(AppColors.text.opacity(0.6))
 
-                                Text("Pull down to refresh or check back later")
+                                Text(localized("stop_detail.pull_refresh_or_later"))
                                     .font(AppFonts.caption())
                                     .foregroundColor(AppColors.text.opacity(0.4))
                                     .multilineTextAlignment(.center)
@@ -105,7 +105,7 @@ struct StopDetailView: View {
 
                         // Stop code
                         if !viewModel.stop.stopCode.isEmpty {
-                            Text("#\(viewModel.stop.stopCode)")
+                            Text(String(format: localized("stop_detail.stop_code_format"), viewModel.stop.stopCode))
                                 .font(AppFonts.caption())
                                 .foregroundColor(AppColors.text.opacity(0.6))
                         }
@@ -119,6 +119,10 @@ struct StopDetailView: View {
                 JourneyDetailView(viewModel: viewModel)
             }
         }
+    }
+
+    private func localized(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 }
 

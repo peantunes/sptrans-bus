@@ -14,7 +14,7 @@ struct GeneralSettingsView: View {
 
     var body: some View {
         List {
-            Section("About") {
+            Section(localized("settings.section.about")) {
                 HStack(spacing: 12) {
                     appIconView
 
@@ -23,7 +23,7 @@ struct GeneralSettingsView: View {
                             .font(AppFonts.headline())
                             .foregroundColor(AppColors.text)
 
-                        Text("Version \(appVersionText)")
+                        Text(String(format: localized("settings.about.version_format"), appVersionText))
                             .font(AppFonts.caption())
                             .foregroundColor(AppColors.text.opacity(0.65))
                     }
@@ -31,9 +31,9 @@ struct GeneralSettingsView: View {
                 .padding(.vertical, 4)
             }
 
-            Section("Appearance") {
+            Section(localized("settings.section.appearance")) {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Accent Color")
+                    Text(localized("settings.appearance.accent_color"))
                         .font(AppFonts.subheadline())
                         .foregroundColor(AppColors.text)
 
@@ -66,7 +66,7 @@ struct GeneralSettingsView: View {
                                     .frame(minWidth: 52)
                                 }
                                 .buttonStyle(.plain)
-                                .accessibilityLabel("\(option.name) accent color")
+                                .accessibilityLabel(String(format: localized("settings.appearance.accent_color_accessibility_format"), option.name))
                             }
                         }
                         .padding(.vertical, 4)
@@ -75,58 +75,58 @@ struct GeneralSettingsView: View {
                 .padding(.vertical, 4)
             }
 
-            Section("Support") {
+            Section(localized("settings.section.support")) {
                 Button {
                     requestReview()
                 } label: {
-                    settingsRow(title: "Review the App", systemImage: "star.bubble")
+                    settingsRow(title: localized("settings.support.review_app"), systemImage: "star.bubble")
                 }
                 .buttonStyle(.plain)
 
                 Button {
                     isShowingTipSheet = true
                 } label: {
-                    settingsRow(title: "Tip the Developer", systemImage: "heart.circle")
+                    settingsRow(title: localized("settings.support.tip_developer"), systemImage: "heart.circle")
                 }
                 .buttonStyle(.plain)
 
                 if let appWebsiteURL {
                     NavigationLink {
-                        SettingsWebView(title: "Website", url: appWebsiteURL)
+                        SettingsWebView(title: localized("settings.support.website"), url: appWebsiteURL)
                     } label: {
-                        settingsRow(title: "Website", systemImage: "globe")
+                        settingsRow(title: localized("settings.support.website"), systemImage: "globe")
                     }
                 }
 
                 if let supportURL {
                     NavigationLink {
-                        SettingsWebView(title: "Contact Us", url: supportURL)
+                        SettingsWebView(title: localized("settings.support.contact_us"), url: supportURL)
                     } label: {
-                        settingsRow(title: "Contact Us", systemImage: "envelope")
+                        settingsRow(title: localized("settings.support.contact_us"), systemImage: "envelope")
                     }
                 }
             }
 
-            Section("Legal") {
+            Section(localized("settings.section.legal")) {
                 if let policyURL {
                     NavigationLink {
-                        SettingsWebView(title: "Policy", url: policyURL)
+                        SettingsWebView(title: localized("settings.legal.policy"), url: policyURL)
                     } label: {
-                        settingsRow(title: "Policy", systemImage: "doc.text")
+                        settingsRow(title: localized("settings.legal.policy"), systemImage: "doc.text")
                     }
                 }
 
                 if let termsURL {
                     NavigationLink {
-                        SettingsWebView(title: "Terms of Use", url: termsURL)
+                        SettingsWebView(title: localized("settings.legal.terms"), url: termsURL)
                     } label: {
-                        settingsRow(title: "Terms of Use", systemImage: "doc.plaintext")
+                        settingsRow(title: localized("settings.legal.terms"), systemImage: "doc.plaintext")
                     }
                 }
             }
         }
         .listStyle(.insetGrouped)
-        .navigationTitle("Settings")
+        .navigationTitle(localized("settings.title"))
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $isShowingTipSheet) {
             TipDeveloperSheet()
@@ -167,6 +167,10 @@ struct GeneralSettingsView: View {
         let marketingVersion = (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String) ?? "1.0"
         let buildVersion = (Bundle.main.object(forInfoDictionaryKey: kCFBundleVersionKey as String) as? String) ?? "1"
         return "\(marketingVersion) (\(buildVersion))"
+    }
+
+    private func localized(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 
     private func settingsRow(title: String, systemImage: String, isExternal: Bool = false) -> some View {
