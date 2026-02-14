@@ -6,6 +6,7 @@ struct GeneralSettingsView: View {
     @Environment(\.requestReview) private var requestReview
     @AppStorage(AppTheme.selectedPrimaryColorHexKey) private var selectedPrimaryColorHex = AppTheme.defaultPrimaryColorHex
 
+    private let appWebsiteURL = URL(string: "https://sptrans.lolados.app")
     private let supportURL = URL(string: "https://lolados.app/contact.php")
     private let policyURL = URL(string: "https://sptrans.lolados.app/policy.html")
     private let termsURL = URL(string: "https://sptrans.lolados.app/terms.html")
@@ -81,23 +82,37 @@ struct GeneralSettingsView: View {
                 }
                 .buttonStyle(.plain)
 
+                if let appWebsiteURL {
+                    NavigationLink {
+                        SettingsWebView(title: "Website", url: appWebsiteURL)
+                    } label: {
+                        settingsRow(title: "Website", systemImage: "globe")
+                    }
+                }
+
                 if let supportURL {
-                    Link(destination: supportURL) {
-                        settingsRow(title: "Contact Us", systemImage: "envelope", isExternal: true)
+                    NavigationLink {
+                        SettingsWebView(title: "Contact Us", url: supportURL)
+                    } label: {
+                        settingsRow(title: "Contact Us", systemImage: "envelope")
                     }
                 }
             }
 
             Section("Legal") {
                 if let policyURL {
-                    Link(destination: policyURL) {
-                        settingsRow(title: "Policy", systemImage: "doc.text", isExternal: true)
+                    NavigationLink {
+                        SettingsWebView(title: "Policy", url: policyURL)
+                    } label: {
+                        settingsRow(title: "Policy", systemImage: "doc.text")
                     }
                 }
 
                 if let termsURL {
-                    Link(destination: termsURL) {
-                        settingsRow(title: "Terms of Use", systemImage: "doc.plaintext", isExternal: true)
+                    NavigationLink {
+                        SettingsWebView(title: "Terms of Use", url: termsURL)
+                    } label: {
+                        settingsRow(title: "Terms of Use", systemImage: "doc.plaintext")
                     }
                 }
             }

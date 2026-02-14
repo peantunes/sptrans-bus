@@ -3,7 +3,7 @@ import SwiftUI
 struct MainTabView: View {
     let dependencies: AppDependencies
     
-    enum TabOption {
+    enum TabOption: String {
         case home
         case nearby
         case search
@@ -11,11 +11,28 @@ struct MainTabView: View {
         case map
         case settings
     }
-    
-    @State private var tabSelection: TabOption = .home
+
+    @AppStorage("main_tab_selection") private var storedTabSelection: String = TabOption.map.rawValue
+
+    private var tabSelectionBinding: Binding<TabOption> {
+        Binding(
+            get: {
+                guard let stored = TabOption(rawValue: storedTabSelection) else {
+                    return .map
+                }
+                if stored == .search && !FeatureToggles.isSearchEnabled {
+                    return .map
+                }
+                return stored
+            },
+            set: { newValue in
+                storedTabSelection = newValue.rawValue
+            }
+        )
+    }
 
     var body: some View {
-        TabView(selection: $tabSelection) {
+        TabView(selection: tabSelectionBinding) {
 //            Tab("Home", systemImage: "house.fill", value: .home){
 //                HomeView(
 //                    viewModel: dependencies.homeViewModel,

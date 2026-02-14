@@ -57,20 +57,35 @@ class SystemStatusViewModel: ObservableObject {
     @Published var cptmLineStatuses: [RailLineStatusItem] = []
     @Published var overallStatus: String = "Loading..."
     @Published var overallSeverity: RailStatusSeverity = .warning
+    @Published private(set) var favoriteLineIDs: Set<String> = []
+    @Published var metroLastUpdatedAt: String?
+    @Published var cptmLastUpdatedAt: String?
+    @Published var generatedAt: String?
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
+    private static let favoritesKey = "favorite_rail_line_ids"
+
     private let apiClient: APIClient?
     private let getMetroStatusUseCase: GetMetroStatusUseCase?
+    private let userDefaults: UserDefaults
 
-    init(apiClient: APIClient, fallbackUseCase: GetMetroStatusUseCase = GetMetroStatusUseCase()) {
+    init(
+        apiClient: APIClient,
+        fallbackUseCase: GetMetroStatusUseCase = GetMetroStatusUseCase(),
+        userDefaults: UserDefaults = .standard
+    ) {
         self.apiClient = apiClient
         self.getMetroStatusUseCase = fallbackUseCase
+        self.userDefaults = userDefaults
+        self.favoriteLineIDs = Set(userDefaults.stringArray(forKey: Self.favoritesKey) ?? [])
     }
 
-    init(getMetroStatusUseCase: GetMetroStatusUseCase) {
+    init(getMetroStatusUseCase: GetMetroStatusUseCase, userDefaults: UserDefaults = .standard) {
         self.apiClient = nil
         self.getMetroStatusUseCase = getMetroStatusUseCase
+        self.userDefaults = userDefaults
+        self.favoriteLineIDs = Set(userDefaults.stringArray(forKey: Self.favoritesKey) ?? [])
     }
 
     func loadMetroStatus(forceRefresh: Bool = false) {
@@ -92,7 +107,13 @@ class SystemStatusViewModel: ObservableObject {
                 let cptmItems = mapLines(response.cptm.lines, source: "cptm")
 
                 await MainActor.run {
-                    self.applyStatusData(metroItems: metroItems, cptmItems: cptmItems)
+                    self.applyStatusData(
+                        metroItems: metroItems,
+                        cptmItems: cptmItems,
+                        metroLastUpdated: self.displayTimestamp(response.metro.lastSourceUpdatedAt ?? response.metro.lastFetchedAt),
+                        cptmLastUpdated: self.displayTimestamp(response.cptm.lastSourceUpdatedAt ?? response.cptm.lastFetchedAt),
+                        generatedAt: self.displayTimestamp(response.generatedAt)
+                    )
                     self.isLoading = false
                 }
             } catch {
@@ -100,6 +121,9 @@ class SystemStatusViewModel: ObservableObject {
                     self.metroLineStatuses = []
                     self.cptmLineStatuses = []
                     self.metroLines = []
+                    self.metroLastUpdatedAt = nil
+                    self.cptmLastUpdatedAt = nil
+                    self.generatedAt = nil
                     self.overallStatus = "Falha ao carregar status"
                     self.overallSeverity = .alert
                     self.errorMessage = error.localizedDescription
@@ -134,13 +158,25 @@ class SystemStatusViewModel: ObservableObject {
             )
         }
         cptmLineStatuses = []
+        metroLastUpdatedAt = nil
+        cptmLastUpdatedAt = nil
+        generatedAt = nil
         updateOverallStatus()
         isLoading = false
     }
 
-    private func applyStatusData(metroItems: [RailLineStatusItem], cptmItems: [RailLineStatusItem]) {
+    private func applyStatusData(
+        metroItems: [RailLineStatusItem],
+        cptmItems: [RailLineStatusItem],
+        metroLastUpdated: String?,
+        cptmLastUpdated: String?,
+        generatedAt: String?
+    ) {
         metroLineStatuses = metroItems
         cptmLineStatuses = cptmItems
+        metroLastUpdatedAt = metroLastUpdated
+        cptmLastUpdatedAt = cptmLastUpdated
+        self.generatedAt = generatedAt
 
         metroLines = metroItems.map {
             MetroLine(line: $0.badgeText, name: $0.displayTitle, colorHex: $0.lineColorHex)
@@ -168,7 +204,7 @@ class SystemStatusViewModel: ObservableObject {
 
                 let status = dto.status.trimmingCharacters(in: .whitespacesAndNewlines)
                 let severity = statusSeverity(status: status)
-                let statusColorHex = normalizedHex(dto.statusColor) ?? fallbackStatusColorHex(status: status, severity: severity)
+                let statusColorHex = fallbackStatusColorHex(status: status, severity: severity)
                 let identifier = "\(source)-\(lineNumber.isEmpty ? "idx\(index)" : lineNumber)-\(lineName.isEmpty ? "idx\(index)" : lineName)"
 
                 return RailLineStatusItem(
@@ -180,7 +216,7 @@ class SystemStatusViewModel: ObservableObject {
                     statusDetail: dto.statusDetail,
                     statusColorHex: statusColorHex,
                     lineColorHex: lineColorHex(source: source, lineNumber: lineNumber),
-                    sourceUpdatedAt: dto.sourceUpdatedAt,
+                    sourceUpdatedAt: displayTimestamp(dto.sourceUpdatedAt),
                     severity: severity
                 )
             }
@@ -315,6 +351,87 @@ class SystemStatusViewModel: ObservableObject {
     private func normalizedLineNumber(_ raw: String) -> String {
         let digitsOnly = raw.filter(\.isNumber)
         return digitsOnly.isEmpty ? raw : digitsOnly
+    }
+
+    var favoriteLineStatuses: [RailLineStatusItem] {
+        let all = metroLineStatuses + cptmLineStatuses
+        return all.filter { isFavorite($0) }.sorted(by: sortByLineOrder)
+    }
+
+    var metroNonFavoriteLineStatuses: [RailLineStatusItem] {
+        metroLineStatuses.filter { !isFavorite($0) }
+    }
+
+    var cptmNonFavoriteLineStatuses: [RailLineStatusItem] {
+        cptmLineStatuses.filter { !isFavorite($0) }
+    }
+
+    func isFavorite(_ line: RailLineStatusItem) -> Bool {
+        favoriteLineIDs.contains(line.id)
+    }
+
+    func toggleFavorite(_ line: RailLineStatusItem) {
+        if favoriteLineIDs.contains(line.id) {
+            favoriteLineIDs.remove(line.id)
+        } else {
+            favoriteLineIDs.insert(line.id)
+        }
+        persistFavoriteLineIDs()
+    }
+
+    private func persistFavoriteLineIDs() {
+        userDefaults.set(Array(favoriteLineIDs).sorted(), forKey: Self.favoritesKey)
+    }
+
+    private func sortByLineOrder(_ lhs: RailLineStatusItem, _ rhs: RailLineStatusItem) -> Bool {
+        if lhs.source != rhs.source {
+            let sourceRank: (String) -> Int = { source in
+                switch source.lowercased() {
+                case "metro": return 0
+                case "cptm": return 1
+                default: return 2
+                }
+            }
+            return sourceRank(lhs.source) < sourceRank(rhs.source)
+        }
+
+        let leftOrder = Int(lhs.lineNumber) ?? Int.max
+        let rightOrder = Int(rhs.lineNumber) ?? Int.max
+        if leftOrder == rightOrder {
+            return lhs.displayTitle < rhs.displayTitle
+        }
+        return leftOrder < rightOrder
+    }
+
+    private func displayTimestamp(_ raw: String?) -> String? {
+        guard let raw else { return nil }
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        let parser = DateFormatter()
+        parser.locale = Locale(identifier: "pt_BR")
+        parser.timeZone = TimeZone.current
+
+        let printer = DateFormatter()
+        printer.locale = Locale(identifier: "pt_BR")
+        printer.timeZone = TimeZone.current
+        printer.dateFormat = "dd/MM HH:mm"
+
+        let formats = [
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy-MM-dd HH:mm",
+            "dd/MM/yyyy HH:mm:ss",
+            "dd/MM/yyyy HH:mm"
+        ]
+
+        for format in formats {
+            parser.dateFormat = format
+            if let date = parser.date(from: trimmed) {
+                return printer.string(from: date)
+            }
+        }
+
+        return trimmed
     }
 
     private func cptmFallback(for index: Int) -> (number: String, name: String) {

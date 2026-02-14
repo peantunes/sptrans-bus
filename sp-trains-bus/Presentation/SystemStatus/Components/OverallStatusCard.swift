@@ -35,9 +35,10 @@ struct OverallStatusCard: View {
                     .font(.title2)
                     .foregroundColor(tint)
                     .scaleEffect(isAnimating ? 1.08 : 1.0)
-                    .animation(.easeInOut(duration: 1).repeatForever(autoreverses: true), value: isAnimating)
                     .onAppear {
-                        isAnimating = true
+                        withAnimation(.bouncy.repeatForever(autoreverses: true)) {
+                            isAnimating = true
+                        }
                     }
 
                 Text(status)
