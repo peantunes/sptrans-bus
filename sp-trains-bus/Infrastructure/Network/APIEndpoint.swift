@@ -26,6 +26,7 @@ enum TransitAPIEndpoint {
     case shape(shapeId: String)
     case stop(stopId: Int)
     case routes
+    case metroCPTM(refresh: Bool)
     case plan(origin: Location, destination: Location, maxAlternatives: Int, rankingPriority: String)
 }
 
@@ -46,6 +47,8 @@ extension TransitAPIEndpoint: APIEndpoint {
             return "/stop.php"
         case .routes:
             return "/routes.php"
+        case .metroCPTM:
+            return "/metro_cptm.php"
         case .plan:
             return "/plan.php"
         }
@@ -86,6 +89,8 @@ extension TransitAPIEndpoint: APIEndpoint {
             ]
         case .routes:
             return []
+        case .metroCPTM(let refresh):
+            return refresh ? [URLQueryItem(name: "refresh", value: "1")] : []
         case .plan(let origin, let destination, let maxAlternatives, let rankingPriority):
             return [
                 URLQueryItem(name: "origin_lat", value: "\(origin.latitude)"),

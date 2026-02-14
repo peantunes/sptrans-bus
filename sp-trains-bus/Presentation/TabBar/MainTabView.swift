@@ -38,6 +38,12 @@ struct MainTabView: View {
                     }
                 }
             }
+            
+            Tab("Status", systemImage: "tram", value: .status) {
+                NavigationStack {
+                    SystemStatusView(viewModel: dependencies.systemStatusViewModel)
+                }
+            }
 
             Tab("Settings", systemImage: "gearshape.fill", value: .settings) {
                 NavigationStack {

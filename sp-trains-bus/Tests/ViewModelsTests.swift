@@ -173,7 +173,7 @@ class ViewModelsTests: XCTestCase {
         wait(for: [expectation], timeout: 2.0) // Allow for DispatchQueue.main.asyncAfter
         XCTAssertFalse(viewModel.isLoading)
         XCTAssertNil(viewModel.errorMessage)
-        XCTAssertEqual(viewModel.overallStatus, "Normal Operation")
+        XCTAssertEqual(viewModel.overallStatus, "Operação Normal")
     }
 
     // MARK: - MapExplorerViewModel Tests

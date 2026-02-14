@@ -16,37 +16,49 @@ struct SystemStatusView: View {
                     .foregroundColor(AppColors.text)
                     .padding(.horizontal)
 
-                OverallStatusCard(status: viewModel.overallStatus)
+                OverallStatusCard(status: viewModel.overallStatus, severity: viewModel.overallSeverity)
                     .padding(.horizontal)
-
-                Text("Metro Lines")
-                    .font(AppFonts.headline())
-                    .foregroundColor(AppColors.text)
-                    .padding(.horizontal)
-                    .padding(.top, 10)
 
                 if viewModel.isLoading {
                     LoadingView()
+                        .padding(.top, 20)
                 } else if let errorMessage = viewModel.errorMessage {
                     ErrorView(message: errorMessage) {
-                        viewModel.loadMetroStatus()
+                        viewModel.loadMetroStatus(forceRefresh: true)
                     }
+                    .padding(.top, 10)
                 } else {
-                    ForEach(viewModel.metroLines, id: \.line) { line in
-                        MetroLineCard(line: line, status: "Normal", description: "Operation normal") // Placeholder status and description
-                            .padding(.horizontal)
-                    }
+                    lineSection(title: "Metrô", lines: viewModel.metroLineStatuses)
+                    lineSection(title: "CPTM", lines: viewModel.cptmLineStatuses)
                 }
             }
         }
         .navigationTitle("")
         .navigationBarHidden(true)
-        .onAppear(perform: viewModel.loadMetroStatus)
+        .onAppear {
+            viewModel.loadMetroStatus()
+        }
+    }
+
+    @ViewBuilder
+    private func lineSection(title: String, lines: [RailLineStatusItem]) -> some View {
+        if !lines.isEmpty {
+            Text(title)
+                .font(AppFonts.headline())
+                .foregroundColor(AppColors.text)
+                .padding(.horizontal)
+                .padding(.top, 10)
+
+            ForEach(lines) { line in
+                MetroLineCard(line: line)
+                    .padding(.horizontal)
+            }
+        }
     }
 }
 
 #Preview {
-    // Mock dependencies for Preview
     let viewModel = SystemStatusViewModel(getMetroStatusUseCase: GetMetroStatusUseCase())
     return SystemStatusView(viewModel: viewModel)
 }
+

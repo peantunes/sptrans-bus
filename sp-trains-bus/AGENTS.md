@@ -40,3 +40,14 @@ Purpose: reduce tokens and ambiguity for AI agents implementing features in this
 - Do not introduce secrets or environment-specific config.
 - Do not rename/move large folders unless explicitly requested.
 - If requirement is unclear, state assumption briefly and proceed.
+
+## 7) Rail Status Source Rules
+- Metro status source: `https://www.metro.sp.gov.br/wp-content/themes/metrosp/direto-metro.php` (HTML parsing).
+- CPTM status source: `https://api.cptm.sp.gov.br/AppCPTM/v1/Linhas/ObterStatus` (JSON parsing).
+- Use DB cache before remote calls; only refresh when last update is older than 30 minutes.
+- On fetch/parse failures: log the error and email `peantunes@gmail.com`, throttled to at most once per source per 24 hours while failures persist.
+- CPTM line metadata fallback:
+  - Line 10: Turquesa, `#008B8B`
+  - Line 11: Coral, `#F04E23`
+  - Line 12: Safira, `#083D8B`
+  - Line 13: Jade, `#00B352`

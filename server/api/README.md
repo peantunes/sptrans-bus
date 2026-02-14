@@ -10,6 +10,58 @@ http://localhost:8080/api/
 
 ## Endpoints
 
+### 0. Get Metro + CPTM Status
+
+Returns Metro and CPTM line status from DB snapshots.  
+If cached data is older than 30 minutes, the API refreshes from:
+
+- Metro: `https://www.metro.sp.gov.br/wp-content/themes/metrosp/direto-metro.php`
+- CPTM: `https://api.cptm.sp.gov.br/AppCPTM/v1/Linhas/ObterStatus` (JSON API)
+
+**Endpoint:** `GET /api/metro_cptm.php`
+
+**Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `refresh` | integer | No | 0 | Set to `1` to force refresh from source |
+
+**Example Request:**
+```
+GET /api/metro_cptm.php
+```
+
+**Example Response:**
+```json
+{
+  "generatedAt": "2026-02-14 13:35:20",
+  "cacheTtlMinutes": 30,
+  "refreshed": {
+    "metro": false,
+    "cptm": true
+  },
+  "metro": {
+    "source": "metro",
+    "available": true,
+    "count": 5,
+    "lastFetchedAt": "2026-02-14 13:10:00",
+    "lastSourceUpdatedAt": "2026-02-14 13:01:36",
+    "lines": []
+  },
+  "cptm": {
+    "source": "cptm",
+    "available": true,
+    "count": 7,
+    "lastFetchedAt": "2026-02-14 13:35:20",
+    "lastSourceUpdatedAt": "2026-02-14 13:33:40",
+    "lines": []
+  },
+  "errors": {}
+}
+```
+
+---
+
 ### 1. Get Arrivals at Stop
 
 Returns upcoming bus arrivals at a specific stop, considering the current day's service calendar.
