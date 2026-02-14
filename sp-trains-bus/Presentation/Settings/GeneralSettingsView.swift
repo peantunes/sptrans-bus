@@ -5,6 +5,7 @@ import UIKit
 struct GeneralSettingsView: View {
     @Environment(\.requestReview) private var requestReview
     @AppStorage(AppTheme.selectedPrimaryColorHexKey) private var selectedPrimaryColorHex = AppTheme.defaultPrimaryColorHex
+    @State private var isShowingTipSheet = false
 
     private let appWebsiteURL = URL(string: "https://sptrans.lolados.app")
     private let supportURL = URL(string: "https://lolados.app/contact.php")
@@ -82,6 +83,13 @@ struct GeneralSettingsView: View {
                 }
                 .buttonStyle(.plain)
 
+                Button {
+                    isShowingTipSheet = true
+                } label: {
+                    settingsRow(title: "Tip the Developer", systemImage: "heart.circle")
+                }
+                .buttonStyle(.plain)
+
                 if let appWebsiteURL {
                     NavigationLink {
                         SettingsWebView(title: "Website", url: appWebsiteURL)
@@ -120,6 +128,9 @@ struct GeneralSettingsView: View {
         .listStyle(.insetGrouped)
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $isShowingTipSheet) {
+            TipDeveloperSheet()
+        }
     }
 
     @ViewBuilder
@@ -169,10 +180,6 @@ struct GeneralSettingsView: View {
                 .foregroundColor(AppColors.text)
 
             Spacer()
-
-            Image(systemName: isExternal ? "arrow.up.right" : "chevron.right")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(AppColors.text.opacity(0.35))
         }
         .contentShape(Rectangle())
         .padding(.vertical, 2)
