@@ -41,17 +41,7 @@ struct MainTabView: View {
 
             Tab("Settings", systemImage: "gearshape.fill", value: .settings) {
                 NavigationStack {
-                    GeneralSettingsView(
-                        viewModel: LocalDataSettingsViewModel(
-                            modeService: dependencies.transitDataModeService,
-                            feedService: dependencies.gtfsFeedService,
-                            importUseCase: dependencies.importGTFSDataUseCase,
-                            checkRefreshUseCase: dependencies.checkGTFSRefreshUseCase,
-                            storageService: dependencies.storageService,
-                            featureToggles: FeatureToggles.self
-                        ),
-                        dependencies: dependencies
-                    )
+                    GeneralSettingsView()
                 }
             }
 
