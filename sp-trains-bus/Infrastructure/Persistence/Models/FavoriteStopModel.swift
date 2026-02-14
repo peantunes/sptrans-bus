@@ -8,6 +8,7 @@ final class FavoriteStopModel {
     var latitude: Double
     var longitude: Double
     var stopSequence: Int
+    var routes: String?
     var stopCode: String
     var wheelchairBoarding: Int
     var createdAt: Date
@@ -18,6 +19,7 @@ final class FavoriteStopModel {
         latitude: Double,
         longitude: Double,
         stopSequence: Int,
+        routes: String?,
         stopCode: String,
         wheelchairBoarding: Int,
         createdAt: Date = Date()
@@ -28,6 +30,7 @@ final class FavoriteStopModel {
         self.longitude = longitude
         self.stopSequence = stopSequence
         self.stopCode = stopCode
+        self.routes = routes
         self.wheelchairBoarding = wheelchairBoarding
         self.createdAt = createdAt
     }

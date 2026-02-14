@@ -68,9 +68,9 @@ struct FavoritesSection: View {
 
 #Preview("With Favorites") {
     let sampleStops = [
-        Stop(stopId: 1, stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561414, longitude: -46.656166), stopSequence: 1, stopCode: "SP1", wheelchairBoarding: 0),
-        Stop(stopId: 2, stopName: "Rua Augusta, 500", location: Location(latitude: -23.560000, longitude: -46.650000), stopSequence: 2, stopCode: "SP2", wheelchairBoarding: 0),
-        Stop(stopId: 3, stopName: "Metro Consolacao", location: Location(latitude: -23.553000, longitude: -46.660000), stopSequence: 3, stopCode: "SP3", wheelchairBoarding: 0)
+        Stop(stopId: 1, stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561414, longitude: -46.656166), stopSequence: 1, routes: "METRÔ", stopCode: "SP1", wheelchairBoarding: 0),
+        Stop(stopId: 2, stopName: "Rua Augusta, 500", location: Location(latitude: -23.560000, longitude: -46.650000), stopSequence: 2, routes: "CPTM", stopCode: "SP2", wheelchairBoarding: 0),
+        Stop(stopId: 3, stopName: "Metro Consolacao", location: Location(latitude: -23.553000, longitude: -46.660000), stopSequence: 3, routes: "XXX", stopCode: "SP3", wheelchairBoarding: 0)
     ]
     return ZStack {
         LinearGradient(gradient: Gradient(colors: [.blue.opacity(0.3), .purple.opacity(0.3)]), startPoint: .topLeading, endPoint: .bottomTrailing)

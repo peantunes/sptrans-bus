@@ -132,8 +132,8 @@ private struct NearbyStopRow: View {
 #Preview {
     NearbyStopsSection(
         stops: [
-            Stop(stopId: 1, stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561414, longitude: -46.656166), stopSequence: 1, stopCode: "SP1", wheelchairBoarding: 0),
-            Stop(stopId: 2, stopName: "Rua Augusta, 500", location: Location(latitude: -23.560000, longitude: -46.650000), stopSequence: 2, stopCode: "SP2", wheelchairBoarding: 0)
+            Stop(stopId: 1, stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561414, longitude: -46.656166), stopSequence: 1, routes: "METRÔ", stopCode: "SP1", wheelchairBoarding: 0),
+            Stop(stopId: 2, stopName: "Rua Augusta, 500", location: Location(latitude: -23.560000, longitude: -46.650000), stopSequence: 2, routes: "XXX", stopCode: "SP2", wheelchairBoarding: 0)
         ],
         userLocation: Location(latitude: -23.5505, longitude: -46.6333),
         onSelectStop: { _ in }

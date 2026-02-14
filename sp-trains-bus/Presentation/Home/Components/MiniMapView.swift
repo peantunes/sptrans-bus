@@ -50,8 +50,8 @@ struct MiniMapView: View {
 
 #Preview {
     MiniMapView(userLocation: .constant(Location(latitude: -23.5505, longitude: -46.6333)), stops: [
-        Stop(stopId: 1, stopName: "Stop A", location: Location(latitude: -23.5510, longitude: -46.6340), stopSequence: 1, stopCode: "SA", wheelchairBoarding: 0),
-        Stop(stopId: 2, stopName: "Stop B", location: Location(latitude: -23.5480, longitude: -46.6300), stopSequence: 2, stopCode: "SB", wheelchairBoarding: 0)
+        Stop(stopId: 1, stopName: "Stop A", location: Location(latitude: -23.5510, longitude: -46.6340), stopSequence: 1, routes: "METRÔ", stopCode: "SA", wheelchairBoarding: 0),
+        Stop(stopId: 2, stopName: "Stop B", location: Location(latitude: -23.5480, longitude: -46.6300), stopSequence: 2, routes: "CPTM", stopCode: "SB", wheelchairBoarding: 0)
     ], dependencies: AppDependencies())
 }
 

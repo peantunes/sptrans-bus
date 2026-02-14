@@ -120,12 +120,12 @@ private struct MapStopCard: View {
         items: [
             MapStopItem(
                 id: 1,
-                stop: Stop(stopId: 1, stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561, longitude: -46.656), stopSequence: 1, stopCode: "PAU001", wheelchairBoarding: 1),
+                stop: Stop(stopId: 1, stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561, longitude: -46.656), stopSequence: 1, routes: "METRÔ", stopCode: "PAU001", wheelchairBoarding: 1),
                 distanceMeters: 320
             ),
             MapStopItem(
                 id: 2,
-                stop: Stop(stopId: 2, stopName: "Rua Augusta, 500", location: Location(latitude: -23.555, longitude: -46.651), stopSequence: 2, stopCode: "AUG001", wheelchairBoarding: 0),
+                stop: Stop(stopId: 2, stopName: "Rua Augusta, 500", location: Location(latitude: -23.555, longitude: -46.651), stopSequence: 2, routes: "CPTM", stopCode: "AUG001", wheelchairBoarding: 0),
                 distanceMeters: 840
             )
         ],

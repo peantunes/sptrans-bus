@@ -6,6 +6,7 @@ extension StopDTO {
                     stopName: stopName,
                     location: Location(latitude: stopLat, longitude: stopLon),
                     stopSequence: stopSequence ?? 0,
+                    routes: routes,
                     stopCode: "", // StopDTO does not have stopCode
                     wheelchairBoarding: 0) // StopDTO does not have wheelchairBoarding
     }
@@ -17,6 +18,7 @@ extension NearbyStopDTO {
                     stopName: name,
                     location: Location(latitude: Double(lat) ?? 0, longitude: Double(lon) ?? 0),
                     stopSequence: 0,
+                    routes: routes,
                     stopCode: "",
                     wheelchairBoarding: 0)
     }
@@ -61,6 +63,7 @@ extension TripDTO {
                 stopName: stop.stopName,
                 location: Location(latitude: stop.stopLat, longitude: stop.stopLon),
                 stopSequence: stop.stopSequence ?? index + 1,
+                routes: stop.routes,
                 stopCode: "",
                 wheelchairBoarding: 0
             )
@@ -143,6 +146,7 @@ extension PlanStopDTO {
             stopName: name ?? "Unknown stop",
             location: Location(latitude: lat ?? 0, longitude: lon ?? 0),
             stopSequence: 0,
+            routes: routes,
             stopCode: "",
             wheelchairBoarding: 0
         )

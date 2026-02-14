@@ -224,6 +224,7 @@ final class TripPlanDetailViewModel: ObservableObject {
                 stopName: originLabel,
                 location: originLocation,
                 stopSequence: 0,
+                routes: nil,
                 stopCode: "",
                 wheelchairBoarding: 0
             )
@@ -259,6 +260,7 @@ final class TripPlanDetailViewModel: ObservableObject {
                 stopName: destinationLabel,
                 location: destinationLocation,
                 stopSequence: 0,
+                routes: nil,
                 stopCode: "",
                 wheelchairBoarding: 0
             )

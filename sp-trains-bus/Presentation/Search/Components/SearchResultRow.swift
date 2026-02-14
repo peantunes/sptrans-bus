@@ -31,7 +31,7 @@ struct SearchResultRow: View {
 }
 
 #Preview {
-    let sampleStop = Stop(stopId: 1, stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561414, longitude: -46.656166), stopSequence: 1, stopCode: "SP-1234", wheelchairBoarding: 0)
+    let sampleStop = Stop(stopId: 1, stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561414, longitude: -46.656166), stopSequence: 1, routes: "METRÔ", stopCode: "SP-1234", wheelchairBoarding: 0)
     return SearchResultRow(stop: sampleStop, distance: 150.5)
         .padding()
 }

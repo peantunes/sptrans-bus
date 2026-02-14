@@ -156,6 +156,7 @@ final class LocalTransitRepository: TransitRepositoryProtocol {
                 stopName: stop.stopName,
                 location: Location(latitude: stop.stopLat, longitude: stop.stopLon),
                 stopSequence: stopTime.stopSequence,
+                routes: stop.routes,
                 stopCode: stop.stopCode,
                 wheelchairBoarding: stop.wheelchairBoarding
             )
@@ -217,6 +218,7 @@ final class LocalTransitRepository: TransitRepositoryProtocol {
             stopName: model.stopName,
             location: Location(latitude: model.stopLat, longitude: model.stopLon),
             stopSequence: 0,
+            routes: model.routes,
             stopCode: model.stopCode,
             wheelchairBoarding: model.wheelchairBoarding
         )

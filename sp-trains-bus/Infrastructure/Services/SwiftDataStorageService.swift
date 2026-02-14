@@ -32,6 +32,7 @@ class SwiftDataStorageService: StorageServiceProtocol {
                     latitude: stop.location.latitude,
                     longitude: stop.location.longitude,
                     stopSequence: stop.stopSequence,
+                    routes: stop.routes,
                     stopCode: stop.stopCode,
                     wheelchairBoarding: stop.wheelchairBoarding
                 )
@@ -93,6 +94,7 @@ class SwiftDataStorageService: StorageServiceProtocol {
                     stopName: model.stopName,
                     location: Location(latitude: model.latitude, longitude: model.longitude),
                     stopSequence: model.stopSequence,
+                    routes: model.routes,
                     stopCode: model.stopCode,
                     wheelchairBoarding: model.wheelchairBoarding
                 )

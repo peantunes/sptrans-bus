@@ -137,10 +137,10 @@ struct StopDetailView: View {
         func getTrip(tripId: String) async throws -> TripStop {
             let trip = Trip(routeId: "6338-10", serviceId: "WK", tripId: tripId, tripHeadsign: "Terminal Bandeira", directionId: 0, shapeId: "shape-1")
             let stops = [
-                Stop(stopId: 101, stopName: "Terminal Parque Dom Pedro II", location: Location(latitude: -23.5503, longitude: -46.6331), stopSequence: 1, stopCode: "", wheelchairBoarding: 0),
-                Stop(stopId: 102, stopName: "Parada Roberto Simonsen", location: Location(latitude: -23.5509, longitude: -46.6354), stopSequence: 2, stopCode: "", wheelchairBoarding: 0),
-                Stop(stopId: 103, stopName: "Rua Benjamin Constant", location: Location(latitude: -23.5526, longitude: -46.6362), stopSequence: 3, stopCode: "", wheelchairBoarding: 0),
-                Stop(stopId: 104, stopName: "Maria Paula", location: Location(latitude: -23.5545, longitude: -46.6372), stopSequence: 4, stopCode: "", wheelchairBoarding: 0)
+                Stop(stopId: 101, stopName: "Terminal Parque Dom Pedro II", location: Location(latitude: -23.5503, longitude: -46.6331), stopSequence: 1, routes: "METRÔ", stopCode: "", wheelchairBoarding: 0),
+                Stop(stopId: 102, stopName: "Parada Roberto Simonsen", location: Location(latitude: -23.5509, longitude: -46.6354), stopSequence: 2, routes: "CPTM", stopCode: "", wheelchairBoarding: 0),
+                Stop(stopId: 103, stopName: "Rua Benjamin Constant", location: Location(latitude: -23.5526, longitude: -46.6362), stopSequence: 3, routes: "CPTM", stopCode: "", wheelchairBoarding: 0),
+                Stop(stopId: 104, stopName: "Maria Paula", location: Location(latitude: -23.5545, longitude: -46.6372), stopSequence: 4, routes: "XXX", stopCode: "", wheelchairBoarding: 0)
             ]
             return TripStop(trip: trip, stops: stops)
         }
@@ -175,7 +175,7 @@ struct StopDetailView: View {
         func getWorkLocation() -> Location? { nil }
     }
 
-    let sampleStop = Stop(stopId: 18848, stopName: "Clínicas", location: Location(latitude: -23.554022, longitude: -46.671108), stopSequence: 0, stopCode: "CLI001", wheelchairBoarding: 0)
+    let sampleStop = Stop(stopId: 18848, stopName: "Clínicas", location: Location(latitude: -23.554022, longitude: -46.671108), stopSequence: 0, routes: "METRÔ", stopCode: "CLI001", wheelchairBoarding: 0)
     let mockTransitRepository = MockTransitRepository()
     let mockGetArrivalsUseCase = GetArrivalsUseCase(transitRepository: mockTransitRepository)
     let mockGetTripRouteUseCase = GetTripRouteUseCase(transitRepository: mockTransitRepository)

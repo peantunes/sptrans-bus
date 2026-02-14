@@ -371,10 +371,10 @@ private struct JourneyStopRow: View {
 
 #Preview {
     let stops = [
-        Stop(stopId: 101, stopName: "Terminal Parque Dom Pedro II", location: Location(latitude: -23.5503, longitude: -46.6331), stopSequence: 1, stopCode: "", wheelchairBoarding: 0),
-        Stop(stopId: 102, stopName: "Parada Roberto Simonsen", location: Location(latitude: -23.5512, longitude: -46.6344), stopSequence: 2, stopCode: "", wheelchairBoarding: 0),
-        Stop(stopId: 103, stopName: "Rua Benjamin Constant", location: Location(latitude: -23.5526, longitude: -46.6362), stopSequence: 3, stopCode: "", wheelchairBoarding: 0),
-        Stop(stopId: 104, stopName: "Maria Paula", location: Location(latitude: -23.5538, longitude: -46.6370), stopSequence: 4, stopCode: "", wheelchairBoarding: 0)
+        Stop(stopId: 101, stopName: "Terminal Parque Dom Pedro II", location: Location(latitude: -23.5503, longitude: -46.6331), stopSequence: 1, routes: "METRÔ", stopCode: "", wheelchairBoarding: 0),
+        Stop(stopId: 102, stopName: "Parada Roberto Simonsen", location: Location(latitude: -23.5512, longitude: -46.6344), stopSequence: 2, routes: "CTPM", stopCode: "", wheelchairBoarding: 0),
+        Stop(stopId: 103, stopName: "Rua Benjamin Constant", location: Location(latitude: -23.5526, longitude: -46.6362), stopSequence: 3, routes: "CTPM", stopCode: "", wheelchairBoarding: 0),
+        Stop(stopId: 104, stopName: "Maria Paula", location: Location(latitude: -23.5538, longitude: -46.6370), stopSequence: 4, routes: "XXX", stopCode: "", wheelchairBoarding: 0)
     ]
 
     return JourneySection(

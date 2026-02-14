@@ -119,6 +119,7 @@ final class GTFSImporterService: GTFSImportServiceProtocol {
                   let stopLon = doubleValue(row["stop_lon"]) else {
                 return
             }
+            let routes: String? = row["routes"]
 
             context.insert(
                 GTFSStopModel(
@@ -127,6 +128,7 @@ final class GTFSImporterService: GTFSImportServiceProtocol {
                     stopName: stopName,
                     stopLat: stopLat,
                     stopLon: stopLon,
+                    routes: routes,
                     wheelchairBoarding: intValue(row["wheelchair_boarding"]) ?? 0
                 )
             )

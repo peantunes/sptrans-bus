@@ -31,13 +31,10 @@ struct ErrorView: View {
                 Button(action: retryAction) {
                     Text("Retry")
                         .font(.headline)
-                        .foregroundColor(.white)
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 20)
-                        .background(AppColors.accent)
                         .cornerRadius(10)
                 }
                 .padding(.top, 10)
+                .buttonStyle(.bordered)
             }
         }
         .padding()

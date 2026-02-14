@@ -55,7 +55,7 @@ struct JourneyDetailView: View {
         func getWorkLocation() -> Location? { nil }
     }
 
-    let stop = Stop(stopId: 18848, stopName: "Clínicas", location: Location(latitude: -23.554022, longitude: -46.671108), stopSequence: 0, stopCode: "CLI001", wheelchairBoarding: 0)
+    let stop = Stop(stopId: 18848, stopName: "Clínicas", location: Location(latitude: -23.554022, longitude: -46.671108), stopSequence: 0, routes: "METRÔ", stopCode: "CLI001", wheelchairBoarding: 0)
     let repository = MockTransitRepository()
     let viewModel = StopDetailViewModel(
         stop: stop,

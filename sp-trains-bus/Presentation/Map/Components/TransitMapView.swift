@@ -10,7 +10,7 @@ struct TransitMapView: View {
     var body: some View {
         Map(coordinateRegion: $region, annotationItems: stops) { stop in
             MapAnnotation(coordinate: stop.location.toCLLocationCoordinate2D()) {
-                StopAnnotation(stop: stop, filter: selectedFilter)
+                StopAnnotation(stop: stop)
                     .onTapGesture {
                         selectedStop = stop
                     }

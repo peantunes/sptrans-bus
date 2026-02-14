@@ -174,9 +174,9 @@ final class JourneyStopAnnotation: NSObject, MKAnnotation {
 
 #Preview {
     let stops = [
-        Stop(stopId: 101, stopName: "Terminal", location: Location(latitude: -23.5503, longitude: -46.6331), stopSequence: 1, stopCode: "", wheelchairBoarding: 0),
-        Stop(stopId: 102, stopName: "Parada 2", location: Location(latitude: -23.5512, longitude: -46.6344), stopSequence: 2, stopCode: "", wheelchairBoarding: 0),
-        Stop(stopId: 103, stopName: "Parada 3", location: Location(latitude: -23.5526, longitude: -46.6362), stopSequence: 3, stopCode: "", wheelchairBoarding: 0)
+        Stop(stopId: 101, stopName: "Terminal", location: Location(latitude: -23.5503, longitude: -46.6331), stopSequence: 1, routes: "METRÔ", stopCode: "", wheelchairBoarding: 0),
+        Stop(stopId: 102, stopName: "Parada 2", location: Location(latitude: -23.5512, longitude: -46.6344), stopSequence: 2, routes: "CPTM", stopCode: "", wheelchairBoarding: 0),
+        Stop(stopId: 103, stopName: "Parada 3", location: Location(latitude: -23.5526, longitude: -46.6362), stopSequence: 3, routes: "XXX", stopCode: "", wheelchairBoarding: 0)
     ]
     let shape = [
         Location(latitude: -23.5503, longitude: -46.6331),

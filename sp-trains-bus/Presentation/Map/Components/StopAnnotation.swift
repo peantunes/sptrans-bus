@@ -2,10 +2,9 @@ import SwiftUI
 
 struct StopAnnotation: View {
     let stop: Stop
-    var filter: TransitFilter = .bus
 
     private var iconName: String {
-        switch filter {
+        switch stop.transportType {
         case .bus:
             return "bus.fill"
         case .metro:
@@ -16,13 +15,13 @@ struct StopAnnotation: View {
     }
 
     private var iconColor: Color {
-        switch filter {
+        switch stop.transportType {
         case .bus:
-            return AppColors.primary
+            return AppColors.accent.opacity(0.8)
         case .metro:
-            return AppColors.metroL2Verde
+            return AppColors.metroL1Azul.opacity(0.8)
         case .train:
-            return AppColors.metroL11Coral
+            return AppColors.metroL5Lilas.opacity(0.8)
         }
     }
 
@@ -39,5 +38,5 @@ struct StopAnnotation: View {
 }
 
 #Preview {
-    StopAnnotation(stop: Stop(stopId: 1, stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561414, longitude: -46.656166), stopSequence: 1, stopCode: "SP1", wheelchairBoarding: 0))
+    StopAnnotation(stop: Stop(stopId: 1, stopName: "Av. Paulista, 1000", location: Location(latitude: -23.561414, longitude: -46.656166), stopSequence: 1, routes: "METRÔ", stopCode: "SP1", wheelchairBoarding: 0))
 }
