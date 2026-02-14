@@ -16,16 +16,16 @@ struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $tabSelection) {
-            Tab("Home", systemImage: "house.fill", value: .home){
-                HomeView(
-                    viewModel: dependencies.homeViewModel,
-                    dependencies: dependencies,
-                    onOpenMap: { tabSelection = .map },
-                    onOpenStatus: { tabSelection = .status }
-                )
-            }
+//            Tab("Home", systemImage: "house.fill", value: .home){
+//                HomeView(
+//                    viewModel: dependencies.homeViewModel,
+//                    dependencies: dependencies,
+//                    onOpenMap: { tabSelection = .map },
+//                    onOpenStatus: { tabSelection = .status }
+//                )
+//            }
 
-            Tab("Map", systemImage: "map.fill", value: .map) {
+            Tab("Map", systemImage: "map.fill", value: .map, role: .search) {
                 NavigationStack {
                     MapExplorerView(viewModel: dependencies.mapExplorerViewModel, dependencies: dependencies) // Assuming MapExplorerViewModel exists in dependencies
                 }

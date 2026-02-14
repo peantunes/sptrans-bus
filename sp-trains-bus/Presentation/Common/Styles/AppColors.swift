@@ -36,6 +36,10 @@ struct AppColors {
 extension Color {
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        guard !hex.isEmpty else {
+            self = AppColors.background
+            return
+        }
         var int: UInt64 = 0
         Scanner(string: hex).scanHexInt64(&int)
         let a, r, g, b: UInt64

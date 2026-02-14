@@ -28,6 +28,7 @@ struct MapStopCarousel: View {
                     ForEach(items) { item in
                         Button(action: { onSelect(item.stop) }) {
                             MapStopCard(item: item)
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                     }
@@ -36,17 +37,17 @@ struct MapStopCarousel: View {
             }
         }
         .padding(.vertical, 8)
-        .background(
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    AppColors.background.opacity(0.95),
-                    AppColors.background.opacity(0.85)
-                ]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
-        )
+//        .background(
+//            LinearGradient(
+//                gradient: Gradient(colors: [
+//                    AppColors.background.opacity(0.95),
+//                    AppColors.background.opacity(0.85)
+//                ]),
+//                startPoint: .top,
+//                endPoint: .bottom
+//            )
+//            .ignoresSafeArea()
+//        )
     }
 }
 
@@ -67,7 +68,8 @@ private struct MapStopCard: View {
                         .font(.caption.weight(.semibold))
                         .foregroundColor(AppColors.primary)
                         .padding(6)
-                        .background(AppColors.primary.opacity(0.12))
+                        .glassIfAvailble()
+//                        .background(AppColors.primary.opacity(0.12))
                         .clipShape(Circle())
 
                     Spacer()
@@ -78,7 +80,7 @@ private struct MapStopCard: View {
                 }
 
                 Text(item.stop.stopName)
-                    .font(AppFonts.subheadline())
+                    .font(AppFonts.subheadline().bold())
                     .foregroundColor(AppColors.text)
                     .lineLimit(2)
 
@@ -129,4 +131,15 @@ private struct MapStopCard: View {
         ],
         onSelect: { _ in }
     )
+}
+
+extension View {
+    @ViewBuilder
+    func glassIfAvailble() -> some View {
+        if #available(iOS 26, *) {
+            self.buttonStyle(.glass)
+        } else {
+            self.buttonStyle(.plain)
+        }
+    }
 }

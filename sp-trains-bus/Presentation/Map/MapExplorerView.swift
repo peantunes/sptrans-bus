@@ -16,9 +16,9 @@ struct MapExplorerView: View {
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
-                FilterChips(selectedFilter: $selectedFilter)
-                    .padding(.top, 8)
-                    .padding(.bottom, selectedFilter.isAvailable ? 8 : 4)
+//                FilterChips(selectedFilter: $selectedFilter)
+//                    .padding(.top, 8)
+//                    .padding(.bottom, selectedFilter.isAvailable ? 8 : 4)
 
                 if !selectedFilter.isAvailable {
                     FilterNoticeCard(text: selectedFilter.helperText)
@@ -33,6 +33,8 @@ struct MapExplorerView: View {
                     selectedFilter: selectedFilter
                 )
                     .edgesIgnoringSafeArea(.bottom)
+                    .ignoresSafeArea()
+                    .searchable(text: $viewModel.searchQuery)
             }
 
             // Floating buttons overlay
@@ -81,11 +83,11 @@ struct MapExplorerView: View {
                     }
 
                     Spacer()
-
-                    // Placeholder for balance (invisible)
-                    Color.clear
-                        .frame(width: 44, height: 44)
-                        .padding(.trailing, 16)
+//
+//                    // Placeholder for balance (invisible)
+//                    Color.clear
+//                        .frame(width: 44, height: 44)
+//                        .padding(.trailing, 16)
                 }
                 .padding(.bottom, showCarousel ? 0 : 24)
             }
@@ -113,11 +115,12 @@ struct MapExplorerView: View {
                 }
             }
         }
+        .toolbarVisibility(.hidden, for: .navigationBar)
         .navigationTitle("Map Explorer")
-        .navigationBarTitleDisplayMode(.inline)
+//        .navigationBarTitleDisplayMode()
         .onAppear(perform: viewModel.loadStopsInVisibleRegion)
         .animation(.easeInOut(duration: 0.3), value: viewModel.showRefreshButton)
-        .searchable(text: $viewModel.searchQuery, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search places")
+//        .searchable(text: $viewModel.searchQuery, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search places")
         .searchSuggestions {
             ForEach(viewModel.searchSuggestions, id: \.stableIdentifier) { suggestion in
                 Button(action: {

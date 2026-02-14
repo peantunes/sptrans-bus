@@ -26,11 +26,11 @@ struct JourneySection: View {
                 Spacer()
 
                 if selection != nil {
-                    Button("Clear") {
-                        onClear()
-                    }
-                    .font(AppFonts.caption())
-                    .foregroundColor(AppColors.text.opacity(0.6))
+//                    Button("Clear") {
+//                        onClear()
+//                    }
+//                    .font(AppFonts.caption())
+//                    .foregroundColor(AppColors.text.opacity(0.6))
                 }
             }
 
@@ -105,7 +105,9 @@ struct JourneySection: View {
                 }
             }
         } else if let selection {
-            GlassCard {
+            JourneySummaryCard(selection: selection, stops: stops)
+//            GlassCard {
+
                 if shape.isEmpty && stops.isEmpty {
                     VStack(spacing: 12) {
                         Image(systemName: "map.fill")
@@ -132,12 +134,11 @@ struct JourneySection: View {
                     .frame(height: 200)
                     .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
-            }
+//            }
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
-                    JourneySummaryCard(selection: selection, stops: stops)
-
+                    
                     JourneyStopsTimeline(
                         stops: stops,
                         routeColor: journeyColor,
@@ -231,67 +232,67 @@ private struct JourneyStopsTimeline: View {
     }
 
     var body: some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    Text("Stops")
-                        .font(AppFonts.subheadline())
-                        .fontWeight(.semibold)
-                        .foregroundColor(AppColors.text)
-
-                    Spacer()
-
-                    if !stops.isEmpty {
-                        Text("\(stops.count)")
-                            .font(AppFonts.caption())
-                            .foregroundColor(AppColors.text.opacity(0.6))
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(AppColors.text.opacity(0.08))
-                            .clipShape(Capsule())
-                    }
-                }
-
-                if stops.isEmpty {
-                    Text("No stops available for this trip.")
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("Stops")
+                    .font(AppFonts.subheadline())
+                    .fontWeight(.semibold)
+                    .foregroundColor(AppColors.text)
+                
+                Spacer()
+                
+                if !stops.isEmpty {
+                    Text("\(stops.count)")
                         .font(AppFonts.caption())
                         .foregroundColor(AppColors.text.opacity(0.6))
-                } else {
-                    ZStack(alignment: .leading) {
-                        Rectangle()
-                            .fill(routeColor.opacity(0.2))
-                            .frame(width: 2)
-                            .padding(.leading, 6)
-                            .padding(.vertical, 8)
-
-                        VStack(alignment: .leading, spacing: 16) {
-                            ForEach(displayedStops.indices, id: \.self) { index in
-                                Button {
-                                    onSelectStop(displayedStops[index])
-                                } label: {
-                                    JourneyStopRow(
-                                        stop: displayedStops[index],
-                                        isCurrent: displayedStops[index].stopId == currentStopId,
-                                        isSelected: displayedStops[index].stopId == focusedStopId,
-                                        isStart: index == 0,
-                                        isEnd: index == displayedStops.count - 1,
-                                        routeColor: routeColor
-                                    )
-                                }
-                                .buttonStyle(.plain)
+                        .padding(.horizontal, 16)
+                        .background(AppColors.text.opacity(0.08))
+                        .clipShape(Capsule())
+                }
+            }
+            .padding(.vertical, 12)
+            
+            if stops.isEmpty {
+                Text("No stops available for this trip.")
+                    .font(AppFonts.caption())
+                    .foregroundColor(AppColors.text.opacity(0.6))
+            } else {
+                ZStack(alignment: .leading) {
+                    Rectangle()
+                        .fill(routeColor.opacity(0.2))
+                        .frame(width: 2)
+                        .padding(.leading, 6)
+                        .padding(.vertical, 8)
+                    
+                    VStack(alignment: .leading, spacing: 16) {
+                        ForEach(displayedStops.indices, id: \.self) { index in
+                            Button {
+                                onSelectStop(displayedStops[index])
+                            } label: {
+                                JourneyStopRow(
+                                    stop: displayedStops[index],
+                                    isCurrent: displayedStops[index].stopId == currentStopId,
+                                    isSelected: displayedStops[index].stopId == focusedStopId,
+                                    isStart: index == 0,
+                                    isEnd: index == displayedStops.count - 1,
+                                    routeColor: routeColor
+                                )
                             }
+                            .buttonStyle(.plain)
                         }
                     }
-
-                    if stops.count > collapsedCount {
-                        Button(isExpanded ? "Show fewer stops" : "Show all stops") {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                isExpanded.toggle()
-                            }
+                }
+                .padding()
+                
+                if stops.count > collapsedCount {
+                    Button(isExpanded ? "Show fewer stops" : "Show all stops") {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isExpanded.toggle()
                         }
-                        .font(AppFonts.caption())
-                        .foregroundColor(routeColor)
                     }
+                    .font(AppFonts.caption())
+                    .foregroundColor(routeColor)
+                    .padding()
                 }
             }
         }

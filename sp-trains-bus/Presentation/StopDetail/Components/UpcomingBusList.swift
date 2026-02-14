@@ -19,10 +19,11 @@ struct UpcomingBusList: View {
                         index: index + 1,
                         isSelected: arrival.selectionKey == selectedArrivalKey
                     )
-                        .padding(.horizontal)
-                        .onTapGesture {
-                            onArrivalTap?(arrival)
-                        }
+                    .contentShape(Rectangle())
+                    .padding(.horizontal)
+                    .onTapGesture {
+                        onArrivalTap?(arrival)
+                    }
                 }
             } else if arrivals.isEmpty {
                 VStack(spacing: 12) {
