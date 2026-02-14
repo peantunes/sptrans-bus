@@ -17,7 +17,7 @@ struct StopAnnotation: View {
     private var iconColor: Color {
         switch stop.transportType {
         case .bus:
-            return AppColors.accent.opacity(0.8)
+            return AppColors.primary.opacity(0.8)
         case .metro:
             return AppColors.metroL1Azul.opacity(0.8)
         case .train:

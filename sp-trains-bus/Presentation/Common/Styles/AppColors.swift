@@ -3,9 +3,9 @@ import UIKit
 
 struct AppColors {
     // Primary Colors
-    static let primary = Color("PrimaryColor")
+    static var primary: Color { AppTheme.primaryColor }
     static let secondary = Color("SecondaryColor")
-    static let accent = Color("AccentColor")
+    static var accent: Color { AppTheme.accentColor }
 
     // Neutral Colors
     static let background = Color("BackgroundColor")
@@ -31,6 +31,51 @@ struct AppColors {
     static let statusNormal = Color("StatusNormal")
     static let statusWarning = Color("StatusWarning")
     static let statusAlert = Color("StatusAlert")
+}
+
+struct AppTheme {
+    struct AccentColorOption: Identifiable {
+        let id: String
+        let name: String
+        let hex: String
+        let color: Color
+
+        init(name: String, hex: String) {
+            self.id = hex
+            self.name = name
+            self.hex = hex
+            self.color = Color(hex: hex)
+        }
+    }
+
+    static let selectedPrimaryColorHexKey = "selected_primary_color_hex"
+    static let defaultPrimaryColorHex = "007AFF"
+
+    static let accentColorOptions: [AccentColorOption] = [
+        AccentColorOption(name: "Blue", hex: "007AFF"),
+        AccentColorOption(name: "Green", hex: "34C759"),
+        AccentColorOption(name: "Teal", hex: "00AFAF"),
+        AccentColorOption(name: "Orange", hex: "FF9500"),
+        AccentColorOption(name: "Red", hex: "FF3B30"),
+        AccentColorOption(name: "Pink", hex: "FF2D55"),
+        AccentColorOption(name: "Indigo", hex: "5856D6"),
+        AccentColorOption(name: "Gray", hex: "5E5E5E")
+    ]
+
+    static var primaryColor: Color {
+        color(forStoredHex: UserDefaults.standard.string(forKey: selectedPrimaryColorHexKey) ?? defaultPrimaryColorHex)
+    }
+
+    static var accentColor: Color {
+        color(forStoredHex: UserDefaults.standard.string(forKey: selectedPrimaryColorHexKey) ?? defaultPrimaryColorHex)
+    }
+
+    static func color(forStoredHex hex: String?) -> Color {
+        guard let hex, !hex.isEmpty else {
+            return Color("PrimaryColor")
+        }
+        return Color(hex: hex)
+    }
 }
 
 extension Color {
