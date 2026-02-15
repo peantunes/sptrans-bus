@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="pt-BR" data-current-lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="apple-itunes-app" content="app-id=857976922, affiliate-data=, app-argument=https://apps.apple.com/gb/app/train-times-railo/id857976922">
+  <title>Due SP | Mobilidade em São Paulo</title>
+  <meta name="description" content="Due SP ajuda você a se locomover em São Paulo com chegadas em tempo real, mapa de paradas e status de Metrô e CPTM.">
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --text: #111827;
+      --muted: #4b5563;
+      --primary: #e11d48;
+      --primary-2: #be123c;
+      --line: #e5e7eb;
+      --radius: 14px;
+      --shadow: 0 10px 24px rgba(17, 24, 39, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background: radial-gradient(1200px 500px at 20% -20%, #ffd1dc 0%, transparent 50%), var(--bg);
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(8px);
+      background: rgba(245, 247, 251, 0.85);
+      border-bottom: 1px solid var(--line);
+    }
+    .topbar {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 14px 20px;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand { font-weight: 800; letter-spacing: 0.2px; }
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      margin-right: 14px;
+      font-size: 14px;
+    }
+    nav a:hover { color: var(--text); }
+    .lang-switch button {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--muted);
+      padding: 6px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .lang-switch button.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+    main {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 28px 20px 40px;
+    }
+    .hero, .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .hero {
+      padding: 30px;
+      margin-bottom: 18px;
+      background: linear-gradient(135deg, #fff 0%, #ffe9ef 100%);
+    }
+    h1 { margin: 0 0 10px; font-size: 34px; line-height: 1.08; }
+    .hero p { margin: 0 0 16px; color: var(--muted); font-size: 18px; max-width: 680px; }
+    .cta {
+      display: inline-block;
+      background: var(--primary);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 700;
+      padding: 11px 16px;
+      border-radius: 10px;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+    .cta.secondary {
+      background: #fff;
+      color: var(--primary);
+      border: 1px solid #fecdd3;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+    }
+    .card { padding: 18px; }
+    .card h3 { margin: 0 0 8px; font-size: 18px; }
+    .card p { margin: 0; color: var(--muted); }
+    footer {
+      max-width: 1040px;
+      margin: 8px auto 26px;
+      padding: 0 20px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    [data-lang] { display: none; }
+    html[data-current-lang="pt-BR"] [data-lang="pt-BR"] { display: block; }
+    html[data-current-lang="en"] [data-lang="en"] { display: block; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div class="brand">Due SP</div>
+      <nav>
+        <a href="./index.html">Home</a>
+        <a href="./privacy.html">Privacidade</a>
+        <a href="./terms.html">Termos</a>
+      </nav>
+      <div class="lang-switch">
+        <button type="button" data-set-lang="pt-BR">PT-BR</button>
+        <button type="button" data-set-lang="en">EN</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div data-lang="pt-BR">
+        <h1>Seu deslocamento em São Paulo, mais rápido e inteligente.</h1>
+        <p>O Due SP reúne ônibus, Metrô e CPTM em um só lugar, com previsão de chegadas, status do sistema e mapa interativo para você decidir melhor cada trajeto.</p>
+        <a class="cta" href="https://apps.apple.com/br/app/due-sao-paulo-infomações-cptm-metro-e-sptrans-em-tempo-real/id857976922">Baixar na App Store</a>
+        <a class="cta secondary" href="./privacy.html">Ler Privacidade</a>
+      </div>
+      <div data-lang="en">
+        <h1>Move through São Paulo faster and smarter.</h1>
+        <p>Due SP brings buses, Metro and CPTM together with live arrivals, system status and an interactive map so you can choose better routes every day.</p>
+        <a class="cta" href="https://apps.apple.com/uk/app/due-sao-paulo-infomações-cptm-metro-e-sptrans-em-tempo-real/id857976922">Download on the App Store</a>
+        <a class="cta secondary" href="./privacy.html">Read Privacy</a>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <div data-lang="pt-BR">
+          <h3>Chegadas em tempo real</h3>
+          <p>Veja os próximos horários por parada e acompanhe o tempo restante até cada chegada.</p>
+        </div>
+        <div data-lang="en">
+          <h3>Live arrivals</h3>
+          <p>Check upcoming times by stop and track how long until each arrival.</p>
+        </div>
+      </article>
+      <article class="card">
+        <div data-lang="pt-BR">
+          <h3>Mapa com paradas próximas</h3>
+          <p>Explore a região no mapa, encontre pontos de interesse e abra detalhes com um toque.</p>
+        </div>
+        <div data-lang="en">
+          <h3>Nearby stops map</h3>
+          <p>Explore your area on the map, find transit points and open details with one tap.</p>
+        </div>
+      </article>
+      <article class="card">
+        <div data-lang="pt-BR">
+          <h3>Status de Metrô e CPTM</h3>
+          <p>Acompanhe operação normal, alertas e interrupções para planejar seu trajeto.</p>
+        </div>
+        <div data-lang="en">
+          <h3>Metro and CPTM status</h3>
+          <p>Track normal operation, alerts and disruptions to plan around issues.</p>
+        </div>
+      </article>
+      <article class="card">
+        <div data-lang="pt-BR">
+          <h3>Favoritos e personalização</h3>
+          <p>Fixe linhas importantes, salve preferências e ajuste a aparência do app.</p>
+        </div>
+        <div data-lang="en">
+          <h3>Favorites and customization</h3>
+          <p>Pin important lines, save preferences and personalize your app look.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="card" style="margin-top:14px;">
+      <div data-lang="pt-BR">
+        <h3 style="margin-top:0;">Fontes oficiais de dados</h3>
+        <p style="margin-bottom:8px; color:var(--muted);">As informações exibidas no Due SP são alimentadas por dados públicos e oficiais, conforme disponibilidade:</p>
+        <ul>
+          <li>SPTrans (API/Olho Vivo e bases públicas): <a href="https://www.sptrans.com.br/desenvolvedores/" target="_blank" rel="noopener noreferrer">sptrans.com.br/desenvolvedores</a></li>
+          <li>CPTM (status operacional): <a href="https://api.cptm.sp.gov.br/AppCPTM/v1/Linhas/ObterStatus" target="_blank" rel="noopener noreferrer">api.cptm.sp.gov.br/.../ObterStatus</a></li>
+          <li>Metrô de São Paulo (status operacional): <a href="https://www.metro.sp.gov.br/wp-content/themes/metrosp/direto-metro.php" target="_blank" rel="noopener noreferrer">metro.sp.gov.br/.../direto-metro.php</a></li>
+        </ul>
+      </div>
+      <div data-lang="en">
+        <h3 style="margin-top:0;">Official data sources</h3>
+        <p style="margin-bottom:8px; color:var(--muted);">Information shown in Due SP is powered by public and official data sources, subject to availability:</p>
+        <ul>
+          <li>SPTrans (API/Olho Vivo and public datasets): <a href="https://www.sptrans.com.br/desenvolvedores/" target="_blank" rel="noopener noreferrer">sptrans.com.br/desenvolvedores</a></li>
+          <li>CPTM (service status): <a href="https://api.cptm.sp.gov.br/AppCPTM/v1/Linhas/ObterStatus" target="_blank" rel="noopener noreferrer">api.cptm.sp.gov.br/.../ObterStatus</a></li>
+          <li>São Paulo Metro (service status): <a href="https://www.metro.sp.gov.br/wp-content/themes/metrosp/direto-metro.php" target="_blank" rel="noopener noreferrer">metro.sp.gov.br/.../direto-metro.php</a></li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div data-lang="pt-BR">Due SP © 2026. Mobilidade urbana para São Paulo.</div>
+    <div data-lang="en">Due SP © 2026. Urban mobility for São Paulo.</div>
+  </footer>
+
+  <script>
+    (function () {
+      var KEY = "due-sp-lang";
+      var allowed = { "pt-BR": true, "en": true };
+      var params = new URLSearchParams(window.location.search);
+      var lang = params.get("lang") || localStorage.getItem(KEY) || "pt-BR";
+      if (!allowed[lang]) lang = "pt-BR";
+
+      function setLang(next) {
+        document.documentElement.setAttribute("data-current-lang", next);
+        document.documentElement.lang = next;
+        localStorage.setItem(KEY, next);
+        document.querySelectorAll("[data-set-lang]").forEach(function (btn) {
+          btn.classList.toggle("active", btn.getAttribute("data-set-lang") === next);
+        });
+      }
+
+      document.querySelectorAll("[data-set-lang]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          setLang(btn.getAttribute("data-set-lang"));
+        });
+      });
+
+      setLang(lang);
+    })();
+  </script>
+</body>
+</html>
