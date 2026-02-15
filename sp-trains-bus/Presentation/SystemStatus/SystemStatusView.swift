@@ -53,6 +53,7 @@ struct SystemStatusView: View {
         }
         .navigationTitle(localized("status.title"))
         .onAppear {
+            viewModel.trackScreenOpened()
             viewModel.loadMetroStatus()
         }
     }

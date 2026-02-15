@@ -6,11 +6,16 @@ struct GeneralSettingsView: View {
     @Environment(\.requestReview) private var requestReview
     @AppStorage(AppTheme.selectedPrimaryColorHexKey) private var selectedPrimaryColorHex = AppTheme.defaultPrimaryColorHex
     @State private var isShowingTipSheet = false
+    let analyticsService: AnalyticsServiceProtocol
 
     private let appWebsiteURL = URL(string: "https://sptrans.lolados.app")
     private let supportURL = URL(string: "https://lolados.app/contact.php")
     private let policyURL = URL(string: "https://sptrans.lolados.app/policy.html")
     private let termsURL = URL(string: "https://sptrans.lolados.app/terms.html")
+
+    init(analyticsService: AnalyticsServiceProtocol = NoOpAnalyticsService()) {
+        self.analyticsService = analyticsService
+    }
 
     var body: some View {
         List {
@@ -77,6 +82,7 @@ struct GeneralSettingsView: View {
 
             Section(localized("settings.section.support")) {
                 Button {
+                    analyticsService.trackEvent(name: "settings_review_tapped")
                     requestReview()
                 } label: {
                     settingsRow(title: localized("settings.support.review_app"), systemImage: "star.bubble")
@@ -84,6 +90,7 @@ struct GeneralSettingsView: View {
                 .buttonStyle(.plain)
 
                 Button {
+                    analyticsService.trackEvent(name: "settings_tip_modal_opened")
                     isShowingTipSheet = true
                 } label: {
                     settingsRow(title: localized("settings.support.tip_developer"), systemImage: "heart.circle")
@@ -92,7 +99,12 @@ struct GeneralSettingsView: View {
 
                 if let appWebsiteURL {
                     NavigationLink {
-                        SettingsWebView(title: localized("settings.support.website"), url: appWebsiteURL)
+                        SettingsWebView(
+                            title: localized("settings.support.website"),
+                            url: appWebsiteURL,
+                            analyticsService: analyticsService,
+                            analyticsSource: "website"
+                        )
                     } label: {
                         settingsRow(title: localized("settings.support.website"), systemImage: "globe")
                     }
@@ -100,7 +112,12 @@ struct GeneralSettingsView: View {
 
                 if let supportURL {
                     NavigationLink {
-                        SettingsWebView(title: localized("settings.support.contact_us"), url: supportURL)
+                        SettingsWebView(
+                            title: localized("settings.support.contact_us"),
+                            url: supportURL,
+                            analyticsService: analyticsService,
+                            analyticsSource: "contact"
+                        )
                     } label: {
                         settingsRow(title: localized("settings.support.contact_us"), systemImage: "envelope")
                     }
@@ -110,7 +127,12 @@ struct GeneralSettingsView: View {
             Section(localized("settings.section.legal")) {
                 if let policyURL {
                     NavigationLink {
-                        SettingsWebView(title: localized("settings.legal.policy"), url: policyURL)
+                        SettingsWebView(
+                            title: localized("settings.legal.policy"),
+                            url: policyURL,
+                            analyticsService: analyticsService,
+                            analyticsSource: "policy"
+                        )
                     } label: {
                         settingsRow(title: localized("settings.legal.policy"), systemImage: "doc.text")
                     }
@@ -118,7 +140,12 @@ struct GeneralSettingsView: View {
 
                 if let termsURL {
                     NavigationLink {
-                        SettingsWebView(title: localized("settings.legal.terms"), url: termsURL)
+                        SettingsWebView(
+                            title: localized("settings.legal.terms"),
+                            url: termsURL,
+                            analyticsService: analyticsService,
+                            analyticsSource: "terms"
+                        )
                     } label: {
                         settingsRow(title: localized("settings.legal.terms"), systemImage: "doc.plaintext")
                     }
@@ -129,7 +156,18 @@ struct GeneralSettingsView: View {
         .navigationTitle(localized("settings.title"))
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $isShowingTipSheet) {
-            TipDeveloperSheet()
+            TipDeveloperSheet(analyticsService: analyticsService)
+        }
+        .onAppear {
+            analyticsService.trackScreen(name: "GeneralSettingsView", className: "GeneralSettingsView")
+            analyticsService.trackEvent(name: "settings_screen_opened")
+        }
+        .onChange(of: selectedPrimaryColorHex) { oldValue, newValue in
+            guard oldValue != newValue else { return }
+            analyticsService.trackEvent(
+                name: "settings_accent_color_changed",
+                properties: ["hex": newValue]
+            )
         }
     }
 

@@ -42,7 +42,8 @@ struct MiniMapView: View {
                 getArrivalsUseCase: dependencies.getArrivalsUseCase,
                 getTripRouteUseCase: dependencies.getTripRouteUseCase,
                 getRouteShapeUseCase: dependencies.getRouteShapeUseCase,
-                storageService: dependencies.storageService
+                storageService: dependencies.storageService,
+                analyticsService: dependencies.analyticsService
             ))
         }
     }

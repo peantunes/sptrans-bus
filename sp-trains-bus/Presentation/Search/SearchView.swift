@@ -170,6 +170,15 @@ struct SearchView: View {
                                 JourneyOptionCard(alternative: alternative)
                             }
                             .buttonStyle(.plain)
+                            .simultaneousGesture(TapGesture().onEnded {
+                                dependencies.analyticsService.trackEvent(
+                                    name: "search_alternative_opened",
+                                    properties: [
+                                        "type": alternative.type.rawValue,
+                                        "legs": "\(alternative.legCount)"
+                                    ]
+                                )
+                            })
                             .padding(.horizontal)
                         }
                     }
@@ -179,6 +188,10 @@ struct SearchView: View {
         }
         .navigationTitle("Search")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            dependencies.analyticsService.trackScreen(name: "SearchView", className: "SearchView")
+            dependencies.analyticsService.trackEvent(name: "search_screen_opened")
+        }
     }
 
     private func suggestionList(

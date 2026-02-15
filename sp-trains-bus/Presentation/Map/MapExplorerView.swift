@@ -118,7 +118,11 @@ struct MapExplorerView: View {
         .toolbarVisibility(.hidden, for: .navigationBar)
         .navigationTitle(localized("map.title"))
 //        .navigationBarTitleDisplayMode()
-        .onAppear(perform: viewModel.loadStopsInVisibleRegion)
+        .onAppear {
+            dependencies.analyticsService.trackScreen(name: "MapExplorerView", className: "MapExplorerView")
+            dependencies.analyticsService.trackEvent(name: "map_screen_opened")
+            viewModel.loadStopsInVisibleRegion()
+        }
         .animation(.easeInOut(duration: 0.3), value: viewModel.showRefreshButton)
 //        .searchable(text: $viewModel.searchQuery, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search places")
         .searchSuggestions {
@@ -154,7 +158,8 @@ struct MapExplorerView: View {
                     getArrivalsUseCase: dependencies.getArrivalsUseCase,
                     getTripRouteUseCase: dependencies.getTripRouteUseCase,
                     getRouteShapeUseCase: dependencies.getRouteShapeUseCase,
-                    storageService: dependencies.storageService
+                    storageService: dependencies.storageService,
+                    analyticsService: dependencies.analyticsService
                 )
             )
         }
@@ -170,6 +175,16 @@ struct MapExplorerView: View {
             Button(localized("common.ok"), role: .cancel) {}
         } message: {
             Text(viewModel.searchErrorMessage ?? "")
+        }
+        .onChange(of: selectedStop?.stopId) { _, newStopID in
+            guard let newStopID, let selectedStop else { return }
+            dependencies.analyticsService.trackEvent(
+                name: "map_stop_selected",
+                properties: [
+                    "stop_id": "\(newStopID)",
+                    "stop_name": selectedStop.stopName
+                ]
+            )
         }
     }
 

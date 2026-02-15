@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>ANALYTICS_API_KEY</key>
+	<string>lll-11021933-1jdjdjd01jd1-12121341</string>
+	<key>ANALYTICS_BASE_URL</key>
+	<string>https://analytics.lolados.app/api</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>

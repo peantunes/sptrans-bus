@@ -15,14 +15,20 @@ class MapExplorerViewModel: NSObject, ObservableObject {
 
     private let getNearbyStopsUseCase: GetNearbyStopsUseCase
     private let locationService: LocationServiceProtocol
+    private let analyticsService: AnalyticsServiceProtocol
     private let searchCompleter = MKLocalSearchCompleter()
     private var cancellables = Set<AnyCancellable>()
     private var regionChangeWorkItem: DispatchWorkItem?
     private var lastLoadedRegion: MKCoordinateRegion?
 
-    init(getNearbyStopsUseCase: GetNearbyStopsUseCase, locationService: LocationServiceProtocol) {
+    init(
+        getNearbyStopsUseCase: GetNearbyStopsUseCase,
+        locationService: LocationServiceProtocol,
+        analyticsService: AnalyticsServiceProtocol = NoOpAnalyticsService()
+    ) {
         self.getNearbyStopsUseCase = getNearbyStopsUseCase
         self.locationService = locationService
+        self.analyticsService = analyticsService
 
         _region = Published(initialValue: MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: -23.5505, longitude: -46.6333), // Default to São Paulo
@@ -84,6 +90,7 @@ class MapExplorerViewModel: NSObject, ObservableObject {
         isLoading = true
         errorMessage = nil
         showRefreshButton = false
+        analyticsService.trackEvent(name: "map_stops_load_requested", properties: ["trigger": "visible_region"])
 
         Task {
             await fetchStops()
@@ -95,6 +102,7 @@ class MapExplorerViewModel: NSObject, ObservableObject {
         isLoading = true
         errorMessage = nil
         showRefreshButton = false
+        analyticsService.trackEvent(name: "map_stops_load_requested", properties: ["trigger": "manual_refresh"])
         await fetchStops()
     }
 
@@ -107,9 +115,21 @@ class MapExplorerViewModel: NSObject, ObservableObject {
             self.stops = fetchedStops
             self.lastLoadedRegion = region
             self.isLoading = false
+            analyticsService.trackEvent(
+                name: "map_stops_load_succeeded",
+                properties: [
+                    "stops_count": "\(fetchedStops.count)",
+                    "latitude": "\(mapLocation.latitude)",
+                    "longitude": "\(mapLocation.longitude)"
+                ]
+            )
         } catch {
             self.errorMessage = error.localizedDescription
             self.isLoading = false
+            analyticsService.trackEvent(
+                name: "map_stops_load_failed",
+                properties: ["error": error.localizedDescription]
+            )
         }
     }
 
@@ -121,6 +141,15 @@ class MapExplorerViewModel: NSObject, ObservableObject {
                 span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
             )
             loadStopsInVisibleRegion()
+            analyticsService.trackEvent(
+                name: "map_center_on_user_location",
+                properties: [
+                    "latitude": "\(userLocation.latitude)",
+                    "longitude": "\(userLocation.longitude)"
+                ]
+            )
+        } else {
+            analyticsService.trackEvent(name: "map_center_on_user_location_failed")
         }
     }
 
@@ -128,6 +157,13 @@ class MapExplorerViewModel: NSObject, ObservableObject {
     func submitSearch() async {
         let trimmed = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
+        analyticsService.trackEvent(
+            name: "map_search_submitted",
+            properties: [
+                "query": trimmed,
+                "query_length": "\(trimmed.count)"
+            ]
+        )
 
         let request = MKLocalSearch.Request()
         request.naturalLanguageQuery = trimmed
@@ -137,6 +173,11 @@ class MapExplorerViewModel: NSObject, ObservableObject {
 
     @MainActor
     func selectSuggestion(_ suggestion: MKLocalSearchCompletion) async {
+        analyticsService.trackEvent(
+            name: "map_search_suggestion_selected",
+            properties: ["title": suggestion.title]
+        )
+
         let request = MKLocalSearch.Request(completion: suggestion)
         request.region = .saoPauloMetro
         await performSearch(request: request)
@@ -152,12 +193,14 @@ class MapExplorerViewModel: NSObject, ObservableObject {
             guard let mapItem = response.mapItems.first else {
                 searchErrorMessage = "No locations found for that search."
                 isSearchingLocation = false
+                analyticsService.trackEvent(name: "map_search_no_results")
                 return
             }
 
             if !MKCoordinateRegion.saoPauloMetro.contains(mapItem.placemark.coordinate) {
                 searchErrorMessage = "Search is limited to the Sao Paulo metro area."
                 isSearchingLocation = false
+                analyticsService.trackEvent(name: "map_search_outside_supported_area")
                 return
             }
 
@@ -165,6 +208,10 @@ class MapExplorerViewModel: NSObject, ObservableObject {
             searchSuggestions = []
         } catch {
             searchErrorMessage = error.localizedDescription
+            analyticsService.trackEvent(
+                name: "map_search_failed",
+                properties: ["error": error.localizedDescription]
+            )
         }
 
         isSearchingLocation = false
@@ -180,6 +227,14 @@ class MapExplorerViewModel: NSObject, ObservableObject {
         lastLoadedRegion = region
         showRefreshButton = false
         loadStopsInVisibleRegion()
+        analyticsService.trackEvent(
+            name: "map_search_result_applied",
+            properties: [
+                "title": mapItem.name ?? "",
+                "latitude": "\(coordinate.latitude)",
+                "longitude": "\(coordinate.longitude)"
+            ]
+        )
     }
 }
 

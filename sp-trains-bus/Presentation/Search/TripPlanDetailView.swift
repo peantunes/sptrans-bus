@@ -6,6 +6,7 @@ struct TripPlanDetailView: View {
     let alternative: TripPlanAlternative
     let originLabel: String
     let destinationLabel: String
+    private let analyticsService: AnalyticsServiceProtocol
     @State private var expandedLegId: UUID?
 
     init(
@@ -30,6 +31,7 @@ struct TripPlanDetailView: View {
         self.alternative = alternative
         self.originLabel = originLabel
         self.destinationLabel = destinationLabel
+        self.analyticsService = dependencies.analyticsService
     }
 
     var body: some View {
@@ -118,6 +120,14 @@ struct TripPlanDetailView: View {
         .navigationTitle("Journey")
         .navigationBarTitleDisplayMode(.inline)
         .task {
+            analyticsService.trackScreen(name: "TripPlanDetailView", className: "TripPlanDetailView")
+            analyticsService.trackEvent(
+                name: "trip_plan_detail_opened",
+                properties: [
+                    "type": alternative.type.rawValue,
+                    "legs": "\(alternative.legCount)"
+                ]
+            )
             await viewModel.load()
         }
     }

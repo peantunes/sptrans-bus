@@ -112,8 +112,11 @@ struct StopDetailView: View {
                     }
                 }
             }
-            .onAppear(perform: viewModel.loadArrivals)
-            .onAppear(perform: viewModel.startRefreshingArrivals)
+            .onAppear {
+                viewModel.trackStopDetailOpened()
+                viewModel.loadArrivals()
+                viewModel.startRefreshingArrivals()
+            }
             .onDisappear(perform: viewModel.stopRefreshingArrivals)
             .navigationDestination(isPresented: $isShowingJourneyDetail) {
                 JourneyDetailView(viewModel: viewModel)

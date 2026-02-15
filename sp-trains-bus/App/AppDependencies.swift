@@ -10,6 +10,7 @@ class AppDependencies {
     let gtfsFeedService: GTFSFeedServiceProtocol
     let gtfsImportService: GTFSImportServiceProtocol
     let transitDataModeService: TransitDataModeServiceProtocol
+    let analyticsService: AnalyticsServiceProtocol
 
     let getNearbyStopsUseCase: GetNearbyStopsUseCase
     let getArrivalsUseCase: GetArrivalsUseCase
@@ -38,6 +39,7 @@ class AppDependencies {
         gtfsFeedService = GTFSFeedService(modelContainer: modelContainer)
         gtfsImportService = GTFSImporterService(modelContainer: modelContainer, feedService: gtfsFeedService)
         transitDataModeService = UserDefaultsTransitDataModeService()
+        analyticsService = AppAnalyticsService()
         transitRepository = ConfigurableTransitRepository(
             remoteRepository: remoteRepository,
             localRepository: localRepository,
@@ -58,8 +60,20 @@ class AppDependencies {
 
         // Presentation Layer - ViewModels
         homeViewModel = HomeViewModel(getNearbyStopsUseCase: getNearbyStopsUseCase, locationService: locationService, storageService: storageService)
-        searchViewModel = SearchViewModel(planTripUseCase: planTripUseCase, locationService: locationService)
-        systemStatusViewModel = SystemStatusViewModel(apiClient: apiClient, fallbackUseCase: getMetroStatusUseCase)
-        mapExplorerViewModel = MapExplorerViewModel(getNearbyStopsUseCase: getNearbyStopsUseCase, locationService: locationService)
+        searchViewModel = SearchViewModel(
+            planTripUseCase: planTripUseCase,
+            locationService: locationService,
+            analyticsService: analyticsService
+        )
+        systemStatusViewModel = SystemStatusViewModel(
+            apiClient: apiClient,
+            fallbackUseCase: getMetroStatusUseCase,
+            analyticsService: analyticsService
+        )
+        mapExplorerViewModel = MapExplorerViewModel(
+            getNearbyStopsUseCase: getNearbyStopsUseCase,
+            locationService: locationService,
+            analyticsService: analyticsService
+        )
     }
 }

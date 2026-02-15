@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		C0A1000A2F6B123400000001 /* AnalyticsSDK in Frameworks */ = {isa = PBXBuildFile; productRef = C0A1000B2F6B123400000001 /* AnalyticsSDK */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		9C022E062F2FBEF00073F454 /* sp-trains-bus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "sp-trains-bus.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		9C022EA12F2FDAE20073F454 /* sp_trains_bus.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = sp_trains_bus.entitlements; sourceTree = "<group>"; };
@@ -62,6 +66,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C0A1000A2F6B123400000001 /* AnalyticsSDK in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -115,6 +120,7 @@
 			);
 			name = "sp-trains-bus";
 			packageProductDependencies = (
+				C0A1000B2F6B123400000001 /* AnalyticsSDK */,
 			);
 			productName = "sp-trains-bus";
 			productReference = 9C022E062F2FBEF00073F454 /* sp-trains-bus.app */;
@@ -147,6 +153,9 @@
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 9C022E072F2FBEF00073F454 /* Products */;
+			packageReferences = (
+				C0A1000C2F6B123400000001 /* XCRemoteSwiftPackageReference "my-analytics-ios-sdk" */,
+			);
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -174,6 +183,17 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		C0A1000C2F6B123400000001 /* XCRemoteSwiftPackageReference "my-analytics-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "git@github.com:peantunes/my-analytics-ios-sdk.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCBuildConfiguration section */
 		9C022E152F2FBEF20073F454 /* Debug */ = {
@@ -387,6 +407,14 @@
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C0A1000B2F6B123400000001 /* AnalyticsSDK */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C0A1000C2F6B123400000001 /* XCRemoteSwiftPackageReference "my-analytics-ios-sdk" */;
+			productName = AnalyticsSDK;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCConfigurationList section */
 		9C022E012F2FBEF00073F454 /* Build configuration list for PBXProject "sp-trains-bus" */ = {

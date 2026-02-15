@@ -1,0 +1,15 @@
+{
+  "originHash" : "e3a4638450b73eddca0431a53a3b045e725efd1170ea06ccbe8025c8c8949e79",
+  "pins" : [
+    {
+      "identity" : "my-analytics-ios-sdk",
+      "kind" : "remoteSourceControl",
+      "location" : "git@github.com:peantunes/my-analytics-ios-sdk.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "6ae8f2dd289438d919219b17f46d6f60e3b1a6fc"
+      }
+    }
+  ],
+  "version" : 3
+}

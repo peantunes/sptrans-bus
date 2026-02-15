@@ -4,11 +4,23 @@ import WebKit
 struct SettingsWebView: View {
     let title: String
     let url: URL
+    let analyticsService: AnalyticsServiceProtocol
+    let analyticsSource: String
 
     var body: some View {
         WebView(url: url)
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                analyticsService.trackScreen(name: "SettingsWebView", className: "SettingsWebView")
+                analyticsService.trackEvent(
+                    name: "settings_webview_opened",
+                    properties: [
+                        "source": analyticsSource,
+                        "url": url.absoluteString
+                    ]
+                )
+            }
     }
 }
 
@@ -33,7 +45,9 @@ private struct WebView: UIViewRepresentable {
     NavigationStack {
         SettingsWebView(
             title: "Website",
-            url: URL(string: "https://sptrans.lolados.app")!
+            url: URL(string: "https://sptrans.lolados.app")!,
+            analyticsService: NoOpAnalyticsService(),
+            analyticsSource: "website"
         )
     }
 }

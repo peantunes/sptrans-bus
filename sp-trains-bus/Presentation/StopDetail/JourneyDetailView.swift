@@ -23,6 +23,9 @@ struct JourneyDetailView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .navigationTitle(localized("stop_detail.journey.title"))
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            viewModel.trackJourneyDetailOpened()
+        }
     }
 
     private func localized(_ key: String) -> String {

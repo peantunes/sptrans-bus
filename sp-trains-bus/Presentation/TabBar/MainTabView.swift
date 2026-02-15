@@ -13,6 +13,7 @@ struct MainTabView: View {
     }
 
     @AppStorage("main_tab_selection") private var storedTabSelection: String = TabOption.map.rawValue
+    @State private var hasTrackedInitialTabSelection = false
 
     private var tabSelectionBinding: Binding<TabOption> {
         Binding(
@@ -64,15 +65,38 @@ struct MainTabView: View {
 
             Tab(localized("tab.settings"), systemImage: "gearshape.fill", value: .settings) {
                 NavigationStack {
-                    GeneralSettingsView()
+                    GeneralSettingsView(analyticsService: dependencies.analyticsService)
                 }
             }
 
+        }
+        .onAppear {
+            trackTabSelection(for: storedTabSelection, trigger: "initial")
+        }
+        .onChange(of: storedTabSelection) { _, newValue in
+            trackTabSelection(for: newValue, trigger: "change")
         }
     }
 
     private func localized(_ key: String) -> String {
         NSLocalizedString(key, comment: "")
+    }
+
+    private func trackTabSelection(for rawValue: String, trigger: String) {
+        guard let tab = TabOption(rawValue: rawValue) else { return }
+
+        if trigger == "initial" {
+            guard !hasTrackedInitialTabSelection else { return }
+            hasTrackedInitialTabSelection = true
+        }
+
+        dependencies.analyticsService.trackEvent(
+            name: "tab_selected",
+            properties: [
+                "tab": tab.rawValue,
+                "trigger": trigger
+            ]
+        )
     }
 }
 

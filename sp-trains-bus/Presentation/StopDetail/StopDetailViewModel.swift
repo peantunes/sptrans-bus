@@ -17,6 +17,7 @@ class StopDetailViewModel: ObservableObject {
     private let getTripRouteUseCase: GetTripRouteUseCase
     private let getRouteShapeUseCase: GetRouteShapeUseCase
     private let storageService: StorageServiceProtocol
+    private let analyticsService: AnalyticsServiceProtocol
     private let calendar: Calendar
     private let outputTimeFormatter: DateFormatter
     private var timer: Timer?
@@ -27,6 +28,7 @@ class StopDetailViewModel: ObservableObject {
         getTripRouteUseCase: GetTripRouteUseCase,
         getRouteShapeUseCase: GetRouteShapeUseCase,
         storageService: StorageServiceProtocol,
+        analyticsService: AnalyticsServiceProtocol = NoOpAnalyticsService(),
         calendar: Calendar = .current
     ) {
         self.stop = stop
@@ -34,6 +36,7 @@ class StopDetailViewModel: ObservableObject {
         self.getTripRouteUseCase = getTripRouteUseCase
         self.getRouteShapeUseCase = getRouteShapeUseCase
         self.storageService = storageService
+        self.analyticsService = analyticsService
         self.calendar = calendar
         self.outputTimeFormatter = DateFormatter()
         self.outputTimeFormatter.calendar = calendar
@@ -45,6 +48,10 @@ class StopDetailViewModel: ObservableObject {
     func loadArrivals() {
         isLoading = true
         errorMessage = nil
+        analyticsService.trackEvent(
+            name: "stop_arrivals_load_requested",
+            properties: ["stop_id": "\(stop.stopId)"]
+        )
 
         Task {
             await fetchArrivals()
@@ -55,6 +62,13 @@ class StopDetailViewModel: ObservableObject {
     func refreshArrivals() async {
         isLoading = true
         errorMessage = nil
+        analyticsService.trackEvent(
+            name: "stop_arrivals_load_requested",
+            properties: [
+                "stop_id": "\(stop.stopId)",
+                "trigger": "refresh"
+            ]
+        )
         await fetchArrivals()
     }
 
@@ -68,9 +82,23 @@ class StopDetailViewModel: ObservableObject {
                 displayLimit: 10
             )
             self.isLoading = false
+            analyticsService.trackEvent(
+                name: "stop_arrivals_load_succeeded",
+                properties: [
+                    "stop_id": "\(stop.stopId)",
+                    "arrivals_count": "\(self.arrivals.count)"
+                ]
+            )
         } catch {
             self.errorMessage = error.localizedDescription
             self.isLoading = false
+            analyticsService.trackEvent(
+                name: "stop_arrivals_load_failed",
+                properties: [
+                    "stop_id": "\(stop.stopId)",
+                    "error": error.localizedDescription
+                ]
+            )
         }
     }
 
@@ -214,6 +242,36 @@ class StopDetailViewModel: ObservableObject {
             storageService.saveFavorite(stop: stop)
         }
         isFavorite.toggle()
+        analyticsService.trackEvent(
+            name: "stop_favorite_toggled",
+            properties: [
+                "stop_id": "\(stop.stopId)",
+                "is_favorite": isFavorite ? "true" : "false"
+            ]
+        )
+    }
+
+    func trackStopDetailOpened() {
+        analyticsService.trackScreen(name: "StopDetailView", className: "StopDetailView")
+        analyticsService.trackEvent(
+            name: "stop_detail_opened",
+            properties: [
+                "stop_id": "\(stop.stopId)",
+                "stop_name": stop.stopName
+            ]
+        )
+    }
+
+    func trackJourneyDetailOpened() {
+        guard let selectedArrival else { return }
+        analyticsService.trackScreen(name: "JourneyDetailView", className: "JourneyDetailView")
+        analyticsService.trackEvent(
+            name: "journey_detail_opened",
+            properties: [
+                "trip_id": selectedArrival.tripId,
+                "route_id": selectedArrival.routeId
+            ]
+        )
     }
 
     func startRefreshingArrivals() {
@@ -235,6 +293,14 @@ class StopDetailViewModel: ObservableObject {
         journeyShape = []
         journeyErrorMessage = nil
         isLoadingJourney = true
+        analyticsService.trackEvent(
+            name: "stop_arrival_selected",
+            properties: [
+                "stop_id": "\(stop.stopId)",
+                "trip_id": arrival.tripId,
+                "route_id": arrival.routeId
+            ]
+        )
 
         Task {
             await loadJourney(for: arrival)
@@ -264,9 +330,24 @@ class StopDetailViewModel: ObservableObject {
             journeyShape = shape
             journeyErrorMessage = nil
             isLoadingJourney = false
+            analyticsService.trackEvent(
+                name: "journey_load_succeeded",
+                properties: [
+                    "trip_id": arrival.tripId,
+                    "stops_count": "\(journeyStops.count)",
+                    "shape_points_count": "\(journeyShape.count)"
+                ]
+            )
         } catch {
             journeyErrorMessage = error.localizedDescription
             isLoadingJourney = false
+            analyticsService.trackEvent(
+                name: "journey_load_failed",
+                properties: [
+                    "trip_id": arrival.tripId,
+                    "error": error.localizedDescription
+                ]
+            )
         }
     }
 }

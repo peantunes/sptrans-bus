@@ -8,6 +8,7 @@ struct TipDeveloperSheet: View {
     @State private var isLoadingProducts = true
     @State private var activePurchaseID: String?
     @State private var alertMessage: String?
+    let analyticsService: AnalyticsServiceProtocol
 
     private let options: [TipOption] = [
         TipOption(
@@ -26,6 +27,10 @@ struct TipDeveloperSheet: View {
             subtitleKey: "settings.tip.option.large.subtitle"
         )
     ]
+
+    init(analyticsService: AnalyticsServiceProtocol = NoOpAnalyticsService()) {
+        self.analyticsService = analyticsService
+    }
 
     var body: some View {
         NavigationStack {
@@ -60,6 +65,8 @@ struct TipDeveloperSheet: View {
                 }
             }
             .task {
+                analyticsService.trackScreen(name: "TipDeveloperSheet", className: "TipDeveloperSheet")
+                analyticsService.trackEvent(name: "tip_modal_opened")
                 await loadProducts()
             }
             .alert(localized("settings.tip.purchase.alert.title"), isPresented: Binding(get: { alertMessage != nil }, set: { _ in alertMessage = nil })) {
@@ -116,19 +123,35 @@ struct TipDeveloperSheet: View {
             let ids = Set(options.map(\.id))
             let products = try await Product.products(for: ids)
             productsByID = Dictionary(uniqueKeysWithValues: products.map { ($0.id, $0) })
+            analyticsService.trackEvent(
+                name: "tip_products_loaded",
+                properties: ["products_count": "\(products.count)"]
+            )
         } catch {
             alertMessage = localized("settings.tip.error.load_products")
+            analyticsService.trackEvent(
+                name: "tip_products_load_failed",
+                properties: ["error": error.localizedDescription]
+            )
         }
     }
 
     private func purchase(_ option: TipOption) async {
         guard let product = productsByID[option.id] else {
             alertMessage = localized("settings.tip.error.option_unavailable")
+            analyticsService.trackEvent(
+                name: "tip_purchase_unavailable",
+                properties: ["product_id": option.id]
+            )
             return
         }
 
         activePurchaseID = option.id
         defer { activePurchaseID = nil }
+        analyticsService.trackEvent(
+            name: "tip_purchase_started",
+            properties: ["product_id": option.id]
+        )
 
         do {
             let result = try await product.purchase()
@@ -138,18 +161,45 @@ struct TipDeveloperSheet: View {
                 case .verified(let transaction):
                     await transaction.finish()
                     alertMessage = localized("settings.tip.purchase.thank_you")
+                    analyticsService.trackEvent(
+                        name: "tip_purchase_succeeded",
+                        properties: ["product_id": option.id]
+                    )
                 case .unverified:
                     alertMessage = localized("settings.tip.purchase.unverified")
+                    analyticsService.trackEvent(
+                        name: "tip_purchase_unverified",
+                        properties: ["product_id": option.id]
+                    )
                 }
             case .pending:
                 alertMessage = localized("settings.tip.purchase.pending")
+                analyticsService.trackEvent(
+                    name: "tip_purchase_pending",
+                    properties: ["product_id": option.id]
+                )
             case .userCancelled:
+                analyticsService.trackEvent(
+                    name: "tip_purchase_cancelled",
+                    properties: ["product_id": option.id]
+                )
                 break
             @unknown default:
                 alertMessage = localized("settings.tip.error.purchase_failed")
+                analyticsService.trackEvent(
+                    name: "tip_purchase_failed",
+                    properties: ["product_id": option.id]
+                )
             }
         } catch {
             alertMessage = localized("settings.tip.error.purchase_failed")
+            analyticsService.trackEvent(
+                name: "tip_purchase_failed",
+                properties: [
+                    "product_id": option.id,
+                    "error": error.localizedDescription
+                ]
+            )
         }
     }
 

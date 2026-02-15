@@ -13,6 +13,7 @@ class SearchViewModel: NSObject, ObservableObject {
 
     private let planTripUseCase: PlanTripUseCase
     private let locationService: LocationServiceProtocol
+    private let analyticsService: AnalyticsServiceProtocol
     private let originCompleter = MKLocalSearchCompleter()
     private let destinationCompleter = MKLocalSearchCompleter()
     private var cancellables = Set<AnyCancellable>()
@@ -22,9 +23,14 @@ class SearchViewModel: NSObject, ObservableObject {
 
     var rankingPriority: String = "arrives_first"
 
-    init(planTripUseCase: PlanTripUseCase, locationService: LocationServiceProtocol) {
+    init(
+        planTripUseCase: PlanTripUseCase,
+        locationService: LocationServiceProtocol,
+        analyticsService: AnalyticsServiceProtocol = NoOpAnalyticsService()
+    ) {
         self.planTripUseCase = planTripUseCase
         self.locationService = locationService
+        self.analyticsService = analyticsService
 
         super.init()
 
@@ -45,6 +51,13 @@ class SearchViewModel: NSObject, ObservableObject {
         if let location = locationService.getCurrentLocation() {
             originLocation = location
             originQuery = "Current location"
+            analyticsService.trackEvent(
+                name: "search_origin_current_location_set",
+                properties: [
+                    "latitude": "\(location.latitude)",
+                    "longitude": "\(location.longitude)"
+                ]
+            )
         }
     }
 
@@ -62,9 +75,14 @@ class SearchViewModel: NSObject, ObservableObject {
     func planTrip() async {
         errorMessage = nil
         alternatives = []
+        analyticsService.trackEvent(
+            name: "search_plan_trip_requested",
+            properties: ["ranking_priority": rankingPriority]
+        )
 
         guard let originLocation, let destinationLocation else {
             errorMessage = "Select both origin and destination."
+            analyticsService.trackEvent(name: "search_plan_trip_validation_failed")
             return
         }
 
@@ -77,8 +95,16 @@ class SearchViewModel: NSObject, ObservableObject {
                 rankingPriority: rankingPriority
             )
             alternatives = plan.alternatives
+            analyticsService.trackEvent(
+                name: "search_plan_trip_succeeded",
+                properties: ["alternatives_count": "\(plan.alternatives.count)"]
+            )
         } catch {
             errorMessage = error.localizedDescription
+            analyticsService.trackEvent(
+                name: "search_plan_trip_failed",
+                properties: ["error": error.localizedDescription]
+            )
         }
         isPlanning = false
     }
@@ -141,8 +167,23 @@ class SearchViewModel: NSObject, ObservableObject {
                 destinationQuery = name
                 destinationSuggestions = []
             }
+
+            analyticsService.trackEvent(
+                name: "search_suggestion_selected",
+                properties: [
+                    "field": isOrigin ? "origin" : "destination",
+                    "title": suggestion.title
+                ]
+            )
         } catch {
             errorMessage = error.localizedDescription
+            analyticsService.trackEvent(
+                name: "search_suggestion_resolution_failed",
+                properties: [
+                    "field": isOrigin ? "origin" : "destination",
+                    "error": error.localizedDescription
+                ]
+            )
         }
     }
 }

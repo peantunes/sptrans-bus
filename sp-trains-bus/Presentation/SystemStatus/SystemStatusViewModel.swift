@@ -69,28 +69,40 @@ class SystemStatusViewModel: ObservableObject {
     private let apiClient: APIClient?
     private let getMetroStatusUseCase: GetMetroStatusUseCase?
     private let userDefaults: UserDefaults
+    private let analyticsService: AnalyticsServiceProtocol
 
     init(
         apiClient: APIClient,
         fallbackUseCase: GetMetroStatusUseCase = GetMetroStatusUseCase(),
-        userDefaults: UserDefaults = .standard
+        userDefaults: UserDefaults = .standard,
+        analyticsService: AnalyticsServiceProtocol = NoOpAnalyticsService()
     ) {
         self.apiClient = apiClient
         self.getMetroStatusUseCase = fallbackUseCase
         self.userDefaults = userDefaults
+        self.analyticsService = analyticsService
         self.favoriteLineIDs = Set(userDefaults.stringArray(forKey: Self.favoritesKey) ?? [])
     }
 
-    init(getMetroStatusUseCase: GetMetroStatusUseCase, userDefaults: UserDefaults = .standard) {
+    init(
+        getMetroStatusUseCase: GetMetroStatusUseCase,
+        userDefaults: UserDefaults = .standard,
+        analyticsService: AnalyticsServiceProtocol = NoOpAnalyticsService()
+    ) {
         self.apiClient = nil
         self.getMetroStatusUseCase = getMetroStatusUseCase
         self.userDefaults = userDefaults
+        self.analyticsService = analyticsService
         self.favoriteLineIDs = Set(userDefaults.stringArray(forKey: Self.favoritesKey) ?? [])
     }
 
     func loadMetroStatus(forceRefresh: Bool = false) {
         isLoading = true
         errorMessage = nil
+        analyticsService.trackEvent(
+            name: "system_status_load_requested",
+            properties: ["force_refresh": forceRefresh ? "true" : "false"]
+        )
 
         guard let apiClient else {
             loadFallbackMetroStatus()
@@ -115,6 +127,13 @@ class SystemStatusViewModel: ObservableObject {
                         generatedAt: self.displayTimestamp(response.generatedAt)
                     )
                     self.isLoading = false
+                    self.analyticsService.trackEvent(
+                        name: "system_status_load_succeeded",
+                        properties: [
+                            "metro_lines_count": "\(metroItems.count)",
+                            "cptm_lines_count": "\(cptmItems.count)"
+                        ]
+                    )
                 }
             } catch {
                 await MainActor.run {
@@ -128,9 +147,18 @@ class SystemStatusViewModel: ObservableObject {
                     self.overallSeverity = .alert
                     self.errorMessage = error.localizedDescription
                     self.isLoading = false
+                    self.analyticsService.trackEvent(
+                        name: "system_status_load_failed",
+                        properties: ["error": error.localizedDescription]
+                    )
                 }
             }
         }
+    }
+
+    func trackScreenOpened() {
+        analyticsService.trackScreen(name: "SystemStatusView", className: "SystemStatusView")
+        analyticsService.trackEvent(name: "system_status_screen_opened")
     }
 
     private func loadFallbackMetroStatus() {
@@ -163,6 +191,10 @@ class SystemStatusViewModel: ObservableObject {
         generatedAt = nil
         updateOverallStatus()
         isLoading = false
+        analyticsService.trackEvent(
+            name: "system_status_load_fallback_used",
+            properties: ["metro_lines_count": "\(metroLineStatuses.count)"]
+        )
     }
 
     private func applyStatusData(
@@ -377,6 +409,14 @@ class SystemStatusViewModel: ObservableObject {
             favoriteLineIDs.insert(line.id)
         }
         persistFavoriteLineIDs()
+        analyticsService.trackEvent(
+            name: "system_status_line_favorite_toggled",
+            properties: [
+                "line_id": line.id,
+                "source": line.source,
+                "is_favorite": favoriteLineIDs.contains(line.id) ? "true" : "false"
+            ]
+        )
     }
 
     private func persistFavoriteLineIDs() {
