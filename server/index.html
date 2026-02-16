@@ -1,250 +1,812 @@
 <!doctype html>
-<html lang="pt-BR" data-current-lang="pt-BR">
+<html lang="pt-BR" data-lang="pt">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="apple-itunes-app" content="app-id=857976922, affiliate-data=, app-argument=https://apps.apple.com/gb/app/train-times-railo/id857976922">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
+
   <title>Due SP | Mobilidade em São Paulo</title>
-  <meta name="description" content="Due SP ajuda você a se locomover em São Paulo com chegadas em tempo real, mapa de paradas e status de Metrô e CPTM.">
+  <meta name="apple-itunes-app" content="app-id=857976922, affiliate-data=, app-argument=https://apps.apple.com/gb/app/train-times-railo/id857976922">
+  <meta name="description" content="Due SP reúne ônibus, Metrô e CPTM em um só lugar: chegadas em tempo real, status do sistema e mapa interativo." />
+
   <style>
-    :root {
-      --bg: #f5f7fb;
-      --surface: #ffffff;
-      --text: #111827;
-      --muted: #4b5563;
-      --primary: #e11d48;
-      --primary-2: #be123c;
-      --line: #e5e7eb;
-      --radius: 14px;
-      --shadow: 0 10px 24px rgba(17, 24, 39, 0.08);
+    :root{
+      --bg0:#070B16;
+      --bg1:#0B1224;
+      --panel: rgba(255,255,255,.06);
+      --panel2: rgba(255,255,255,.09);
+      --border: rgba(255,255,255,.10);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.72);
+      --muted2: rgba(255,255,255,.55);
+
+      --accent:#E11D48;   /* vermelho do site atual */
+      --accent2:#3B82F6;  /* azul */
+      --good:#22C55E;
+      --warn:#F59E0B;
+
+      --shadow: 0 18px 60px rgba(0,0,0,.55);
+      --radius: 18px;
+
+      --max: 1100px;
     }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
       color: var(--text);
-      background: radial-gradient(1200px 500px at 20% -20%, #ffd1dc 0%, transparent 50%), var(--bg);
+      background:
+        radial-gradient(1200px 700px at 50% 12%, rgba(59,130,246,.18), rgba(0,0,0,0) 60%),
+        radial-gradient(900px 600px at 22% 22%, rgba(225,29,72,.14), rgba(0,0,0,0) 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x:hidden;
     }
-    header {
+
+    a{ color: rgba(255,255,255,.92); text-decoration: none; }
+    a:hover{ opacity:.92; }
+
+    /* Layout */
+    .container{ width:min(var(--max), 92vw); margin:0 auto; }
+    .topbar{
       position: sticky;
-      top: 0;
-      z-index: 10;
-      backdrop-filter: blur(8px);
-      background: rgba(245, 247, 251, 0.85);
-      border-bottom: 1px solid var(--line);
+      top:0;
+      z-index: 20;
+      backdrop-filter: blur(12px);
+      background: rgba(7,11,22,.58);
+      border-bottom: 1px solid rgba(255,255,255,.08);
     }
-    .topbar {
-      max-width: 1040px;
-      margin: 0 auto;
-      padding: 14px 20px;
-      display: flex;
+    .topbar-inner{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding: 14px 0;
       gap: 14px;
-      align-items: center;
-      justify-content: space-between;
     }
-    .brand { font-weight: 800; letter-spacing: 0.2px; }
-    nav a {
+    .brand{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      font-weight: 800;
+      letter-spacing:-.02em;
+    }
+    .logo-dot{
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #fff, rgba(255,255,255,.2) 40%, rgba(255,255,255,0) 70%),
+                  linear-gradient(180deg, var(--accent), #ff6b6b);
+      box-shadow: 0 0 0 4px rgba(225,29,72,.14);
+    }
+    nav{
+      display:flex;
+      align-items:center;
+      gap: 18px;
       color: var(--muted);
-      text-decoration: none;
-      margin-right: 14px;
-      font-size: 14px;
+      font-weight: 600;
     }
-    nav a:hover { color: var(--text); }
-    .lang-switch button {
-      border: 1px solid var(--line);
-      background: var(--surface);
+    nav a{
       color: var(--muted);
-      padding: 6px 10px;
-      border-radius: 999px;
-      cursor: pointer;
-      font-size: 12px;
-    }
-    .lang-switch button.active {
-      background: var(--primary);
-      border-color: var(--primary);
-      color: #fff;
-    }
-    main {
-      max-width: 1040px;
-      margin: 0 auto;
-      padding: 28px 20px 40px;
-    }
-    .hero, .card {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-    }
-    .hero {
-      padding: 30px;
-      margin-bottom: 18px;
-      background: linear-gradient(135deg, #fff 0%, #ffe9ef 100%);
-    }
-    h1 { margin: 0 0 10px; font-size: 34px; line-height: 1.08; }
-    .hero p { margin: 0 0 16px; color: var(--muted); font-size: 18px; max-width: 680px; }
-    .cta {
-      display: inline-block;
-      background: var(--primary);
-      color: #fff;
-      text-decoration: none;
-      font-weight: 700;
-      padding: 11px 16px;
+      padding: 8px 10px;
       border-radius: 10px;
-      margin-right: 10px;
-      margin-bottom: 10px;
     }
-    .cta.secondary {
-      background: #fff;
-      color: var(--primary);
-      border: 1px solid #fecdd3;
+    nav a:hover{
+      color: var(--text);
+      background: rgba(255,255,255,.06);
     }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+
+    .lang{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.20);
+      color: var(--muted);
+      font-weight: 700;
+      cursor:pointer;
+      user-select:none;
+    }
+    .pill.active{
+      background: rgba(225,29,72,.18);
+      border-color: rgba(225,29,72,.40);
+      color: rgba(255,255,255,.92);
+    }
+
+    /* Hero */
+    .hero{
+      padding: 34px 0 24px;
+    }
+    .hero-grid{
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 18px;
+      align-items:stretch;
+    }
+    @media (max-width: 920px){
+      .hero-grid{ grid-template-columns: 1fr; }
+    }
+
+    .hero-card{
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,.10);
+      background:
+        radial-gradient(1200px 500px at 20% 10%, rgba(59,130,246,.20), rgba(0,0,0,0) 55%),
+        radial-gradient(900px 520px at 80% 20%, rgba(225,29,72,.16), rgba(0,0,0,0) 60%),
+        linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04));
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
+      padding: 26px;
+      min-height: 320px;
+    }
+
+    /* background image optional */
+    .hero-card::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        linear-gradient(180deg, rgba(7,11,22,.45), rgba(7,11,22,.78)),
+        url("assets/bg-masp-ponte-night.jpg");
+      background-size: cover;
+      background-position: center;
+      opacity: .35; /* reduz se quiser mais imagem */
+      pointer-events:none;
+    }
+    .hero-card > *{ position:relative; }
+
+    h1{
+      margin:0;
+      font-size: clamp(28px, 3.4vw, 48px);
+      letter-spacing:-.03em;
+      line-height: 1.08;
+    }
+    .sub{
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 17px;
+      max-width: 62ch;
+    }
+    .cta{
+      display:flex;
+      gap: 12px;
+      flex-wrap:wrap;
+      margin-top: 18px;
+    }
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap: 10px;
+      padding: 12px 16px;
+      border-radius: 14px;
+      font-weight: 800;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.92);
+      cursor:pointer;
+    }
+    .btn:hover{ background: rgba(255,255,255,.09); }
+    .btn.primary{
+      background: linear-gradient(180deg, rgba(225,29,72,.92), rgba(225,29,72,.72));
+      border-color: rgba(225,29,72,.55);
+    }
+    .btn.primary:hover{ filter: brightness(1.03); }
+    .hint{
+      margin-top: 12px;
+      color: var(--muted2);
+      font-size: 13px;
+    }
+
+    /* Mock */
+    .mock{
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
+      min-height: 320px;
+    }
+    .mock::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        linear-gradient(180deg, rgba(7,11,22,.22), rgba(7,11,22,.85)),
+        url("assets/bg-luz-night.jpg");
+      background-size: cover;
+      background-position: center;
+      opacity: .75;
+      pointer-events:none;
+    }
+    .mock-inner{
+      position:relative;
+      padding: 18px;
+      height:100%;
+      display:flex;
+      align-items:flex-end;
+      justify-content:center;
+    }
+    .mock-note{
+      width:min(360px, 80%);
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.25);
+      backdrop-filter: blur(12px);
+      padding: 14px 14px;
+      color: var(--muted);
+      text-align:center;
+      font-weight: 700;
+    }
+
+    /* Features */
+    section{
+      padding: 18px 0;
+    }
+    .grid5{
+      display:grid;
+      grid-template-columns: repeat(5, 1fr);
       gap: 14px;
     }
-    .card { padding: 18px; }
-    .card h3 { margin: 0 0 8px; font-size: 18px; }
-    .card p { margin: 0; color: var(--muted); }
-    footer {
-      max-width: 1040px;
-      margin: 8px auto 26px;
-      padding: 0 20px;
-      color: var(--muted);
-      font-size: 14px;
+    @media (max-width: 980px){ .grid5{ grid-template-columns: repeat(2,1fr);} }
+    @media (max-width: 560px){ .grid5{ grid-template-columns: 1fr; } }
+
+    .grid4{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
     }
-    [data-lang] { display: none; }
-    html[data-current-lang="pt-BR"] [data-lang="pt-BR"] { display: block; }
-    html[data-current-lang="en"] [data-lang="en"] { display: block; }
+    @media (max-width: 980px){ .grid4{ grid-template-columns: repeat(2,1fr);} }
+    @media (max-width: 560px){ .grid4{ grid-template-columns: 1fr; } }
+
+    .grid2{
+      display:grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+    @media (max-width: 980px){ .grid2{ grid-template-columns: repeat(2,1fr);} }
+    @media (max-width: 560px){ .grid2{ grid-template-columns: 1fr; } }
+
+    .card{
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,.10);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      box-shadow: 0 10px 40px rgba(0,0,0,.35);
+      padding: 18px;
+    }
+    .card h3{
+      margin:0;
+      font-size: 18px;
+      letter-spacing:-.01em;
+    }
+    .card p{
+      margin: 10px 0 0;
+      color: var(--muted);
+    }
+
+    .section-title{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap: 12px;
+      margin: 10px 0 12px;
+    }
+    .section-title h2{
+      margin:0;
+      font-size: 22px;
+      letter-spacing:-.02em;
+    }
+    .section-title p{
+      margin:0;
+      color: var(--muted2);
+      max-width: 60ch;
+    }
+
+    /* Sources */
+    .sources{
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+    .sources ul{
+      margin: 10px 0 0;
+      padding-left: 18px;
+      color: var(--muted);
+    }
+    .sources li{ margin: 8px 0; }
+    .sources a{
+      color: rgba(255,255,255,.90);
+      border-bottom: 1px dashed rgba(255,255,255,.35);
+    }
+
+    /* Footer */
+    footer{
+      padding: 26px 0 34px;
+      color: var(--muted2);
+      text-align:center;
+    }
+
+    .banner{
+    border-radius: 22px;
+    border: 1px solid rgba(255,255,255,.10);
+    box-shadow: var(--shadow);
+    overflow:hidden;
+    position:relative;
+    padding: 20px;
+    background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+    }
+    .banner::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background-size: cover;
+    background-position: center;
+    opacity:.85;
+    pointer-events:none;
+    }
+    .banner > *{ position:relative; }
+    .banner h2{ margin:0; font-size:22px; letter-spacing:-.02em; }
+    .banner p{ margin:10px 0 0; color: var(--muted); max-width: 70ch; }
+
+    .banner.luz::before{
+    background:
+        linear-gradient(180deg, rgba(7,11,22,.25), rgba(7,11,22,.88)),
+        url("assets/bg-luz-night.jpg");
+    }
+    .banner.ipiranga::before{
+    background:
+        linear-gradient(180deg, rgba(7,11,22,.25), rgba(7,11,22,.88)),
+        url("assets/bg-ipiranga-night.jpg");
+    }
+    
+    .feature{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-items:center;
+    }
+
+    @media (max-width: 920px){
+    .feature{ grid-template-columns: 1fr; }
+    }
+
+    .feature .copy{
+    padding: 6px 2px;
+    }
+
+    .kicker{
+    display:inline-flex;
+    align-items:center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 800;
+    color: rgba(255,255,255,.80);
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.12);
+    background: rgba(0,0,0,.18);
+    }
+
+    .device, .device2 {
+    border-radius: 28px;
+    border: 1px solid rgba(255,255,255,.10);
+    background: rgba(0,0,0,.18);
+    box-shadow: var(--shadow);
+    overflow:hidden;
+    position:relative;
+    }
+
+    .device2, .device2 img {
+        width: 180px;
+        max-height: 400px;
+    }
+
+    .device2 img {
+        display: block;
+    }
+
+    .device img{
+    width:100%;
+    height:auto;
+    display:block;
+    }
+
+    .divider {
+        height: 60px;
+        width: 100%;
+    }
+    .device img{
+        width:100%;
+        height:auto;
+        display:block;
+        transition: opacity .6s ease, transform .6s ease;
+     }
+
+    .device img.fade-out{
+        opacity:0;
+        transform: scale(.98);
+    }
+
+    .device img.fade-in{
+        opacity:1;
+        transform: scale(1);
+    }
+
+    /* leve inclinação opcional */
+    .tilt{
+    transform: rotate(-7deg);
+    transform-origin: 50% 60%;
+    }
+    @media (max-width: 920px){
+    .tilt{ transform:none; }
+    }
+
+    /* Por padrão: mostra tudo */
+    [data-lang]{ display:block; }
+
+    /* Quando JS estiver ativo: filtra por idioma */
+    html.js [data-lang]{ display:none; }
+    html.js[data-lang="pt"] [data-lang="pt"]{ display:block; }
+    html.js[data-lang="en"] [data-lang="en"]{ display:block; }
   </style>
 </head>
+
 <body>
-  <header>
-    <div class="topbar">
-      <div class="brand">Due SP</div>
+  <div class="topbar">
+    <div class="container topbar-inner">
+      <div class="brand">
+        <span class="logo-dot" aria-hidden="true"></span>
+        <span>Due SP</span>
+      </div>
+
       <nav>
-        <a href="./index.html">Home</a>
-        <a href="./privacy.html">Privacidade</a>
-        <a href="./terms.html">Termos</a>
+        <a href="#home" data-i18n="nav_home">Home</a>
+        <a href="#privacy" data-i18n="nav_priv">Privacidade</a>
+        <a href="#terms" data-i18n="nav_terms">Termos</a>
       </nav>
-      <div class="lang-switch">
-        <button type="button" data-set-lang="pt-BR">PT-BR</button>
-        <button type="button" data-set-lang="en">EN</button>
+
+      <div class="lang" aria-label="Language">
+        <div class="pill" id="btn-pt">PT-BR</div>
+        <div class="pill" id="btn-en">EN</div>
       </div>
     </div>
-  </header>
+  </div>
 
-  <main>
+  <main id="home" class="container">
     <section class="hero">
-      <div data-lang="pt-BR">
-        <h1>Seu deslocamento em São Paulo, mais rápido e inteligente.</h1>
-        <p>O Due SP reúne ônibus, Metrô e CPTM em um só lugar, com previsão de chegadas, status do sistema e mapa interativo para você decidir melhor cada trajeto.</p>
-        <a class="cta" href="https://apps.apple.com/br/app/due-sao-paulo-infomações-cptm-metro-e-sptrans-em-tempo-real/id857976922">Baixar na App Store</a>
-        <a class="cta secondary" href="./privacy.html">Ler Privacidade</a>
-      </div>
-      <div data-lang="en">
-        <h1>Move through São Paulo faster and smarter.</h1>
-        <p>Due SP brings buses, Metro and CPTM together with live arrivals, system status and an interactive map so you can choose better routes every day.</p>
-        <a class="cta" href="https://apps.apple.com/uk/app/due-sao-paulo-infomações-cptm-metro-e-sptrans-em-tempo-real/id857976922">Download on the App Store</a>
-        <a class="cta secondary" href="./privacy.html">Read Privacy</a>
+      <div class="hero-grid">
+        <div class="hero-card">
+          <div data-lang="pt">
+            <h1>Seu deslocamento em São Paulo, mais rápido e inteligente.</h1>
+            <p class="sub">
+              O Due SP reúne ônibus, Metrô e CPTM em um só lugar, com previsão de chegadas,
+              status do sistema e mapa interativo para você decidir melhor cada trajeto.
+            </p>
+
+            <div class="cta">
+              <a class="btn primary" href="https://apps.apple.com/gb/app/due-sao-paulo-infoma%C3%A7%C3%B5es-cptm-metro-e-sptrans-em-tempo-real/id857976922" target="_blank" rel="noopener">
+                Baixar na App Store
+              </a>
+              <a class="btn" href="#privacy">Ler Privacidade</a>
+            </div>
+            <div class="hint">iPhone e iPad. Dados oficiais, conforme disponibilidade.</div>
+          </div>
+
+          <div data-lang="en">
+            <h1>Move through São Paulo faster and smarter.</h1>
+            <p class="sub">
+              Due SP brings buses, Metro and CPTM together with live arrivals, system status
+              and an interactive map so you can choose better routes every day.
+            </p>
+
+            <div class="cta">
+              <a class="btn primary" href="https://apps.apple.com/gb/app/due-sao-paulo-infoma%C3%A7%C3%B5es-cptm-metro-e-sptrans-em-tempo-real/id857976922" target="_blank" rel="noopener">
+                Download on the App Store
+              </a>
+              <a class="btn" href="#privacy">Read Privacy</a>
+            </div>
+            <div class="hint">iPhone & iPad. Official data sources, subject to availability.</div>
+          </div>
+        </div>
+
+        <div class="mock">
+            <div class="mock-inner" style="padding:18px;">
+                <div class="device" style="max-height: 500px;">
+                <img id="mockSlider"
+                    src="assets/art1_iphone.png"
+                    alt="Due SP preview"
+                    loading="eager">
+                </div>
+            </div>
+        </div>
       </div>
     </section>
 
-    <section class="grid">
-      <article class="card">
-        <div data-lang="pt-BR">
-          <h3>Chegadas em tempo real</h3>
-          <p>Veja os próximos horários por parada e acompanhe o tempo restante até cada chegada.</p>
+    <section>
+      <div class="section-title">
+        <div>
+          <h2 data-lang="pt">O que você consegue fazer</h2>
+          <h2 data-lang="en">What you can do</h2>
+          <p data-lang="pt">Tudo em um fluxo simples: ver, decidir e embarcar.</p>
+          <p data-lang="en">A simple flow: check, decide, and go.</p>
         </div>
-        <div data-lang="en">
-          <h3>Live arrivals</h3>
-          <p>Check upcoming times by stop and track how long until each arrival.</p>
+      </div>
+
+      <div class="grid4">
+        <div class="card">
+          <h3 data-lang="pt">Chegadas em tempo real</h3>
+          <h3 data-lang="en">Live arrivals</h3>
+          <p data-lang="pt">Veja os próximos horários por parada e acompanhe o tempo restante até cada chegada.</p>
+          <p data-lang="en">Check upcoming times by stop and track how long until each arrival.</p>
         </div>
-      </article>
-      <article class="card">
-        <div data-lang="pt-BR">
-          <h3>Mapa com paradas próximas</h3>
-          <p>Explore a região no mapa, encontre pontos de interesse e abra detalhes com um toque.</p>
+
+        <div class="card">
+          <h3 data-lang="pt">Mapa com paradas próximas</h3>
+          <h3 data-lang="en">Nearby stops map</h3>
+          <p data-lang="pt">Explore a região no mapa, encontre pontos de interesse e abra detalhes com um toque.</p>
+          <p data-lang="en">Explore your area on the map, find transit points and open details with one tap.</p>
         </div>
-        <div data-lang="en">
-          <h3>Nearby stops map</h3>
-          <p>Explore your area on the map, find transit points and open details with one tap.</p>
+
+        <div class="card">
+          <h3 data-lang="pt">Status de Metrô e CPTM</h3>
+          <h3 data-lang="en">Metro and CPTM status</h3>
+          <p data-lang="pt">Acompanhe operação normal, alertas e interrupções para planejar seu trajeto.</p>
+          <p data-lang="en">Track normal operation, alerts and disruptions to plan around issues.</p>
         </div>
-      </article>
-      <article class="card">
-        <div data-lang="pt-BR">
-          <h3>Status de Metrô e CPTM</h3>
-          <p>Acompanhe operação normal, alertas e interrupções para planejar seu trajeto.</p>
+
+        <div class="card">
+          <h3 data-lang="pt">Favoritos e personalização</h3>
+          <h3 data-lang="en">Favorites and customization</h3>
+          <p data-lang="pt">Fixe linhas importantes, salve preferências e ajuste a aparência do app.</p>
+          <p data-lang="en">Pin important lines, save preferences and personalize your app look.</p>
         </div>
-        <div data-lang="en">
-          <h3>Metro and CPTM status</h3>
-          <p>Track normal operation, alerts and disruptions to plan around issues.</p>
-        </div>
-      </article>
-      <article class="card">
-        <div data-lang="pt-BR">
-          <h3>Favoritos e personalização</h3>
-          <p>Fixe linhas importantes, salve preferências e ajuste a aparência do app.</p>
-        </div>
-        <div data-lang="en">
-          <h3>Favorites and customization</h3>
-          <p>Pin important lines, save preferences and personalize your app look.</p>
-        </div>
-      </article>
+      </div>
     </section>
 
-    <section class="card" style="margin-top:14px;">
-      <div data-lang="pt-BR">
-        <h3 style="margin-top:0;">Fontes oficiais de dados</h3>
-        <p style="margin-bottom:8px; color:var(--muted);">As informações exibidas no Due SP são alimentadas por dados públicos e oficiais, conforme disponibilidade:</p>
-        <ul>
-          <li>SPTrans (API/Olho Vivo e bases públicas): <a href="https://www.sptrans.com.br/desenvolvedores/" target="_blank" rel="noopener noreferrer">sptrans.com.br/desenvolvedores</a></li>
-          <li>CPTM (status operacional): <a href="https://api.cptm.sp.gov.br/AppCPTM/v1/Linhas/ObterStatus" target="_blank" rel="noopener noreferrer">api.cptm.sp.gov.br/.../ObterStatus</a></li>
-          <li>Metrô de São Paulo (status operacional): <a href="https://www.metro.sp.gov.br/wp-content/themes/metrosp/direto-metro.php" target="_blank" rel="noopener noreferrer">metro.sp.gov.br/.../direto-metro.php</a></li>
-        </ul>
+    <section>
+        <div class="sources" style="padding:22px;">
+            <div class="section-title" style="margin:0 0 14px;">
+            <div>
+                <h2 data-lang="pt">Destaques do app</h2>
+                <h2 data-lang="en">App highlights</h2>
+                <p data-lang="pt">Principais telas para acompanhar ônibus, Metrô e CPTM no dia a dia.</p>
+                <p data-lang="en">Key screens to follow buses, Metro and CPTM day to day.</p>
+            </div>
+            </div>
+            <div class="grid2">
+                <!-- 1) Mapa -->
+                <div class="feature" style="margin-top:16px;">
+                    <div class="copy">
+                        <h2 data-lang="pt" style="margin-top:10px;">Ônibus, Metrô e CPTM no mesmo mapa</h2>
+                        <h2 data-lang="en" style="margin-top:10px;">Buses, Metro and CPTM on one map</h2>
+
+                        <p data-lang="pt">Encontre paradas próximas, visualize linhas e acompanhe o movimento na região.</p>
+                        <p data-lang="en">Find nearby stops, view lines and track what’s happening in your area.</p>
+                    </div>
+                    <div class="device2">
+                        <img src="assets/screen_mapa.jpg" alt="Mapa com paradas próximas" loading="lazy" />
+                    </div>
+                </div>
+
+                <!-- 2) Detalhe da parada -->
+                <div class="feature">
+                    <div class="device2">
+                        <img src="assets/screen_stop_detail.jpg" alt="Detalhe da parada com próximas chegadas" loading="lazy" />
+                    </div>
+                    <div class="copy">
+                        <h2 data-lang="pt" style="margin-top:10px;">Próximas chegadas por parada</h2>
+                        <h2 data-lang="en" style="margin-top:10px;">Next arrivals by stop</h2>
+
+                        <p data-lang="pt">Veja horários, frequência e tempo restante até cada chegada em um só lugar.</p>
+                        <p data-lang="en">See times, frequency and countdown to each arrival in one place.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+            
+            <div class="grid2">
+                <!-- 3) Rota/Jornada -->
+                <div class="feature">
+                    <div class="copy">
+
+                        <h2 data-lang="pt" style="margin-top:10px;">Confira o trajeto completo antes de embarcar</h2>
+                        <h2 data-lang="en" style="margin-top:10px;">Check your full route before you go</h2>
+
+                        <p data-lang="pt">Visualize rota, tempo estimado e paradas para planejar com mais segurança.</p>
+                        <p data-lang="en">See route, estimated time and stops to plan with confidence.</p>
+                    </div>
+                    <div class="device2">
+                        <img src="assets/screen_journey_route.jpg" alt="Rota com mapa e paradas" loading="lazy" />
+                    </div>
+                </div>
+
+                <!-- 4) Status das linhas -->
+                <div class="feature">
+                    <div class="device2">
+                        <img src="assets/screen_status_lines.jpg" alt="Status do sistema e linhas" loading="lazy" />
+                    </div>
+                    <div class="copy">
+
+                        <h2 data-lang="pt" style="margin-top:10px;">Status das linhas em um só lugar</h2>
+                        <h2 data-lang="en" style="margin-top:10px;">Line status in one place</h2>
+
+                        <p data-lang="pt">Acompanhe operação normal, alertas e interrupções para evitar surpresas.</p>
+                        <p data-lang="en">Track normal operation, alerts and disruptions to avoid surprises.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </section>
+
+    <section id="privacy">
+      <div class="sources">
+        <div class="section-title" style="margin:0 0 10px;">
+          <div>
+            <h2 data-lang="pt">Privacidade</h2>
+            <h2 data-lang="en">Privacy</h2>
+            <p data-lang="pt">Leia nossa política para entender como os dados são tratados.</p>
+            <p data-lang="en">Read our policy to understand how data is handled.</p>
+          </div>
+        </div>
+
+        <!-- Ajuste as URLs conforme seus arquivos reais -->
+        <p class="hint" style="margin:0;">
+          <a href="./privacy.html"><span data-lang="en">Privacy</span><span data-lang="pt">Privacidade</span></a>
+        </p>
       </div>
-      <div data-lang="en">
-        <h3 style="margin-top:0;">Official data sources</h3>
-        <p style="margin-bottom:8px; color:var(--muted);">Information shown in Due SP is powered by public and official data sources, subject to availability:</p>
+    </section>
+
+    <section id="terms">
+      <div class="sources">
+        <div class="section-title" style="margin:0 0 10px;">
+          <div>
+            <h2 data-lang="pt">Termos</h2>
+            <h2 data-lang="en">Terms</h2>
+            <p data-lang="pt">Regras e condições de uso do app.</p>
+            <p data-lang="en">Rules and conditions for using the app.</p>
+          </div>
+        </div>
+
+        <!-- Ajuste as URLs conforme seus arquivos reais -->
+        <p class="hint" style="margin:0;">
+          <a href="./terms.html"><span data-lang="en">Terms and conditions</span><span data-lang="pt">Termos e condições</span></a>
+        </p>
+      </div>
+    </section>
+
+    <section>
+      <div class="sources">
+        <div class="section-title" style="margin:0 0 10px;">
+          <div>
+            <h2 data-lang="pt">Fontes oficiais de dados</h2>
+            <h2 data-lang="en">Official data sources</h2>
+            <p data-lang="pt">As informações exibidas no Due SP são alimentadas por dados públicos e oficiais, conforme disponibilidade:</p>
+            <p data-lang="en">Information shown in Due SP is powered by public and official data sources, subject to availability:</p>
+          </div>
+        </div>
+
         <ul>
-          <li>SPTrans (API/Olho Vivo and public datasets): <a href="https://www.sptrans.com.br/desenvolvedores/" target="_blank" rel="noopener noreferrer">sptrans.com.br/desenvolvedores</a></li>
-          <li>CPTM (service status): <a href="https://api.cptm.sp.gov.br/AppCPTM/v1/Linhas/ObterStatus" target="_blank" rel="noopener noreferrer">api.cptm.sp.gov.br/.../ObterStatus</a></li>
-          <li>São Paulo Metro (service status): <a href="https://www.metro.sp.gov.br/wp-content/themes/metrosp/direto-metro.php" target="_blank" rel="noopener noreferrer">metro.sp.gov.br/.../direto-metro.php</a></li>
+          <li>
+            SPTrans (API/Olho Vivo e bases públicas):
+            <a href="https://www.sptrans.com.br/desenvolvedores" target="_blank" rel="noopener">sptrans.com.br/desenvolvedores</a>
+          </li>
+          <li>
+            CPTM (status operacional):
+            <a href="https://api.cptm.sp.gov.br/" target="_blank" rel="noopener">api.cptm.sp.gov.br</a>
+          </li>
+          <li>
+            Metrô de São Paulo (status operacional):
+            <a href="https://www.metro.sp.gov.br/" target="_blank" rel="noopener">metro.sp.gov.br</a>
+          </li>
         </ul>
       </div>
     </section>
+
+    <section>
+        <div class="sources">
+            <div class="section-title" style="margin:0 0 10px;">
+            <div>
+                <h2 data-lang="pt">Galeria</h2>
+                <h2 data-lang="en">Gallery</h2>
+                <p data-lang="pt">Peças de marketing e telas do app.</p>
+                <p data-lang="en">Marketing artboards and app screens.</p>
+            </div>
+            </div>
+
+            <div class="grid5">
+            <div class="device"><img src="assets/art1_iphone.png" alt="Artboard 1" loading="lazy"></div>
+            <div class="device"><img src="assets/art2_iphone.png" alt="Artboard 2" loading="lazy"></div>
+            <div class="device"><img src="assets/art3_iphone.png" alt="Artboard 3" loading="lazy"></div>
+            <div class="device"><img src="assets/art4_iphone.png" alt="Artboard 4" loading="lazy"></div>
+            <div class="device"><img src="assets/art5_iphone.png" alt="Artboard 5" loading="lazy"></div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+      <div data-lang="pt">Due SP © <span id="year"></span>. Mobilidade urbana para São Paulo.</div>
+      <div data-lang="en">Due SP © <span id="year2"></span>. Urban mobility for São Paulo.</div>
+    </footer>
   </main>
 
-  <footer>
-    <div data-lang="pt-BR">Due SP © 2026. Mobilidade urbana para São Paulo.</div>
-    <div data-lang="en">Due SP © 2026. Urban mobility for São Paulo.</div>
-  </footer>
-
   <script>
-    (function () {
-      var KEY = "due-sp-lang";
-      var allowed = { "pt-BR": true, "en": true };
-      var params = new URLSearchParams(window.location.search);
-      var lang = params.get("lang") || localStorage.getItem(KEY) || "pt-BR";
-      if (!allowed[lang]) lang = "pt-BR";
+    document.documentElement.classList.add("js");
+    // year
+    const y = new Date().getFullYear();
+    document.getElementById("year").textContent = y;
+    document.getElementById("year2").textContent = y;
 
-      function setLang(next) {
-        document.documentElement.setAttribute("data-current-lang", next);
-        document.documentElement.lang = next;
-        localStorage.setItem(KEY, next);
-        document.querySelectorAll("[data-set-lang]").forEach(function (btn) {
-          btn.classList.toggle("active", btn.getAttribute("data-set-lang") === next);
-        });
-      }
+    // language toggle
+    const root = document.documentElement;
+    const btnPt = document.getElementById("btn-pt");
+    const btnEn = document.getElementById("btn-en");
 
-      document.querySelectorAll("[data-set-lang]").forEach(function (btn) {
-        btn.addEventListener("click", function () {
-          setLang(btn.getAttribute("data-set-lang"));
-        });
+    function setLang(lang){
+      root.setAttribute("data-lang", lang);
+      root.lang = lang === "pt" ? "pt-BR" : "en";
+      localStorage.setItem("due_lang", lang);
+
+      btnPt.classList.toggle("active", lang === "pt");
+      btnEn.classList.toggle("active", lang === "en");
+
+      // update nav labels (optional)
+      const labels = {
+        pt: { nav_home:"Home", nav_priv:"Privacidade", nav_terms:"Termos" },
+        en: { nav_home:"Home", nav_priv:"Privacy", nav_terms:"Terms" }
+      };
+      document.querySelectorAll("[data-i18n]").forEach(el=>{
+        const key = el.getAttribute("data-i18n");
+        el.textContent = (labels[lang] && labels[lang][key]) ? labels[lang][key] : el.textContent;
       });
+    }
 
-      setLang(lang);
-    })();
+    btnPt.addEventListener("click", ()=> setLang("pt"));
+    btnEn.addEventListener("click", ()=> setLang("en"));
+
+    // Mock image slider
+    const mockImages = [
+    "assets/art1_iphone.png",
+    "assets/art2_iphone.png",
+    "assets/art3_iphone.png",
+    "assets/art4_iphone.png",
+    "assets/art5_iphone.png"
+    ];
+
+    let currentIndex = 0;
+    const slider = document.getElementById("mockSlider");
+
+    function nextMockImage() {
+        slider.classList.add("fade-out");
+
+        setTimeout(() => {
+            currentIndex = (currentIndex + 1) % mockImages.length;
+            slider.src = mockImages[currentIndex];
+            slider.classList.remove("fade-out");
+            slider.classList.add("fade-in");
+
+            setTimeout(() => {
+            slider.classList.remove("fade-in");
+            }, 600);
+
+        }, 300);
+    }
+
+    // troca a cada 3.5 segundos
+    setInterval(nextMockImage, 3500);
+    // init
+    const saved = localStorage.getItem("due_lang");
+    setLang(saved === "en" ? "en" : "pt");
   </script>
 </body>
 </html>
