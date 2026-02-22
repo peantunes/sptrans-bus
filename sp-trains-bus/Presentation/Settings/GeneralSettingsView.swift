@@ -10,7 +10,7 @@ struct GeneralSettingsView: View {
 
     private let appWebsiteURL = URL(string: "https://sptrans.lolados.app")
     private let supportURL = URL(string: "https://lolados.app/contact.php")
-    private let policyURL = URL(string: "https://sptrans.lolados.app/policy.html")
+    private let policyURL = URL(string: "https://sptrans.lolados.app/privacy.html")
     private let termsURL = URL(string: "https://sptrans.lolados.app/terms.html")
 
     init(analyticsService: AnalyticsServiceProtocol = NoOpAnalyticsService()) {

@@ -151,11 +151,11 @@
 			);
 			mainGroup = 9C022DFD2F2FBEF00073F454;
 			minimizedProjectReferenceProxies = 1;
-			preferredProjectObjectVersion = 77;
-			productRefGroup = 9C022E072F2FBEF00073F454 /* Products */;
 			packageReferences = (
 				C0A1000C2F6B123400000001 /* XCRemoteSwiftPackageReference "my-analytics-ios-sdk" */,
 			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 9C022E072F2FBEF00073F454 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -183,17 +183,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		C0A1000C2F6B123400000001 /* XCRemoteSwiftPackageReference "my-analytics-ios-sdk" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "git@github.com:peantunes/my-analytics-ios-sdk.git";
-			requirement = {
-				branch = main;
-				kind = branch;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCBuildConfiguration section */
 		9C022E152F2FBEF20073F454 /* Debug */ = {
@@ -233,13 +222,14 @@
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TARGETED_DEVICE_FAMILY = "1,2";
 				XROS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -281,13 +271,14 @@
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TARGETED_DEVICE_FAMILY = "1,2";
 				XROS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -408,14 +399,6 @@
 		};
 /* End XCBuildConfiguration section */
 
-/* Begin XCSwiftPackageProductDependency section */
-		C0A1000B2F6B123400000001 /* AnalyticsSDK */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = C0A1000C2F6B123400000001 /* XCRemoteSwiftPackageReference "my-analytics-ios-sdk" */;
-			productName = AnalyticsSDK;
-		};
-/* End XCSwiftPackageProductDependency section */
-
 /* Begin XCConfigurationList section */
 		9C022E012F2FBEF00073F454 /* Build configuration list for PBXProject "sp-trains-bus" */ = {
 			isa = XCConfigurationList;
@@ -436,6 +419,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		C0A1000C2F6B123400000001 /* XCRemoteSwiftPackageReference "my-analytics-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "git@github.com:peantunes/my-analytics-ios-sdk.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C0A1000B2F6B123400000001 /* AnalyticsSDK */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C0A1000C2F6B123400000001 /* XCRemoteSwiftPackageReference "my-analytics-ios-sdk" */;
+			productName = AnalyticsSDK;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 9C022DFE2F2FBEF00073F454 /* Project object */;
 }
