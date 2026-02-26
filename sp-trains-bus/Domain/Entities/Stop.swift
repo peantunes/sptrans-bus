@@ -25,4 +25,24 @@ struct Stop: Codable, Identifiable {
         }
         return .bus
     }
+
+    var isRailOnlyService: Bool {
+        let tokens = routeTokens
+        guard !tokens.isEmpty else { return false }
+
+        let railTokens = tokens.filter { token in
+            token.contains("METRO") || token.contains("CPTM")
+        }
+        return !railTokens.isEmpty && railTokens.count == tokens.count
+    }
+
+    private var routeTokens: [String] {
+        guard let routes else { return [] }
+        return routes
+            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            .uppercased()
+            .components(separatedBy: CharacterSet(charactersIn: ",;/|"))
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+    }
 }

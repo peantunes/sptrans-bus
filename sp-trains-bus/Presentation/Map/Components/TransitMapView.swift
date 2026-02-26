@@ -1,5 +1,6 @@
 import SwiftUI
 import MapKit
+import CoreLocation
 
 struct TransitMapView: UIViewRepresentable {
     @Binding var region: MKCoordinateRegion
@@ -37,7 +38,11 @@ struct TransitMapView: UIViewRepresentable {
     }
 
     private var visibleStops: [Stop] {
-        selectedFilter == .bus ? stops : []
+        guard selectedFilter == .bus else { return [] }
+        return stops.filter { stop in
+            guard stop.isRailOnlyService else { return true }
+            return !isStationAlreadyShownInRailNetwork(stop: stop, stations: visibleStations)
+        }
     }
 
     private var visibleRailLines: [RailMapLine] {
@@ -54,6 +59,37 @@ struct TransitMapView: UIViewRepresentable {
     private var visibleStations: [RailMapStation] {
         guard region.span.latitudeDelta <= 0.18 else { return [] }
         return visibleRailLines.flatMap(\.stations)
+    }
+
+    private func isStationAlreadyShownInRailNetwork(stop: Stop, stations: [RailMapStation]) -> Bool {
+        if stations.contains(where: { $0.stopId == stop.stopId }) {
+            return true
+        }
+
+        let stopName = normalizedStationName(stop.stopName)
+        let stopLocation = CLLocation(latitude: stop.location.latitude, longitude: stop.location.longitude)
+
+        return stations.contains { station in
+            let stationName = normalizedStationName(station.name)
+            guard stationName == stopName || stationName.contains(stopName) || stopName.contains(stationName) else {
+                return false
+            }
+
+            let stationLocation = CLLocation(
+                latitude: station.coordinate.latitude,
+                longitude: station.coordinate.longitude
+            )
+            return stopLocation.distance(from: stationLocation) <= 120
+        }
+    }
+
+    private func normalizedStationName(_ value: String) -> String {
+        value
+            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            .lowercased()
+            .replacingOccurrences(of: "-", with: " ")
+            .components(separatedBy: CharacterSet.alphanumerics.inverted)
+            .joined()
     }
 
     final class Coordinator: NSObject, MKMapViewDelegate {
@@ -98,7 +134,7 @@ struct TransitMapView: UIViewRepresentable {
                     ?? MKMarkerAnnotationView(annotation: stationAnnotation, reuseIdentifier: identifier)
                 view.annotation = stationAnnotation
                 view.markerTintColor = UIColor(Color(hex: stationAnnotation.station.colorHex))
-                view.glyphText = ""
+                view.glyphImage = UIImage(systemName: "tram.fill")
                 view.displayPriority = .defaultLow
                 view.canShowCallout = false
                 return view
