@@ -125,6 +125,17 @@
 "map.carousel.tap_arrivals" = "Tap for arrivals";
 "map.carousel.distance_m_format" = "%d m";
 "map.carousel.distance_km_format" = "%.1f km";
+"map.weather.title" = "Weather";
+"map.weather.open_details_accessibility" = "Open weather details";
+"map.weather.metrics.feels_like" = "Feels Like";
+"map.weather.metrics.humidity" = "Humidity";
+"map.weather.metrics.wind" = "Wind";
+"map.weather.metrics.visibility" = "Visibility";
+"map.weather.metrics.pressure" = "Pressure";
+"map.weather.today_temperature" = "Today Temperature";
+"map.weather.today_rain_chance" = "Today Rain Chance";
+"map.weather.week_trend" = "Week Trend";
+"map.weather.week_forecast" = "Week Forecast";
 
 "stop_detail.loading_arrivals" = "Loading arrivals...";
 "stop_detail.no_upcoming_arrivals" = "No upcoming arrivals";

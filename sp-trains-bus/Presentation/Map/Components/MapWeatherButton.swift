@@ -24,7 +24,7 @@ struct MapWeatherButton: View {
             .shadow(color: .black.opacity(0.16), radius: 5, x: 0, y: 2)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Open weather details")
+        .accessibilityLabel(localized("map.weather.open_details_accessibility"))
     }
 
     private var resolvedSymbolName: String {
@@ -32,5 +32,9 @@ struct MapWeatherButton: View {
             return snapshot.current.symbolName
         }
         return "cloud.sun.fill"
+    }
+
+    private func localized(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 }

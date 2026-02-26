@@ -108,7 +108,7 @@ struct MapExplorerView: View {
                             .clipShape(Circle())
                     }
                 }
-                .padding(.top, 60)
+                .padding(.top, 16)
                 .padding(.trailing, 16)
                 Spacer()
             }

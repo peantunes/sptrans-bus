@@ -70,11 +70,20 @@ struct RailMapLineCache: Codable {
 
 struct RailMapStationCache: Codable {
     let id: String
-    let stopId: Int?
+    let stopId: Int
     let name: String
     let latitude: Double
     let longitude: Double
     let system: String
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case stopId
+        case name
+        case latitude
+        case longitude
+        case system
+    }
 
     @MainActor
     init(station: RailMapStation) {
@@ -86,12 +95,21 @@ struct RailMapStationCache: Codable {
         system = station.system.cacheValue
     }
 
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        stopId = try container.decodeIfPresent(Int.self, forKey: .stopId) ?? syntheticRailStopId(fromStationId: id)
+        name = try container.decode(String.self, forKey: .name)
+        latitude = try container.decode(Double.self, forKey: .latitude)
+        longitude = try container.decode(Double.self, forKey: .longitude)
+        system = try container.decode(String.self, forKey: .system)
+    }
+
     func toRailMapStation(colorHex: String, defaultSystem: RailSystem) -> RailMapStation {
         let mappedSystem = RailSystem(cacheValue: system) ?? defaultSystem
-        let resolvedStopId = stopId ?? syntheticRailStopId(fromStationId: id)
         return RailMapStation(
             id: id,
-            stopId: resolvedStopId,
+            stopId: stopId,
             name: name,
             coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude),
             system: mappedSystem,

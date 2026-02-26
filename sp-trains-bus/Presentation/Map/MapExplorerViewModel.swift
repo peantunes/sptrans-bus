@@ -29,7 +29,7 @@ class MapExplorerViewModel: NSObject, ObservableObject {
     private var lastLoadedRegion: MKCoordinateRegion?
     private var railNetworkLoadTask: Task<Void, Never>?
     private var weatherLoadTask: Task<Void, Never>?
-    private let railNetworkCacheFileName = "rail_network_cache_v1.json"
+    private let railNetworkCacheFileName = "rail_network_cache_v2.json"
 
     init(
         getNearbyStopsUseCase: GetNearbyStopsUseCase,

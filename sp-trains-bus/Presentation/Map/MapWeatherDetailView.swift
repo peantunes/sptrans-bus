@@ -21,10 +21,10 @@ struct MapWeatherDetailView: View {
                 .padding(16)
             }
             .background(AppColors.background.ignoresSafeArea())
-            .navigationTitle("Weather")
+            .navigationTitle(localized("map.weather.title"))
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") {
+                    Button(localized("common.done")) {
                         dismiss()
                     }
                 }
@@ -69,12 +69,12 @@ struct MapWeatherDetailView: View {
 
     private var metricsGrid: some View {
         let items: [(String, String, String)] = [
-            ("Feels Like", "\(Int(snapshot.current.apparentTemperatureCelsius.rounded()))°", "thermometer"),
-            ("Humidity", "\(Int(snapshot.current.humidityPercent.rounded()))%", "humidity.fill"),
-            ("Wind", "\(Int(snapshot.current.windSpeedKilometersPerHour.rounded())) km/h", "wind"),
+            (localized("map.weather.metrics.feels_like"), "\(Int(snapshot.current.apparentTemperatureCelsius.rounded()))°", "thermometer"),
+            (localized("map.weather.metrics.humidity"), "\(Int(snapshot.current.humidityPercent.rounded()))%", "humidity.fill"),
+            (localized("map.weather.metrics.wind"), "\(Int(snapshot.current.windSpeedKilometersPerHour.rounded())) km/h", "wind"),
             ("UV", "\(Int(snapshot.current.uvIndex.rounded()))", "sun.max.fill"),
-            ("Visibility", "\(Int(snapshot.current.visibilityKilometers.rounded())) km", "eye.fill"),
-            ("Pressure", "\(Int(snapshot.current.pressureHPa.rounded())) hPa", "gauge")
+            (localized("map.weather.metrics.visibility"), "\(Int(snapshot.current.visibilityKilometers.rounded())) km", "eye.fill"),
+            (localized("map.weather.metrics.pressure"), "\(Int(snapshot.current.pressureHPa.rounded())) hPa", "gauge")
         ]
 
         return LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
@@ -98,7 +98,7 @@ struct MapWeatherDetailView: View {
     private var hourlyTemperatureChart: some View {
         GlassCard {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Today Temperature")
+                Text(localized("map.weather.today_temperature"))
                     .font(AppFonts.headline())
                     .foregroundColor(AppColors.text)
 
@@ -124,7 +124,7 @@ struct MapWeatherDetailView: View {
     private var hourlyPrecipitationChart: some View {
         GlassCard {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Today Rain Chance")
+                Text(localized("map.weather.today_rain_chance"))
                     .font(AppFonts.headline())
                     .foregroundColor(AppColors.text)
 
@@ -143,7 +143,7 @@ struct MapWeatherDetailView: View {
     private var weeklyTemperatureChart: some View {
         GlassCard {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Week Trend")
+                Text(localized("map.weather.week_trend"))
                     .font(AppFonts.headline())
                     .foregroundColor(AppColors.text)
 
@@ -170,7 +170,7 @@ struct MapWeatherDetailView: View {
     private var weeklyForecastList: some View {
         GlassCard {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Week Forecast")
+                Text(localized("map.weather.week_forecast"))
                     .font(AppFonts.headline())
                     .foregroundColor(AppColors.text)
 
@@ -204,5 +204,9 @@ struct MapWeatherDetailView: View {
             return symbolName
         }
         return "cloud.sun.fill"
+    }
+
+    private func localized(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 }
