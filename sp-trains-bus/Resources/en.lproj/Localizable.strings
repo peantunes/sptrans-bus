@@ -136,6 +136,13 @@
 "map.weather.today_rain_chance" = "Today Rain Chance";
 "map.weather.week_trend" = "Week Trend";
 "map.weather.week_forecast" = "Week Forecast";
+"map.weather.day_details" = "Day Details";
+"map.weather.metrics.rain_volume" = "Rain Volume";
+"map.weather.metrics.snow_volume" = "Snow Volume";
+"map.weather.metrics.sunrise" = "Sunrise";
+"map.weather.metrics.sunset" = "Sunset";
+"map.weather.metrics.dew_point" = "Dew Point";
+"map.weather.metrics.cloud_cover" = "Cloud Cover";
 
 "stop_detail.loading_arrivals" = "Loading arrivals...";
 "stop_detail.no_upcoming_arrivals" = "No upcoming arrivals";

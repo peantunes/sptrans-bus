@@ -136,6 +136,13 @@
 "map.weather.today_rain_chance" = "Chance de chuva hoje";
 "map.weather.week_trend" = "Tendência da semana";
 "map.weather.week_forecast" = "Previsão da semana";
+"map.weather.day_details" = "Detalhes do dia";
+"map.weather.metrics.rain_volume" = "Volume de chuva";
+"map.weather.metrics.snow_volume" = "Volume de neve";
+"map.weather.metrics.sunrise" = "Nascer do sol";
+"map.weather.metrics.sunset" = "Pôr do sol";
+"map.weather.metrics.dew_point" = "Ponto de orvalho";
+"map.weather.metrics.cloud_cover" = "Cobertura de nuvens";
 
 "stop_detail.loading_arrivals" = "Carregando chegadas...";
 "stop_detail.no_upcoming_arrivals" = "Sem próximas chegadas";
