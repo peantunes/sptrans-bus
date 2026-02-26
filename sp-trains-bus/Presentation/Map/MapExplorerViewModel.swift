@@ -5,6 +5,7 @@ import MapKit
 class MapExplorerViewModel: NSObject, ObservableObject {
     @Published var region: MKCoordinateRegion
     @Published var stops: [Stop] = []
+    @Published var railLines: [RailMapLine] = SaoPauloRailNetwork.fallbackLines
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     @Published var showRefreshButton: Bool = false
@@ -14,21 +15,32 @@ class MapExplorerViewModel: NSObject, ObservableObject {
     @Published var searchErrorMessage: String?
 
     private let getNearbyStopsUseCase: GetNearbyStopsUseCase
+    private let getTripRouteUseCase: GetTripRouteUseCase?
     private let locationService: LocationServiceProtocol
     private let analyticsService: AnalyticsServiceProtocol
+    private let fileManager: FileManager
+    private let calendar: Calendar
     private let searchCompleter = MKLocalSearchCompleter()
     private var cancellables = Set<AnyCancellable>()
     private var regionChangeWorkItem: DispatchWorkItem?
     private var lastLoadedRegion: MKCoordinateRegion?
+    private var railNetworkLoadTask: Task<Void, Never>?
+    private let railNetworkCacheFileName = "rail_network_cache_v1.json"
 
     init(
         getNearbyStopsUseCase: GetNearbyStopsUseCase,
         locationService: LocationServiceProtocol,
-        analyticsService: AnalyticsServiceProtocol = NoOpAnalyticsService()
+        getTripRouteUseCase: GetTripRouteUseCase? = nil,
+        analyticsService: AnalyticsServiceProtocol = NoOpAnalyticsService(),
+        fileManager: FileManager = .default,
+        calendar: Calendar = .current
     ) {
         self.getNearbyStopsUseCase = getNearbyStopsUseCase
         self.locationService = locationService
+        self.getTripRouteUseCase = getTripRouteUseCase
         self.analyticsService = analyticsService
+        self.fileManager = fileManager
+        self.calendar = calendar
 
         _region = Published(initialValue: MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: -23.5505, longitude: -46.6333), // Default to São Paulo
@@ -44,10 +56,14 @@ class MapExplorerViewModel: NSObject, ObservableObject {
         searchCompleter.region = .saoPauloMetro
     }
 
+    deinit {
+        railNetworkLoadTask?.cancel()
+    }
+
     private func setupRegionObserver() {
         $region
             .dropFirst() // Skip initial value
-            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+//            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
             .sink { [weak self] newRegion in
                 self?.handleRegionChange(newRegion)
             }
@@ -83,6 +99,127 @@ class MapExplorerViewModel: NSObject, ObservableObject {
 
         if latDiff > threshold || lonDiff > threshold {
             showRefreshButton = true
+        }
+    }
+
+    func loadRailNetworkIfNeeded() {
+        guard railNetworkLoadTask == nil else { return }
+        railNetworkLoadTask = Task { [weak self] in
+            await self?.loadRailNetwork()
+        }
+    }
+
+    private func loadRailNetwork() async {
+        var cachedPayload: RailNetworkCachePayload?
+        if let payload = loadRailNetworkCachePayload() {
+            cachedPayload = payload
+            let cachedLines = payload.lines.compactMap { $0.toRailMapLine() }
+            if !cachedLines.isEmpty {
+                await MainActor.run {
+                    self.railLines = cachedLines
+                }
+                if !isRailNetworkCacheExpired(savedAt: payload.savedAt) {
+                    analyticsService.trackEvent(
+                        name: "map_rail_network_cache_hit",
+                        properties: ["cached_lines_count": "\(cachedLines.count)"]
+                    )
+                    return
+                }
+                analyticsService.trackEvent(
+                    name: "map_rail_network_cache_stale",
+                    properties: ["cached_lines_count": "\(cachedLines.count)"]
+                )
+            }
+        }
+
+        guard let getTripRouteUseCase else { return }
+
+        var lineTrips: [String: TripStop] = [:]
+
+        for source in SaoPauloRailNetwork.apiSources {
+            if Task.isCancelled { return }
+            do {
+                let trip = try await getTripRouteUseCase.execute(tripId: source.tripId)
+                lineTrips[source.id] = trip
+            } catch {
+                analyticsService.trackEvent(
+                    name: "map_rail_line_load_failed",
+                    properties: [
+                        "line_id": source.id,
+                        "trip_id": source.tripId,
+                        "error": error.localizedDescription
+                    ]
+                )
+            }
+        }
+
+        if lineTrips.isEmpty, cachedPayload != nil {
+            analyticsService.trackEvent(name: "map_rail_network_refresh_skipped_due_errors")
+            return
+        }
+
+        let merged = SaoPauloRailNetwork.mergedLines(apiTripsByLineID: lineTrips)
+        let cacheLines = await MainActor.run {
+            merged.map(RailMapLineCache.init(line:))
+        }
+        saveRailNetworkCachePayload(
+            RailNetworkCachePayload(
+                savedAt: Date(),
+                lines: cacheLines
+            )
+        )
+        await MainActor.run {
+            self.railLines = merged
+            self.analyticsService.trackEvent(
+                name: "map_rail_network_loaded",
+                properties: [
+                    "api_lines_loaded_count": "\(lineTrips.count)",
+                    "rendered_lines_count": "\(merged.count)"
+                ]
+            )
+        }
+    }
+
+    private func loadRailNetworkCachePayload() -> RailNetworkCachePayload? {
+        guard let cacheFileURL = railNetworkCacheFileURL() else { return nil }
+        guard let data = try? Data(contentsOf: cacheFileURL) else { return nil }
+        return try? JSONDecoder().decode(RailNetworkCachePayload.self, from: data)
+    }
+
+    private func saveRailNetworkCachePayload(_ payload: RailNetworkCachePayload) {
+        guard let cacheFileURL = railNetworkCacheFileURL() else { return }
+        do {
+            let data = try JSONEncoder().encode(payload)
+            try data.write(to: cacheFileURL, options: .atomic)
+        } catch {
+            analyticsService.trackEvent(
+                name: "map_rail_network_cache_write_failed",
+                properties: ["error": error.localizedDescription]
+            )
+        }
+    }
+
+    private func isRailNetworkCacheExpired(savedAt: Date) -> Bool {
+        guard let refreshDate = calendar.date(byAdding: .month, value: 3, to: savedAt) else {
+            return true
+        }
+        return Date() >= refreshDate
+    }
+
+    private func railNetworkCacheFileURL() -> URL? {
+        guard let appSupportDirectory = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            return nil
+        }
+        let cacheDirectory = appSupportDirectory.appendingPathComponent("MapCache", isDirectory: true)
+        do {
+            try fileManager.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
+            return cacheDirectory.appendingPathComponent(railNetworkCacheFileName)
+        } catch {
+            analyticsService.trackEvent(
+                name: "map_rail_network_cache_directory_failed",
+                properties: ["error": error.localizedDescription]
+            )
+            return nil
         }
     }
 

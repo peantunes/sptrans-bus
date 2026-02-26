@@ -30,6 +30,7 @@ struct MapExplorerView: View {
                     region: $viewModel.region,
                     selectedStop: $selectedStop,
                     stops: filteredStops,
+                    railLines: viewModel.railLines,
                     selectedFilter: selectedFilter
                 )
                     .edgesIgnoringSafeArea(.bottom)
@@ -121,6 +122,7 @@ struct MapExplorerView: View {
         .onAppear {
             dependencies.analyticsService.trackScreen(name: "MapExplorerView", className: "MapExplorerView")
             dependencies.analyticsService.trackEvent(name: "map_screen_opened")
+            viewModel.loadRailNetworkIfNeeded()
             viewModel.loadStopsInVisibleRegion()
         }
         .animation(.easeInOut(duration: 0.3), value: viewModel.showRefreshButton)

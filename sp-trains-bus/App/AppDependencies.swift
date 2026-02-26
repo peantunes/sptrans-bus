@@ -73,6 +73,7 @@ class AppDependencies {
         mapExplorerViewModel = MapExplorerViewModel(
             getNearbyStopsUseCase: getNearbyStopsUseCase,
             locationService: locationService,
+            getTripRouteUseCase: getTripRouteUseCase,
             analyticsService: analyticsService
         )
     }

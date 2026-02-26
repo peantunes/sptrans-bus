@@ -6,22 +6,22 @@ struct MapStopCarousel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text(localized("map.carousel.nearby_center"))
-                    .font(AppFonts.subheadline())
-                    .foregroundColor(AppColors.text)
-
-                Spacer()
-
-                Text("\(items.count)")
-                    .font(AppFonts.caption())
-                    .foregroundColor(AppColors.text.opacity(0.6))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(AppColors.text.opacity(0.1))
-                    .clipShape(Capsule())
-            }
-            .padding(.horizontal)
+//            HStack {
+//                Text(localized("map.carousel.nearby_center"))
+//                    .font(AppFonts.subheadline())
+//                    .foregroundColor(AppColors.text)
+//
+//                Spacer()
+//
+//                Text("\(items.count)")
+//                    .font(AppFonts.caption())
+//                    .foregroundColor(AppColors.text.opacity(0.6))
+//                    .padding(.horizontal, 8)
+//                    .padding(.vertical, 4)
+//                    .background(AppColors.text.opacity(0.1))
+//                    .clipShape(Capsule())
+//            }
+//            .padding(.horizontal)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
