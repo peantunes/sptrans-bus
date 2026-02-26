@@ -29,7 +29,7 @@ class MapExplorerViewModel: NSObject, ObservableObject {
     private var lastLoadedRegion: MKCoordinateRegion?
     private var railNetworkLoadTask: Task<Void, Never>?
     private var weatherLoadTask: Task<Void, Never>?
-    private let railNetworkCacheFileName = "rail_network_cache_v2.json"
+    private let railNetworkCacheFileName = "rail_network_cache_v3.json"
 
     init(
         getNearbyStopsUseCase: GetNearbyStopsUseCase,
@@ -179,9 +179,11 @@ class MapExplorerViewModel: NSObject, ObservableObject {
 
     private func loadRailNetwork() async {
         var cachedPayload: RailNetworkCachePayload?
+        var cachedLinesByID: [String: RailMapLine] = [:]
         if let payload = loadRailNetworkCachePayload() {
             cachedPayload = payload
             let cachedLines = payload.lines.compactMap { $0.toRailMapLine() }
+            cachedLinesByID = Dictionary(uniqueKeysWithValues: cachedLines.map { ($0.id, $0) })
             if !cachedLines.isEmpty {
                 await MainActor.run {
                     self.railLines = cachedLines
@@ -226,7 +228,15 @@ class MapExplorerViewModel: NSObject, ObservableObject {
             return
         }
 
-        let merged = SaoPauloRailNetwork.mergedLines(apiTripsByLineID: lineTrips)
+        if lineTrips.isEmpty {
+            analyticsService.trackEvent(name: "map_rail_network_refresh_failed_without_cache")
+            return
+        }
+
+        let merged = SaoPauloRailNetwork.mergedLines(
+            apiTripsByLineID: lineTrips,
+            cachedLinesByID: cachedLinesByID
+        )
         let cacheLines = await MainActor.run {
             merged.map(RailMapLineCache.init(line:))
         }

@@ -299,20 +299,32 @@ enum SaoPauloRailNetwork {
         RailMapAPISource(id: "L3", tripId: "METR\u{00D4} L3-0", system: .metro, name: "Linha 3 - Vermelha", colorHex: "EE372F"),
         RailMapAPISource(id: "L4", tripId: "METR\u{00D4} L4-0", system: .metro, name: "Linha 4 - Amarela", colorHex: "FFD700"),
         RailMapAPISource(id: "L5", tripId: "METR\u{00D4} L5-0", system: .metro, name: "Linha 5 - Lilas", colorHex: "9B3894"),
+        RailMapAPISource(id: "L7", tripId: "CPTM L07-0", system: .cptm, name: "Linha 07 - Rubi", colorHex: "CA016B"),
+        RailMapAPISource(id: "L8", tripId: "CPTM L08-0", system: .cptm, name: "Linha 08 - Diamante", colorHex: "97A098"),
+        RailMapAPISource(id: "L9", tripId: "CPTM L09-0", system: .cptm, name: "Linha 09 - Esmeralda", colorHex: "01A9A7"),
         RailMapAPISource(id: "L10", tripId: "CPTM L10-0", system: .cptm, name: "Linha 10 - Turquesa", colorHex: "008B8B"),
         RailMapAPISource(id: "L11", tripId: "CPTM L11-0", system: .cptm, name: "Linha 11 - Coral", colorHex: "F04E23"),
         RailMapAPISource(id: "L12", tripId: "CPTM L12-0", system: .cptm, name: "Linha 12 - Safira", colorHex: "083D8B"),
         RailMapAPISource(id: "L13", tripId: "CPTM L13-0", system: .cptm, name: "Linha 13 - Jade", colorHex: "00B352")
     ]
 
-    static func mergedLines(apiTripsByLineID: [String: TripStop]) -> [RailMapLine] {
+    static func mergedLines(
+        apiTripsByLineID: [String: TripStop],
+        cachedLinesByID: [String: RailMapLine] = [:]
+    ) -> [RailMapLine] {
         let apiLinesByID: [String: RailMapLine] = Dictionary(uniqueKeysWithValues: apiSources.compactMap { source in
             guard let trip = apiTripsByLineID[source.id] else { return nil }
             return (source.id, railLine(from: trip, source: source))
         })
 
         return fallbackLines.map { fallback in
-            apiLinesByID[fallback.id] ?? fallback
+            if let apiLine = apiLinesByID[fallback.id], !apiLine.stations.isEmpty {
+                return apiLine
+            }
+            if let cachedLine = cachedLinesByID[fallback.id], !cachedLine.stations.isEmpty {
+                return cachedLine
+            }
+            return fallback
         }
     }
 
