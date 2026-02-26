@@ -8,6 +8,7 @@ enum RailSystem {
 
 struct RailMapStation: Identifiable {
     let id: String
+    let stopId: Int
     let name: String
     let coordinate: CLLocationCoordinate2D
     let system: RailSystem
@@ -69,6 +70,7 @@ struct RailMapLineCache: Codable {
 
 struct RailMapStationCache: Codable {
     let id: String
+    let stopId: Int?
     let name: String
     let latitude: Double
     let longitude: Double
@@ -77,6 +79,7 @@ struct RailMapStationCache: Codable {
     @MainActor
     init(station: RailMapStation) {
         id = station.id
+        stopId = station.stopId
         name = station.name
         latitude = station.coordinate.latitude
         longitude = station.coordinate.longitude
@@ -85,8 +88,10 @@ struct RailMapStationCache: Codable {
 
     func toRailMapStation(colorHex: String, defaultSystem: RailSystem) -> RailMapStation {
         let mappedSystem = RailSystem(cacheValue: system) ?? defaultSystem
+        let resolvedStopId = stopId ?? syntheticRailStopId(fromStationId: id)
         return RailMapStation(
             id: id,
+            stopId: resolvedStopId,
             name: name,
             coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude),
             system: mappedSystem,
@@ -332,6 +337,7 @@ enum SaoPauloRailNetwork {
         stations.enumerated().map { index, station in
             RailMapStation(
                 id: "\(lineId)-\(index)",
+                stopId: syntheticRailStopId(lineId: lineId, index: index),
                 name: station.0,
                 coordinate: CLLocationCoordinate2D(latitude: station.1, longitude: station.2),
                 system: system,
@@ -349,6 +355,7 @@ enum SaoPauloRailNetwork {
             guard seenStopIDs.insert(stop.stopId).inserted else { return nil }
             return RailMapStation(
                 id: "\(source.id)-\(stop.stopId)",
+                stopId: stop.stopId,
                 name: stop.stopName,
                 coordinate: stop.location.toCLLocationCoordinate2D(),
                 system: source.system,
@@ -364,6 +371,27 @@ enum SaoPauloRailNetwork {
             stations: stations
         )
     }
+}
+
+private func syntheticRailStopId(lineId: String, index: Int) -> Int {
+    let lineNumber = Int(lineId.replacingOccurrences(of: "L", with: "")) ?? 0
+    return 700_000_000 + (lineNumber * 10_000) + index
+}
+
+private func syntheticRailStopId(fromStationId stationId: String) -> Int {
+    let parts = stationId.split(separator: "-", maxSplits: 1).map(String.init)
+    if parts.count == 2, let index = Int(parts[1]) {
+        if index >= 1_000 {
+            // Older cache versions encoded API-backed stations as "Lx-<realStopId>".
+            return index
+        }
+        return syntheticRailStopId(lineId: parts[0], index: index)
+    }
+    var hash = 0
+    for scalar in stationId.unicodeScalars {
+        hash = (hash &* 31 &+ Int(scalar.value)) & 0x7fffffff
+    }
+    return 799_000_000 + (hash % 999_999)
 }
 
 private extension RailSystem {

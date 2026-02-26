@@ -141,20 +141,50 @@ struct TransitMapView: UIViewRepresentable {
             let desiredByID = Dictionary(uniqueKeysWithValues: lines.map { ($0.id, $0) })
             let desiredIDs = Set(desiredByID.keys)
             let currentIDs = Set(railOverlaysByID.keys)
+            let sharedIDs = desiredIDs.intersection(currentIDs)
 
             for id in currentIDs.subtracting(desiredIDs) {
                 guard let overlay = railOverlaysByID.removeValue(forKey: id) else { continue }
                 mapView.removeOverlay(overlay)
             }
 
+            for id in sharedIDs {
+                guard let line = desiredByID[id],
+                      let existing = railOverlaysByID[id] else { continue }
+
+                let fingerprint = lineFingerprint(for: line)
+                guard existing.fingerprint != fingerprint || existing.colorHex != line.colorHex else {
+                    continue
+                }
+
+                mapView.removeOverlay(existing)
+                let updated = buildPolyline(for: line)
+                railOverlaysByID[id] = updated
+                mapView.addOverlay(updated)
+            }
+
             for id in desiredIDs.subtracting(currentIDs) {
                 guard let line = desiredByID[id] else { continue }
-                let polyline = RailLinePolyline(coordinates: line.polylineCoordinates, count: line.polylineCoordinates.count)
-                polyline.colorHex = line.colorHex
-                polyline.lineID = id
+                let polyline = buildPolyline(for: line)
                 railOverlaysByID[id] = polyline
                 mapView.addOverlay(polyline)
             }
+        }
+
+        private func buildPolyline(for line: RailMapLine) -> RailLinePolyline {
+            let polyline = RailLinePolyline(coordinates: line.polylineCoordinates, count: line.polylineCoordinates.count)
+            polyline.colorHex = line.colorHex
+            polyline.lineID = line.id
+            polyline.fingerprint = lineFingerprint(for: line)
+            return polyline
+        }
+
+        private func lineFingerprint(for line: RailMapLine) -> String {
+            line.polylineCoordinates
+                .map { coordinate in
+                    "\(Int((coordinate.latitude * 100_000).rounded())):\(Int((coordinate.longitude * 100_000).rounded()))"
+                }
+                .joined(separator: "|")
         }
 
         @MainActor
@@ -239,7 +269,7 @@ private final class RailStationMapAnnotation: NSObject, MKAnnotation {
 
     private static func buildStop(from station: RailMapStation) -> Stop {
         Stop(
-            stopId: buildStopId(from: station.id),
+            stopId: station.stopId,
             stopName: station.name,
             location: Location(latitude: station.coordinate.latitude, longitude: station.coordinate.longitude),
             stopSequence: 0,
@@ -248,27 +278,12 @@ private final class RailStationMapAnnotation: NSObject, MKAnnotation {
             wheelchairBoarding: 0
         )
     }
-
-    private static func buildStopId(from stationId: String) -> Int {
-        let parts = stationId.split(separator: "-", maxSplits: 1).map(String.init)
-        if parts.count == 2 {
-            let lineNumber = Int(parts[0].replacingOccurrences(of: "L", with: "")) ?? 0
-            if let rawStopId = Int(parts[1]) {
-                return (lineNumber * 1_000_000) + rawStopId
-            }
-        }
-
-        var hash = 0
-        for scalar in stationId.unicodeScalars {
-            hash = (hash &* 31 &+ Int(scalar.value)) & 0x7fffffff
-        }
-        return 900_000_000 + (hash % 99_999_999)
-    }
 }
 
 private final class RailLinePolyline: MKPolyline {
     var lineID: String = ""
     var colorHex: String = "000000"
+    var fingerprint: String = ""
 }
 
 private extension MKCoordinateRegion {
