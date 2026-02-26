@@ -6,6 +6,7 @@ struct MapExplorerView: View {
     @StateObject private var viewModel: MapExplorerViewModel
     @State private var selectedFilter: TransitFilter = .bus // Default filter
     @State private var selectedStop: Stop?
+    @State private var showWeatherDetail: Bool = false
     let dependencies: AppDependencies // Inject dependencies
 
     init(viewModel: MapExplorerViewModel, dependencies: AppDependencies) {
@@ -93,6 +94,25 @@ struct MapExplorerView: View {
                 .padding(.bottom, showCarousel ? 0 : 24)
             }
 
+            VStack {
+                HStack {
+                    Spacer()
+                    if let weatherSnapshot = viewModel.weatherSnapshot {
+                        MapWeatherButton(snapshot: weatherSnapshot) {
+                            showWeatherDetail = true
+                        }
+                    } else if viewModel.isLoadingWeather {
+                        ProgressView()
+                            .padding(10)
+                            .background(.ultraThinMaterial)
+                            .clipShape(Circle())
+                    }
+                }
+                .padding(.top, 60)
+                .padding(.trailing, 16)
+                Spacer()
+            }
+
             // Loading indicator
             if viewModel.isLoading || viewModel.isSearchingLocation {
                 VStack {
@@ -123,6 +143,7 @@ struct MapExplorerView: View {
             dependencies.analyticsService.trackScreen(name: "MapExplorerView", className: "MapExplorerView")
             dependencies.analyticsService.trackEvent(name: "map_screen_opened")
             viewModel.loadRailNetworkIfNeeded()
+            viewModel.loadWeatherIfNeeded()
             viewModel.loadStopsInVisibleRegion()
         }
         .animation(.easeInOut(duration: 0.3), value: viewModel.showRefreshButton)
@@ -164,6 +185,11 @@ struct MapExplorerView: View {
                     analyticsService: dependencies.analyticsService
                 )
             )
+        }
+        .fullScreenCover(isPresented: $showWeatherDetail) {
+            if let weatherSnapshot = viewModel.weatherSnapshot {
+                MapWeatherDetailView(snapshot: weatherSnapshot)
+            }
         }
         .safeAreaInset(edge: .bottom) {
             if showCarousel {
@@ -248,7 +274,37 @@ struct MapExplorerView: View {
 
     let mockGetNearbyStopsUseCase = GetNearbyStopsUseCase(transitRepository: MockTransitRepository(), locationService: MockLocationService())
     let mockLocationService = MockLocationService()
-    let viewModel = MapExplorerViewModel(getNearbyStopsUseCase: mockGetNearbyStopsUseCase, locationService: mockLocationService)
+    class MockWeatherService: WeatherServiceProtocol {
+        func fetchDailyWeather(for location: Location) async throws -> WeatherSnapshot {
+            return WeatherSnapshot(
+                savedAt: Date(),
+                location: location,
+                current: WeatherCurrentSnapshot(
+                    date: Date(),
+                    symbolName: "sun.max.fill",
+                    conditionDescription: "Clear",
+                    temperatureCelsius: 25,
+                    apparentTemperatureCelsius: 26,
+                    humidityPercent: 56,
+                    precipitationChancePercent: 10,
+                    windSpeedKilometersPerHour: 7,
+                    pressureHPa: 1014,
+                    visibilityKilometers: 10,
+                    cloudCoverPercent: 15,
+                    uvIndex: 6,
+                    dewPointCelsius: 14
+                ),
+                hourly: [],
+                daily: []
+            )
+        }
+    }
+
+    let viewModel = MapExplorerViewModel(
+        getNearbyStopsUseCase: mockGetNearbyStopsUseCase,
+        locationService: mockLocationService,
+        weatherService: MockWeatherService()
+    )
     let dependencies = AppDependencies()
 
     return NavigationView {

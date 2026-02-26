@@ -7,6 +7,7 @@ class AppDependencies {
     let transitRepository: TransitRepositoryProtocol
     let locationService: LocationServiceProtocol
     let storageService: StorageServiceProtocol
+    let weatherService: WeatherServiceProtocol
     let gtfsFeedService: GTFSFeedServiceProtocol
     let gtfsImportService: GTFSImportServiceProtocol
     let transitDataModeService: TransitDataModeServiceProtocol
@@ -36,6 +37,7 @@ class AppDependencies {
         let localRepository = LocalTransitRepository(modelContainer: modelContainer)
         locationService = CoreLocationService()
         storageService = SwiftDataStorageService(modelContainer: modelContainer)
+        weatherService = WeatherKitCachedService()
         gtfsFeedService = GTFSFeedService(modelContainer: modelContainer)
         gtfsImportService = GTFSImporterService(modelContainer: modelContainer, feedService: gtfsFeedService)
         transitDataModeService = UserDefaultsTransitDataModeService()
@@ -74,6 +76,7 @@ class AppDependencies {
             getNearbyStopsUseCase: getNearbyStopsUseCase,
             locationService: locationService,
             getTripRouteUseCase: getTripRouteUseCase,
+            weatherService: weatherService,
             analyticsService: analyticsService
         )
     }

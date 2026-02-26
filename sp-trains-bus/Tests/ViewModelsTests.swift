@@ -1,5 +1,6 @@
 import XCTest
 import Combine
+import MapKit
 @testable import sp_trains_bus
 
 class ViewModelsTests: XCTestCase {
@@ -184,7 +185,11 @@ class ViewModelsTests: XCTestCase {
         mockLocationService.currentLocation = Location(latitude: -23.0, longitude: -46.0)
         mockGetNearbyStopsUseCase.stopsToReturn = [Stop(stopId: 1, stopName: "Map Stop", location: Location(latitude: -23.0, longitude: -46.0), stopSequence: 0, stopCode: "", wheelchairBoarding: 0)]
 
-        let viewModel = MapExplorerViewModel(getNearbyStopsUseCase: mockGetNearbyStopsUseCase, locationService: mockLocationService)
+        let viewModel = MapExplorerViewModel(
+            getNearbyStopsUseCase: mockGetNearbyStopsUseCase,
+            locationService: mockLocationService,
+            weatherService: MockWeatherService()
+        )
 
         let expectation = XCTestExpectation(description: "MapExplorerViewModel loads stops")
 
@@ -202,6 +207,67 @@ class ViewModelsTests: XCTestCase {
         await fulfillment(of: [expectation], timeout: 1.0)
         XCTAssertFalse(viewModel.isLoading)
         XCTAssertNil(viewModel.errorMessage)
+    }
+
+    func testMapExplorerViewModelWeatherUsesUserLocationInsideSaoPaulo() async throws {
+        let mockGetNearbyStopsUseCase = MockGetNearbyStopsUseCase()
+        let mockLocationService = MockLocationService()
+        let mockWeatherService = MockWeatherService()
+        let insideSaoPaulo = Location(latitude: -23.5505, longitude: -46.6333)
+        mockLocationService.currentLocation = insideSaoPaulo
+
+        let viewModel = MapExplorerViewModel(
+            getNearbyStopsUseCase: mockGetNearbyStopsUseCase,
+            locationService: mockLocationService,
+            weatherService: mockWeatherService
+        )
+
+        let expectation = XCTestExpectation(description: "MapExplorerViewModel loads weather using user location")
+        viewModel.$weatherSnapshot
+            .dropFirst()
+            .sink { snapshot in
+                guard let snapshot else { return }
+                XCTAssertEqual(snapshot.location.latitude, insideSaoPaulo.latitude, accuracy: 0.0001)
+                XCTAssertEqual(snapshot.location.longitude, insideSaoPaulo.longitude, accuracy: 0.0001)
+                expectation.fulfill()
+            }
+            .store(in: &cancellables)
+
+        viewModel.loadWeatherIfNeeded()
+
+        await fulfillment(of: [expectation], timeout: 1.0)
+        XCTAssertEqual(mockWeatherService.requestedLocations.count, 1)
+    }
+
+    func testMapExplorerViewModelWeatherFallsBackOutsideSaoPaulo() async throws {
+        let mockGetNearbyStopsUseCase = MockGetNearbyStopsUseCase()
+        let mockLocationService = MockLocationService()
+        let mockWeatherService = MockWeatherService()
+        mockLocationService.currentLocation = Location(latitude: -22.9056, longitude: -43.1919)
+
+        let expectedCenter = MKCoordinateRegion.saoPauloMetro.center
+
+        let viewModel = MapExplorerViewModel(
+            getNearbyStopsUseCase: mockGetNearbyStopsUseCase,
+            locationService: mockLocationService,
+            weatherService: mockWeatherService
+        )
+
+        let expectation = XCTestExpectation(description: "MapExplorerViewModel loads weather using Sao Paulo fallback")
+        viewModel.$weatherSnapshot
+            .dropFirst()
+            .sink { snapshot in
+                guard let snapshot else { return }
+                XCTAssertEqual(snapshot.location.latitude, expectedCenter.latitude, accuracy: 0.0001)
+                XCTAssertEqual(snapshot.location.longitude, expectedCenter.longitude, accuracy: 0.0001)
+                expectation.fulfill()
+            }
+            .store(in: &cancellables)
+
+        viewModel.loadWeatherIfNeeded()
+
+        await fulfillment(of: [expectation], timeout: 1.0)
+        XCTAssertEqual(mockWeatherService.requestedLocations.count, 1)
     }
 
     // MARK: - SearchViewModel Tests
@@ -250,6 +316,35 @@ class ViewModelsTests: XCTestCase {
         func getHomeLocation() -> Location? { nil }
         func saveWork(location: Location) {}
         func getWorkLocation() -> Location? { nil }
+    }
+
+    class MockWeatherService: WeatherServiceProtocol {
+        private(set) var requestedLocations: [Location] = []
+
+        func fetchDailyWeather(for location: Location) async throws -> WeatherSnapshot {
+            requestedLocations.append(location)
+            WeatherSnapshot(
+                savedAt: Date(),
+                location: location,
+                current: WeatherCurrentSnapshot(
+                    date: Date(),
+                    symbolName: "sun.max.fill",
+                    conditionDescription: "Clear",
+                    temperatureCelsius: 24,
+                    apparentTemperatureCelsius: 25,
+                    humidityPercent: 50,
+                    precipitationChancePercent: 5,
+                    windSpeedKilometersPerHour: 6,
+                    pressureHPa: 1015,
+                    visibilityKilometers: 10,
+                    cloudCoverPercent: 12,
+                    uvIndex: 5,
+                    dewPointCelsius: 13
+                ),
+                hourly: [],
+                daily: []
+            )
+        }
     }
 
     class MockGetNearbyStopsUseCase: GetNearbyStopsUseCase {

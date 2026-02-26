@@ -6,6 +6,8 @@ class MapExplorerViewModel: NSObject, ObservableObject {
     @Published var region: MKCoordinateRegion
     @Published var stops: [Stop] = []
     @Published var railLines: [RailMapLine] = SaoPauloRailNetwork.fallbackLines
+    @Published var weatherSnapshot: WeatherSnapshot?
+    @Published var isLoadingWeather: Bool = false
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     @Published var showRefreshButton: Bool = false
@@ -16,6 +18,7 @@ class MapExplorerViewModel: NSObject, ObservableObject {
 
     private let getNearbyStopsUseCase: GetNearbyStopsUseCase
     private let getTripRouteUseCase: GetTripRouteUseCase?
+    private let weatherService: WeatherServiceProtocol
     private let locationService: LocationServiceProtocol
     private let analyticsService: AnalyticsServiceProtocol
     private let fileManager: FileManager
@@ -25,12 +28,14 @@ class MapExplorerViewModel: NSObject, ObservableObject {
     private var regionChangeWorkItem: DispatchWorkItem?
     private var lastLoadedRegion: MKCoordinateRegion?
     private var railNetworkLoadTask: Task<Void, Never>?
+    private var weatherLoadTask: Task<Void, Never>?
     private let railNetworkCacheFileName = "rail_network_cache_v1.json"
 
     init(
         getNearbyStopsUseCase: GetNearbyStopsUseCase,
         locationService: LocationServiceProtocol,
         getTripRouteUseCase: GetTripRouteUseCase? = nil,
+        weatherService: WeatherServiceProtocol,
         analyticsService: AnalyticsServiceProtocol = NoOpAnalyticsService(),
         fileManager: FileManager = .default,
         calendar: Calendar = .current
@@ -38,6 +43,7 @@ class MapExplorerViewModel: NSObject, ObservableObject {
         self.getNearbyStopsUseCase = getNearbyStopsUseCase
         self.locationService = locationService
         self.getTripRouteUseCase = getTripRouteUseCase
+        self.weatherService = weatherService
         self.analyticsService = analyticsService
         self.fileManager = fileManager
         self.calendar = calendar
@@ -58,6 +64,7 @@ class MapExplorerViewModel: NSObject, ObservableObject {
 
     deinit {
         railNetworkLoadTask?.cancel()
+        weatherLoadTask?.cancel()
     }
 
     private func setupRegionObserver() {
@@ -107,6 +114,67 @@ class MapExplorerViewModel: NSObject, ObservableObject {
         railNetworkLoadTask = Task { [weak self] in
             await self?.loadRailNetwork()
         }
+    }
+
+    func loadWeatherIfNeeded() {
+        guard weatherLoadTask == nil else { return }
+        weatherLoadTask = Task { [weak self] in
+            await self?.loadWeather()
+        }
+    }
+
+    func refreshWeather() {
+        weatherLoadTask?.cancel()
+        weatherLoadTask = Task { [weak self] in
+            await self?.loadWeather()
+        }
+    }
+
+    private func loadWeather() async {
+        await MainActor.run {
+            self.isLoadingWeather = true
+        }
+
+        let targetLocation = resolveWeatherLocation()
+        do {
+            let snapshot = try await weatherService.fetchDailyWeather(for: targetLocation)
+            await MainActor.run {
+                self.weatherSnapshot = snapshot
+                self.isLoadingWeather = false
+            }
+            analyticsService.trackEvent(
+                name: "map_weather_loaded",
+                properties: [
+                    "latitude": "\(targetLocation.latitude)",
+                    "longitude": "\(targetLocation.longitude)"
+                ]
+            )
+        } catch {
+            await MainActor.run {
+                self.isLoadingWeather = false
+            }
+            analyticsService.trackEvent(
+                name: "map_weather_load_failed",
+                properties: ["error": error.localizedDescription]
+            )
+        }
+    }
+
+    private func resolveWeatherLocation() -> Location {
+        let fallback = Location(
+            latitude: MKCoordinateRegion.saoPauloMetro.center.latitude,
+            longitude: MKCoordinateRegion.saoPauloMetro.center.longitude
+        )
+
+        guard let userLocation = locationService.getCurrentLocation() else {
+            return fallback
+        }
+
+        let userCoordinate = userLocation.toCLLocationCoordinate2D()
+        if MKCoordinateRegion.saoPauloMetro.contains(userCoordinate) {
+            return userLocation
+        }
+        return fallback
     }
 
     private func loadRailNetwork() async {
