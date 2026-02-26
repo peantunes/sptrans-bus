@@ -21,6 +21,7 @@ class MapExplorerViewModel: NSObject, ObservableObject {
     private let weatherService: WeatherServiceProtocol
     private let locationService: LocationServiceProtocol
     private let analyticsService: AnalyticsServiceProtocol
+    private let watchSnapshotSync: WatchSnapshotSyncing
     private let fileManager: FileManager
     private let calendar: Calendar
     private let searchCompleter = MKLocalSearchCompleter()
@@ -37,6 +38,7 @@ class MapExplorerViewModel: NSObject, ObservableObject {
         getTripRouteUseCase: GetTripRouteUseCase? = nil,
         weatherService: WeatherServiceProtocol,
         analyticsService: AnalyticsServiceProtocol = NoOpAnalyticsService(),
+        watchSnapshotSync: WatchSnapshotSyncing = NoOpWatchSnapshotSync(),
         fileManager: FileManager = .default,
         calendar: Calendar = .current
     ) {
@@ -45,6 +47,7 @@ class MapExplorerViewModel: NSObject, ObservableObject {
         self.getTripRouteUseCase = getTripRouteUseCase
         self.weatherService = weatherService
         self.analyticsService = analyticsService
+        self.watchSnapshotSync = watchSnapshotSync
         self.fileManager = fileManager
         self.calendar = calendar
 
@@ -328,6 +331,22 @@ class MapExplorerViewModel: NSObject, ObservableObject {
             let mapLocation = Location(latitude: region.center.latitude, longitude: region.center.longitude)
             let fetchedStops = try await getNearbyStopsUseCase.execute(limit: 50, location: mapLocation)
             self.stops = fetchedStops
+            let center = CLLocation(latitude: mapLocation.latitude, longitude: mapLocation.longitude)
+            let watchStops = fetchedStops
+                .map { stop -> WatchStopSnapshot in
+                    let stopLocation = CLLocation(latitude: stop.location.latitude, longitude: stop.location.longitude)
+                    return WatchStopSnapshot(
+                        stopId: stop.stopId,
+                        stopName: stop.stopName,
+                        latitude: stop.location.latitude,
+                        longitude: stop.location.longitude,
+                        stopCode: stop.stopCode,
+                        routes: stop.routes,
+                        distanceMeters: Int(center.distance(from: stopLocation).rounded())
+                    )
+                }
+                .sorted { ($0.distanceMeters ?? Int.max) < ($1.distanceMeters ?? Int.max) }
+            self.watchSnapshotSync.syncNearbyStops(stops: Array(watchStops.prefix(4)))
             self.lastLoadedRegion = region
             self.isLoading = false
             analyticsService.trackEvent(

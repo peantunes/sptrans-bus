@@ -7,12 +7,62 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9CAE8C302F51101700C16D88 /* due-sp-watch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 9CAE8C262F51101600C16D88 /* due-sp-watch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		9CAE8C3C2F51103600C16D88 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9CAE8C3B2F51103600C16D88 /* WidgetKit.framework */; };
+		9CAE8C3E2F51103600C16D88 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9CAE8C3D2F51103600C16D88 /* SwiftUI.framework */; };
+		9CAE8C4B2F51103600C16D88 /* due-sp-watchExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 9CAE8C392F51103600C16D88 /* due-sp-watchExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C0A1000A2F6B123400000001 /* AnalyticsSDK in Frameworks */ = {isa = PBXBuildFile; productRef = C0A1000B2F6B123400000001 /* AnalyticsSDK */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		9CAE8C2E2F51101700C16D88 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9C022DFE2F2FBEF00073F454 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9CAE8C252F51101600C16D88;
+			remoteInfo = "due-sp-watch Watch App";
+		};
+		9CAE8C492F51103600C16D88 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9C022DFE2F2FBEF00073F454 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9CAE8C382F51103600C16D88;
+			remoteInfo = "due-sp-watchExtension";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		9CAE8C342F51101700C16D88 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				9CAE8C302F51101700C16D88 /* due-sp-watch Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9CAE8C502F51103600C16D88 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				9CAE8C4B2F51103600C16D88 /* due-sp-watchExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		9C022E062F2FBEF00073F454 /* sp-trains-bus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "sp-trains-bus.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		9C022EA12F2FDAE20073F454 /* sp_trains_bus.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = sp_trains_bus.entitlements; sourceTree = "<group>"; };
+		9CAE8C262F51101600C16D88 /* due-sp-watch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "due-sp-watch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		9CAE8C392F51103600C16D88 /* due-sp-watchExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "due-sp-watchExtension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		9CAE8C3B2F51103600C16D88 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		9CAE8C3D2F51103600C16D88 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -22,6 +72,20 @@
 				Info.plist,
 			);
 			target = 9C022E052F2FBEF00073F454 /* sp-trains-bus */;
+		};
+		9CAE8C4F2F51103600C16D88 /* Exceptions for "due-sp-watch" folder in "due-sp-watchExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 9CAE8C382F51103600C16D88 /* due-sp-watchExtension */;
+		};
+		9CAE8DB52F5113B200C16D88 /* Exceptions for "Resources" folder in "due-sp-watch Watch App" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				app_icon.icon,
+			);
+			target = 9CAE8C252F51101600C16D88 /* due-sp-watch Watch App */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -55,8 +119,22 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				9C2B24D22F2FDDC100727FB6 /* Exceptions for "Resources" folder in "sp-trains-bus" target */,
+				9CAE8DB52F5113B200C16D88 /* Exceptions for "Resources" folder in "due-sp-watch Watch App" target */,
 			);
 			path = Resources;
+			sourceTree = "<group>";
+		};
+		9CAE8C272F51101600C16D88 /* due-sp-watch Watch App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "due-sp-watch Watch App";
+			sourceTree = "<group>";
+		};
+		9CAE8C3F2F51103600C16D88 /* due-sp-watch */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				9CAE8C4F2F51103600C16D88 /* Exceptions for "due-sp-watch" folder in "due-sp-watchExtension" target */,
+			);
+			path = "due-sp-watch";
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -67,6 +145,22 @@
 			buildActionMask = 2147483647;
 			files = (
 				C0A1000A2F6B123400000001 /* AnalyticsSDK in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9CAE8C232F51101600C16D88 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9CAE8C362F51103600C16D88 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9CAE8C3E2F51103600C16D88 /* SwiftUI.framework in Frameworks */,
+				9CAE8C3C2F51103600C16D88 /* WidgetKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -83,6 +177,9 @@
 				9C022E9D2F2FDAE20073F454 /* Presentation */,
 				9C022EA02F2FDAE20073F454 /* Resources */,
 				9C022EA12F2FDAE20073F454 /* sp_trains_bus.entitlements */,
+				9CAE8C272F51101600C16D88 /* due-sp-watch Watch App */,
+				9CAE8C3F2F51103600C16D88 /* due-sp-watch */,
+				9CAE8C3A2F51103600C16D88 /* Frameworks */,
 				9C022E072F2FBEF00073F454 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -91,8 +188,19 @@
 			isa = PBXGroup;
 			children = (
 				9C022E062F2FBEF00073F454 /* sp-trains-bus.app */,
+				9CAE8C262F51101600C16D88 /* due-sp-watch Watch App.app */,
+				9CAE8C392F51103600C16D88 /* due-sp-watchExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		9CAE8C3A2F51103600C16D88 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				9CAE8C3B2F51103600C16D88 /* WidgetKit.framework */,
+				9CAE8C3D2F51103600C16D88 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -105,10 +213,12 @@
 				9C022E022F2FBEF00073F454 /* Sources */,
 				9C022E032F2FBEF00073F454 /* Frameworks */,
 				9C022E042F2FBEF00073F454 /* Resources */,
+				9CAE8C342F51101700C16D88 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				9CAE8C2F2F51101700C16D88 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				9C022E442F2FDAE20073F454 /* App */,
@@ -126,6 +236,52 @@
 			productReference = 9C022E062F2FBEF00073F454 /* sp-trains-bus.app */;
 			productType = "com.apple.product-type.application";
 		};
+		9CAE8C252F51101600C16D88 /* due-sp-watch Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9CAE8C312F51101700C16D88 /* Build configuration list for PBXNativeTarget "due-sp-watch Watch App" */;
+			buildPhases = (
+				9CAE8C222F51101600C16D88 /* Sources */,
+				9CAE8C232F51101600C16D88 /* Frameworks */,
+				9CAE8C242F51101600C16D88 /* Resources */,
+				9CAE8C502F51103600C16D88 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				9CAE8C4A2F51103600C16D88 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				9CAE8C272F51101600C16D88 /* due-sp-watch Watch App */,
+			);
+			name = "due-sp-watch Watch App";
+			packageProductDependencies = (
+			);
+			productName = "due-sp-watch Watch App";
+			productReference = 9CAE8C262F51101600C16D88 /* due-sp-watch Watch App.app */;
+			productType = "com.apple.product-type.application";
+		};
+		9CAE8C382F51103600C16D88 /* due-sp-watchExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9CAE8C4C2F51103600C16D88 /* Build configuration list for PBXNativeTarget "due-sp-watchExtension" */;
+			buildPhases = (
+				9CAE8C352F51103600C16D88 /* Sources */,
+				9CAE8C362F51103600C16D88 /* Frameworks */,
+				9CAE8C372F51103600C16D88 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				9CAE8C3F2F51103600C16D88 /* due-sp-watch */,
+			);
+			name = "due-sp-watchExtension";
+			packageProductDependencies = (
+			);
+			productName = "due-sp-watchExtension";
+			productReference = 9CAE8C392F51103600C16D88 /* due-sp-watchExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -137,6 +293,12 @@
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					9C022E052F2FBEF00073F454 = {
+						CreatedOnToolsVersion = 26.2;
+					};
+					9CAE8C252F51101600C16D88 = {
+						CreatedOnToolsVersion = 26.2;
+					};
+					9CAE8C382F51103600C16D88 = {
 						CreatedOnToolsVersion = 26.2;
 					};
 				};
@@ -160,12 +322,28 @@
 			projectRoot = "";
 			targets = (
 				9C022E052F2FBEF00073F454 /* sp-trains-bus */,
+				9CAE8C252F51101600C16D88 /* due-sp-watch Watch App */,
+				9CAE8C382F51103600C16D88 /* due-sp-watchExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		9C022E042F2FBEF00073F454 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9CAE8C242F51101600C16D88 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9CAE8C372F51103600C16D88 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -182,7 +360,34 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		9CAE8C222F51101600C16D88 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9CAE8C352F51103600C16D88 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		9CAE8C2F2F51101700C16D88 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 9CAE8C252F51101600C16D88 /* due-sp-watch Watch App */;
+			targetProxy = 9CAE8C2E2F51101700C16D88 /* PBXContainerItemProxy */;
+		};
+		9CAE8C4A2F51103600C16D88 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 9CAE8C382F51103600C16D88 /* due-sp-watchExtension */;
+			targetProxy = 9CAE8C492F51103600C16D88 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		9C022E152F2FBEF20073F454 /* Debug */ = {
@@ -219,7 +424,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 3;
+				MARKETING_VERSION = 4;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.lolados.sp.Sao-Paulo-Onibus";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -271,7 +476,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 3;
+				MARKETING_VERSION = 4;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.lolados.sp.Sao-Paulo-Onibus";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -403,6 +608,144 @@
 			};
 			name = Release;
 		};
+		9CAE8C322F51101700C16D88 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = app_icon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "due-sp-watch Watch App/due-sp-watch Watch App.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 666GZ2659S;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Due SP";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "com.lolados.sp.Sao-Paulo-Onibus";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 4;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.lolados.sp.Sao-Paulo-Onibus.watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Debug;
+		};
+		9CAE8C332F51101700C16D88 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = app_icon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "due-sp-watch Watch App/due-sp-watch Watch App.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 666GZ2659S;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Due SP";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "com.lolados.sp.Sao-Paulo-Onibus";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 4;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.lolados.sp.Sao-Paulo-Onibus.watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Release;
+		};
+		9CAE8C4D2F51103600C16D88 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = "due-sp-watch/due-sp-watch.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 666GZ2659S;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "due-sp-watch/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "due-sp-watch";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 4;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.lolados.sp.Sao-Paulo-Onibus.watchkitapp.due-sp-watch";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Debug;
+		};
+		9CAE8C4E2F51103600C16D88 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = "due-sp-watch/due-sp-watch.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 666GZ2659S;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "due-sp-watch/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "due-sp-watch";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 4;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.lolados.sp.Sao-Paulo-Onibus.watchkitapp.due-sp-watch";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -420,6 +763,24 @@
 			buildConfigurations = (
 				9C022E152F2FBEF20073F454 /* Debug */,
 				9C022E162F2FBEF20073F454 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		9CAE8C312F51101700C16D88 /* Build configuration list for PBXNativeTarget "due-sp-watch Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9CAE8C322F51101700C16D88 /* Debug */,
+				9CAE8C332F51101700C16D88 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		9CAE8C4C2F51103600C16D88 /* Build configuration list for PBXNativeTarget "due-sp-watchExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9CAE8C4D2F51103600C16D88 /* Debug */,
+				9CAE8C4E2F51103600C16D88 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

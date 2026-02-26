@@ -12,6 +12,7 @@ class AppDependencies {
     let gtfsImportService: GTFSImportServiceProtocol
     let transitDataModeService: TransitDataModeServiceProtocol
     let analyticsService: AnalyticsServiceProtocol
+    let watchSnapshotSync: WatchSnapshotSyncing
 
     let getNearbyStopsUseCase: GetNearbyStopsUseCase
     let getArrivalsUseCase: GetArrivalsUseCase
@@ -42,6 +43,7 @@ class AppDependencies {
         gtfsImportService = GTFSImporterService(modelContainer: modelContainer, feedService: gtfsFeedService)
         transitDataModeService = UserDefaultsTransitDataModeService()
         analyticsService = AppAnalyticsService()
+        watchSnapshotSync = WatchSnapshotStore()
         transitRepository = ConfigurableTransitRepository(
             remoteRepository: remoteRepository,
             localRepository: localRepository,
@@ -70,14 +72,16 @@ class AppDependencies {
         systemStatusViewModel = SystemStatusViewModel(
             apiClient: apiClient,
             fallbackUseCase: getMetroStatusUseCase,
-            analyticsService: analyticsService
+            analyticsService: analyticsService,
+            watchSnapshotSync: watchSnapshotSync
         )
         mapExplorerViewModel = MapExplorerViewModel(
             getNearbyStopsUseCase: getNearbyStopsUseCase,
             locationService: locationService,
             getTripRouteUseCase: getTripRouteUseCase,
             weatherService: weatherService,
-            analyticsService: analyticsService
+            analyticsService: analyticsService,
+            watchSnapshotSync: watchSnapshotSync
         )
     }
 }

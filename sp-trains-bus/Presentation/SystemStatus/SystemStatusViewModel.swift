@@ -70,29 +70,34 @@ class SystemStatusViewModel: ObservableObject {
     private let getMetroStatusUseCase: GetMetroStatusUseCase?
     private let userDefaults: UserDefaults
     private let analyticsService: AnalyticsServiceProtocol
+    private let watchSnapshotSync: WatchSnapshotSyncing
 
     init(
         apiClient: APIClient,
         fallbackUseCase: GetMetroStatusUseCase = GetMetroStatusUseCase(),
         userDefaults: UserDefaults = .standard,
-        analyticsService: AnalyticsServiceProtocol = NoOpAnalyticsService()
+        analyticsService: AnalyticsServiceProtocol = NoOpAnalyticsService(),
+        watchSnapshotSync: WatchSnapshotSyncing = NoOpWatchSnapshotSync()
     ) {
         self.apiClient = apiClient
         self.getMetroStatusUseCase = fallbackUseCase
         self.userDefaults = userDefaults
         self.analyticsService = analyticsService
+        self.watchSnapshotSync = watchSnapshotSync
         self.favoriteLineIDs = Set(userDefaults.stringArray(forKey: Self.favoritesKey) ?? [])
     }
 
     init(
         getMetroStatusUseCase: GetMetroStatusUseCase,
         userDefaults: UserDefaults = .standard,
-        analyticsService: AnalyticsServiceProtocol = NoOpAnalyticsService()
+        analyticsService: AnalyticsServiceProtocol = NoOpAnalyticsService(),
+        watchSnapshotSync: WatchSnapshotSyncing = NoOpWatchSnapshotSync()
     ) {
         self.apiClient = nil
         self.getMetroStatusUseCase = getMetroStatusUseCase
         self.userDefaults = userDefaults
         self.analyticsService = analyticsService
+        self.watchSnapshotSync = watchSnapshotSync
         self.favoriteLineIDs = Set(userDefaults.stringArray(forKey: Self.favoritesKey) ?? [])
     }
 
@@ -191,6 +196,7 @@ class SystemStatusViewModel: ObservableObject {
         generatedAt = nil
         updateOverallStatus()
         isLoading = false
+        syncWatchSnapshot()
         analyticsService.trackEvent(
             name: "system_status_load_fallback_used",
             properties: ["metro_lines_count": "\(metroLineStatuses.count)"]
@@ -215,6 +221,7 @@ class SystemStatusViewModel: ObservableObject {
         }
 
         updateOverallStatus()
+        syncWatchSnapshot()
     }
 
     private func mapLines(_ lines: [RailLineStatusDTO], source: String) -> [RailLineStatusItem] {
@@ -409,6 +416,7 @@ class SystemStatusViewModel: ObservableObject {
             favoriteLineIDs.insert(line.id)
         }
         persistFavoriteLineIDs()
+        syncWatchSnapshot()
         analyticsService.trackEvent(
             name: "system_status_line_favorite_toggled",
             properties: [
@@ -486,5 +494,24 @@ class SystemStatusViewModel: ObservableObject {
             return ("", "")
         }
         return fallbacks[index]
+    }
+
+    private func syncWatchSnapshot() {
+        let orderedLines = favoriteLineStatuses + metroNonFavoriteLineStatuses + cptmNonFavoriteLineStatuses
+        let snapshots = orderedLines.map { line in
+            WatchRailLineSnapshot(
+                id: line.id,
+                source: line.source,
+                lineNumber: line.lineNumber,
+                lineName: line.lineName,
+                status: line.status,
+                detail: line.detailText,
+                statusColorHex: line.statusColorHex,
+                lineColorHex: line.lineColorHex,
+                severityRawValue: line.severity.rawValue,
+                isFavorite: favoriteLineIDs.contains(line.id)
+            )
+        }
+        watchSnapshotSync.syncRailStatus(lines: snapshots)
     }
 }

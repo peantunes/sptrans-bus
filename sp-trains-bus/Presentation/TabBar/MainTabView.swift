@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MainTabView: View {
     let dependencies: AppDependencies
+    @ObservedObject var navigationCoordinator: AppNavigationCoordinator
     
     enum TabOption: String {
         case home
@@ -32,6 +33,11 @@ struct MainTabView: View {
         )
     }
 
+    init(dependencies: AppDependencies, navigationCoordinator: AppNavigationCoordinator) {
+        self.dependencies = dependencies
+        self.navigationCoordinator = navigationCoordinator
+    }
+
     var body: some View {
         TabView(selection: tabSelectionBinding) {
 //            Tab("Home", systemImage: "house.fill", value: .home){
@@ -45,7 +51,11 @@ struct MainTabView: View {
 
             Tab(localized("tab.map"), systemImage: "map.fill", value: .map, role: .search) {
                 NavigationStack {
-                    MapExplorerView(viewModel: dependencies.mapExplorerViewModel, dependencies: dependencies) // Assuming MapExplorerViewModel exists in dependencies
+                    MapExplorerView(
+                        viewModel: dependencies.mapExplorerViewModel,
+                        dependencies: dependencies,
+                        navigationCoordinator: navigationCoordinator
+                    )
                 }
             }
 
@@ -59,7 +69,10 @@ struct MainTabView: View {
             
             Tab(localized("tab.status"), systemImage: "tram", value: .status) {
                 NavigationStack {
-                    SystemStatusView(viewModel: dependencies.systemStatusViewModel)
+                    SystemStatusView(
+                        viewModel: dependencies.systemStatusViewModel,
+                        navigationCoordinator: navigationCoordinator
+                    )
                 }
             }
 
@@ -75,6 +88,15 @@ struct MainTabView: View {
         }
         .onChange(of: storedTabSelection) { _, newValue in
             trackTabSelection(for: newValue, trigger: "change")
+        }
+        .onChange(of: navigationCoordinator.pendingTabRawValue) { _, _ in
+            guard let pendingTab = navigationCoordinator.consumePendingTab() else { return }
+            guard let tab = TabOption(rawValue: pendingTab) else { return }
+            if tab == .search && !FeatureToggles.isSearchEnabled {
+                storedTabSelection = TabOption.map.rawValue
+                return
+            }
+            storedTabSelection = tab.rawValue
         }
     }
 
@@ -101,5 +123,8 @@ struct MainTabView: View {
 }
 
 #Preview {
-    MainTabView(dependencies: AppDependencies())
+    MainTabView(
+        dependencies: AppDependencies(),
+        navigationCoordinator: AppNavigationCoordinator()
+    )
 }

@@ -13,6 +13,32 @@
 
 ---
 
+## Apple Watch Integration (Current)
+
+The same Xcode project now includes:
+- `due-sp-watch Watch App` (watch app UI)
+- `due-sp-watchExtension` (WidgetKit complications)
+
+Watch experience currently covers:
+- Rail status list with favorite lines first
+- Top 4 nearby stops
+- Stop detail with upcoming arrivals
+- Open-on-iPhone deep links to `Status` and `Stop Detail`
+- Complications reading live snapshot data from app group storage
+
+Data-sharing contract:
+- App Group: `group.com.lolados.sp.due-sp`
+- Shared snapshot key: `watch_transit_snapshot_v1`
+- iOS snapshot writer: `Infrastructure/Watch/WatchSnapshotStore.swift`
+
+Deep-link contract:
+- URL scheme: `duesp`
+- Routes:
+  - `duesp://status?line_id=<line-id>`
+  - `duesp://stop?stop_id=<id>&name=<name>&lat=<lat>&lon=<lon>&code=<code>&routes=<routes>`
+
+---
+
 ## Architecture Overview
 
 ```

@@ -12,16 +12,20 @@ import SwiftData
 struct sp_trains_busApp: App {
     @Environment(\.scenePhase) private var scenePhase
     let dependencies = AppDependencies()
+    @StateObject private var navigationCoordinator = AppNavigationCoordinator()
     @AppStorage(AppTheme.selectedPrimaryColorHexKey) private var selectedPrimaryColorHex = AppTheme.defaultPrimaryColorHex
     @State private var hasTrackedAppOpen = false
 
     var body: some Scene {
         WindowGroup {
-            MainTabView(dependencies: dependencies)
+            MainTabView(dependencies: dependencies, navigationCoordinator: navigationCoordinator)
                 .tint(AppTheme.color(forStoredHex: selectedPrimaryColorHex))
                 .modelContainer(dependencies.modelContainer)
                 .task {
                     startAnalyticsIfNeeded()
+                }
+                .onOpenURL { url in
+                    navigationCoordinator.handle(url: url)
                 }
                 .onChange(of: scenePhase) { _, newPhase in
                     switch newPhase {

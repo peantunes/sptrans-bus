@@ -8,10 +8,16 @@ struct MapExplorerView: View {
     @State private var selectedStop: Stop?
     @State private var showWeatherDetail: Bool = false
     let dependencies: AppDependencies // Inject dependencies
+    @ObservedObject var navigationCoordinator: AppNavigationCoordinator
 
-    init(viewModel: MapExplorerViewModel, dependencies: AppDependencies) {
+    init(
+        viewModel: MapExplorerViewModel,
+        dependencies: AppDependencies,
+        navigationCoordinator: AppNavigationCoordinator
+    ) {
         _viewModel = StateObject(wrappedValue: viewModel)
         self.dependencies = dependencies
+        self.navigationCoordinator = navigationCoordinator
     }
 
     var body: some View {
@@ -145,6 +151,7 @@ struct MapExplorerView: View {
             viewModel.loadRailNetworkIfNeeded()
             viewModel.loadWeatherIfNeeded()
             viewModel.loadStopsInVisibleRegion()
+            presentPendingStopIfNeeded()
         }
         .animation(.easeInOut(duration: 0.3), value: viewModel.showRefreshButton)
 //        .searchable(text: $viewModel.searchQuery, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search places")
@@ -182,7 +189,8 @@ struct MapExplorerView: View {
                     getTripRouteUseCase: dependencies.getTripRouteUseCase,
                     getRouteShapeUseCase: dependencies.getRouteShapeUseCase,
                     storageService: dependencies.storageService,
-                    analyticsService: dependencies.analyticsService
+                    analyticsService: dependencies.analyticsService,
+                    watchSnapshotSync: dependencies.watchSnapshotSync
                 )
             )
         }
@@ -214,6 +222,9 @@ struct MapExplorerView: View {
                 ]
             )
         }
+        .onChange(of: navigationCoordinator.pendingStop?.stopId) { _, _ in
+            presentPendingStopIfNeeded()
+        }
     }
 
     private var filteredStops: [Stop] {
@@ -239,6 +250,12 @@ struct MapExplorerView: View {
 
     private func localized(_ key: String) -> String {
         NSLocalizedString(key, comment: "")
+    }
+
+    private func presentPendingStopIfNeeded() {
+        guard let pendingStop = navigationCoordinator.pendingStop else { return }
+        selectedStop = pendingStop
+        navigationCoordinator.clearPendingStop()
     }
 }
 
@@ -308,6 +325,10 @@ struct MapExplorerView: View {
     let dependencies = AppDependencies()
 
     return NavigationView {
-        MapExplorerView(viewModel: viewModel, dependencies: dependencies)
+        MapExplorerView(
+            viewModel: viewModel,
+            dependencies: dependencies,
+            navigationCoordinator: AppNavigationCoordinator()
+        )
     }
 }

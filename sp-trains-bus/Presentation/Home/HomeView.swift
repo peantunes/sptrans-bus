@@ -126,7 +126,8 @@ struct HomeView: View {
                     getTripRouteUseCase: dependencies.getTripRouteUseCase,
                     getRouteShapeUseCase: dependencies.getRouteShapeUseCase,
                     storageService: dependencies.storageService,
-                    analyticsService: dependencies.analyticsService
+                    analyticsService: dependencies.analyticsService,
+                    watchSnapshotSync: dependencies.watchSnapshotSync
                 )
             )
         }

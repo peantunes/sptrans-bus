@@ -18,6 +18,7 @@ class StopDetailViewModel: ObservableObject {
     private let getRouteShapeUseCase: GetRouteShapeUseCase
     private let storageService: StorageServiceProtocol
     private let analyticsService: AnalyticsServiceProtocol
+    private let watchSnapshotSync: WatchSnapshotSyncing
     private let calendar: Calendar
     private let outputTimeFormatter: DateFormatter
     private var timer: Timer?
@@ -29,6 +30,7 @@ class StopDetailViewModel: ObservableObject {
         getRouteShapeUseCase: GetRouteShapeUseCase,
         storageService: StorageServiceProtocol,
         analyticsService: AnalyticsServiceProtocol = NoOpAnalyticsService(),
+        watchSnapshotSync: WatchSnapshotSyncing = NoOpWatchSnapshotSync(),
         calendar: Calendar = .current
     ) {
         self.stop = stop
@@ -37,6 +39,7 @@ class StopDetailViewModel: ObservableObject {
         self.getRouteShapeUseCase = getRouteShapeUseCase
         self.storageService = storageService
         self.analyticsService = analyticsService
+        self.watchSnapshotSync = watchSnapshotSync
         self.calendar = calendar
         self.outputTimeFormatter = DateFormatter()
         self.outputTimeFormatter.calendar = calendar
@@ -81,6 +84,19 @@ class StopDetailViewModel: ObservableObject {
                 now: Date(),
                 displayLimit: 10
             )
+            let watchArrivals = self.arrivals
+                .sorted { $0.waitTime < $1.waitTime }
+                .prefix(8)
+                .map { arrival in
+                    WatchArrivalSnapshot(
+                        routeShortName: arrival.routeShortName,
+                        headsign: arrival.headsign,
+                        arrivalTime: arrival.arrivalTime,
+                        waitTime: arrival.waitTime,
+                        routeColorHex: arrival.routeColor
+                    )
+                }
+            watchSnapshotSync.syncArrivals(stopID: stop.stopId, arrivals: Array(watchArrivals))
             self.isLoading = false
             analyticsService.trackEvent(
                 name: "stop_arrivals_load_succeeded",
