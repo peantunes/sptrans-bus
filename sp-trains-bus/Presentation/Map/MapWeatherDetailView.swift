@@ -175,16 +175,20 @@ struct MapWeatherDetailView: View {
                             .foregroundColor(AppColors.text)
                     }
 
-                    detailRow(
-                        label: localized("map.weather.metrics.rain_volume"),
-                        value: "\(Int(selectedDay.precipitationAmountMillimeters.rounded())) mm",
-                        symbol: "cloud.rain.fill"
-                    )
-                    detailRow(
-                        label: localized("map.weather.metrics.snow_volume"),
-                        value: "\(Int(selectedDay.snowfallAmountCentimeters.rounded())) cm",
-                        symbol: "cloud.snow.fill"
-                    )
+                    if selectedDay.precipitationAmountMillimeters > 0 {
+                        detailRow(
+                            label: localized("map.weather.metrics.rain_volume"),
+                            value: "\(Int(selectedDay.precipitationAmountMillimeters.rounded())) mm",
+                            symbol: "cloud.rain.fill"
+                        )
+                    }
+                    if selectedDay.snowfallAmountCentimeters > 0 {
+                        detailRow(
+                            label: localized("map.weather.metrics.snow_volume"),
+                            value: "\(Int(selectedDay.snowfallAmountCentimeters.rounded())) cm",
+                            symbol: "cloud.snow.fill"
+                        )
+                    }
                     detailRow(
                         label: localized("map.weather.metrics.sunrise"),
                         value: formattedTime(selectedDay.sunrise),
