@@ -23,6 +23,8 @@ class RailStatusLine {
 class RailStatusService {
     const SOURCE_METRO = 'metro';
     const SOURCE_CPTM = 'cptm';
+    const NOTIFICATION_TYPE_PROBLEM = 'problem';
+    const NOTIFICATION_TYPE_RECOVERY = 'recovery';
 
     const METRO_URL = 'https://www.metro.sp.gov.br/wp-content/themes/metrosp/direto-metro.php';
     const CPTM_API_URL = 'https://api.cptm.sp.gov.br/AppCPTM/v1/Linhas/ObterStatus';
@@ -66,6 +68,24 @@ class RailStatusService {
 
         $metro = $this->getLatestBySource(self::SOURCE_METRO);
         $cptm = $this->getLatestBySource(self::SOURCE_CPTM);
+
+        if ($forceRefresh) {
+            $latestForNotifications = [];
+            if (!empty($refreshed[self::SOURCE_METRO])) {
+                $latestForNotifications[self::SOURCE_METRO] = $metro;
+            }
+            if (!empty($refreshed[self::SOURCE_CPTM])) {
+                $latestForNotifications[self::SOURCE_CPTM] = $cptm;
+            }
+
+            try {
+                if (!empty($latestForNotifications)) {
+                    $this->processDisruptionNotifications($latestForNotifications);
+                }
+            } catch (Throwable $e) {
+                error_log('[rail-status][notifications] ' . $e->getMessage());
+            }
+        }
 
         return [
             'generatedAt' => $this->nowString(),
@@ -118,6 +138,125 @@ class RailStatusService {
         }
 
         return $result;
+    }
+
+    /**
+     * Sends one explicit test push notification to an active subscribed device.
+     * This does not update disruption dedupe state.
+     */
+    public function sendTestNotification($installationId = null, $source = null, $lineNumber = null) {
+        $this->ensureSchema();
+
+        $normalizedInstallationId = null;
+        if ($installationId !== null) {
+            $normalizedInstallationId = trim((string)$installationId);
+            if ($normalizedInstallationId === '') {
+                $normalizedInstallationId = null;
+            }
+        }
+
+        $normalizedSource = strtolower(trim((string)$source));
+        if ($normalizedSource === '') {
+            $normalizedSource = null;
+        }
+        if ($normalizedSource !== null
+            && $normalizedSource !== self::SOURCE_METRO
+            && $normalizedSource !== self::SOURCE_CPTM) {
+            throw new InvalidArgumentException('Invalid source filter for test notification');
+        }
+
+        $normalizedLineNumber = trim((string)$lineNumber);
+        if ($normalizedLineNumber === '') {
+            $normalizedLineNumber = null;
+        }
+
+        $apnsConfig = $this->buildApnsConfig();
+        if (empty($apnsConfig['ready'])) {
+            throw new RuntimeException('APNs config is missing. Check APNS_* settings on server.');
+        }
+
+        $subscriptions = $this->fetchActiveAlertSubscriptionsForNotifications($normalizedInstallationId);
+        if (empty($subscriptions)) {
+            throw new RuntimeException('No active subscriptions available for test push.');
+        }
+
+        $latestBySource = [
+            self::SOURCE_METRO => $this->getLatestBySource(self::SOURCE_METRO),
+            self::SOURCE_CPTM => $this->getLatestBySource(self::SOURCE_CPTM)
+        ];
+        $latestIndex = $this->buildLatestStatusIndex($latestBySource);
+
+        $selectedSubscription = null;
+        $selectedStatus = null;
+        $wantedLineKey = $normalizedLineNumber !== null ? $this->normalizeLineKey($normalizedLineNumber) : null;
+
+        foreach ($subscriptions as $subscription) {
+            $subscriptionSource = strtolower(trim((string)($subscription['source'] ?? '')));
+            if ($normalizedSource !== null && $subscriptionSource !== $normalizedSource) {
+                continue;
+            }
+
+            $subscriptionLineKey = $this->normalizeLineKey((string)($subscription['line_number'] ?? ''));
+            if ($wantedLineKey !== null && $subscriptionLineKey !== $wantedLineKey) {
+                continue;
+            }
+
+            $selectedSubscription = $subscription;
+            $selectedStatus = $this->resolveLatestStatusForSubscription($subscription, $latestIndex);
+            break;
+        }
+
+        if ($selectedSubscription === null) {
+            throw new RuntimeException('No subscription matched the requested source/line filters.');
+        }
+
+        if ($selectedStatus === null) {
+            $selectedStatus = [
+                'source' => (string)($selectedSubscription['source'] ?? ''),
+                'lineNumber' => (string)($selectedSubscription['line_number'] ?? ''),
+                'lineName' => (string)($selectedSubscription['line_name'] ?? ''),
+                'status' => 'Teste de notificacao',
+                'statusDetail' => 'Disparo manual de teste via API',
+                'statusColor' => 'FF9500',
+                'sourceUpdatedAt' => $this->nowString()
+            ];
+        } else {
+            $currentStatus = $this->normalizeText((string)($selectedStatus['status'] ?? ''));
+            $selectedStatus['status'] = 'Teste de notificacao';
+            $selectedStatus['statusDetail'] = $currentStatus !== ''
+                ? ('Status atual da linha: ' . $currentStatus)
+                : 'Disparo manual de teste via API';
+        }
+
+        $classification = $this->classifyStatusImpact($selectedStatus['status']);
+        $sendResult = $this->sendRailStatusNotification(
+            $apnsConfig,
+            $selectedSubscription,
+            $selectedStatus,
+            self::NOTIFICATION_TYPE_PROBLEM,
+            $classification
+        );
+
+        $this->insertNotificationLog(
+            $selectedSubscription,
+            $selectedStatus,
+            self::NOTIFICATION_TYPE_PROBLEM,
+            $classification,
+            $sendResult
+        );
+
+        return [
+            'success' => !empty($sendResult['success']),
+            'statusCode' => (int)($sendResult['statusCode'] ?? 0),
+            'reason' => (string)($sendResult['reason'] ?? ''),
+            'messageId' => $sendResult['messageId'] ?? null,
+            'target' => [
+                'installationId' => $selectedSubscription['installation_id'] ?? null,
+                'source' => $selectedSubscription['source'] ?? null,
+                'lineNumber' => $selectedSubscription['line_number'] ?? null,
+                'lineName' => $selectedSubscription['line_name'] ?? null
+            ]
+        ];
     }
 
     private function refreshSource($source) {
@@ -1489,6 +1628,724 @@ class RailStatusService {
         ];
     }
 
+    private function processDisruptionNotifications($latestBySource) {
+        $subscriptions = $this->fetchActiveAlertSubscriptionsForNotifications();
+        if (empty($subscriptions)) {
+            return;
+        }
+
+        $apnsConfig = $this->buildApnsConfig();
+        if (!$apnsConfig['ready']) {
+            error_log('[rail-status][notifications] APNs configuration is missing or invalid; skipping sends');
+            return;
+        }
+
+        $latestIndex = $this->buildLatestStatusIndex($latestBySource);
+        if (empty($latestIndex['byNumber']) && empty($latestIndex['byName'])) {
+            return;
+        }
+
+        foreach ($subscriptions as $subscription) {
+            $statusRow = $this->resolveLatestStatusForSubscription($subscription, $latestIndex);
+            if ($statusRow === null) {
+                continue;
+            }
+
+            $classification = $this->classifyStatusImpact($statusRow['status']);
+            $now = $this->nowString();
+
+            $isProblemOpen = ((int)($subscription['is_problem_open'] ?? 0)) === 1;
+            $problemNotifiedAt = $subscription['problem_notified_at'] ?? null;
+            $lastRecoverySentAt = $subscription['last_recovery_sent_at'] ?? null;
+            $lastProblemStatus = $subscription['last_problem_status_text'] ?? null;
+            $lastProblemNormalized = $subscription['last_problem_normalized'] ?? null;
+
+            if (!empty($classification['impactingUser'])) {
+                if ($isProblemOpen) {
+                    $this->upsertDeliveryState([
+                        'deviceId' => (int)$subscription['device_id'],
+                        'lineIdKey' => (string)$subscription['line_id_key'],
+                        'lastStatusText' => $statusRow['status'],
+                        'lastStatusNormalized' => $classification['normalizedStatus'],
+                        'isProblemOpen' => 1,
+                        'lastProblemStatus' => $lastProblemStatus,
+                        'lastProblemNormalized' => $lastProblemNormalized,
+                        'problemNotifiedAt' => $problemNotifiedAt,
+                        'lastRecoverySentAt' => $lastRecoverySentAt
+                    ]);
+                    continue;
+                }
+
+                $sendResult = $this->sendRailStatusNotification(
+                    $apnsConfig,
+                    $subscription,
+                    $statusRow,
+                    self::NOTIFICATION_TYPE_PROBLEM,
+                    $classification
+                );
+
+                $this->insertNotificationLog(
+                    $subscription,
+                    $statusRow,
+                    self::NOTIFICATION_TYPE_PROBLEM,
+                    $classification,
+                    $sendResult
+                );
+
+                if (!empty($sendResult['success'])) {
+                    $this->upsertDeliveryState([
+                        'deviceId' => (int)$subscription['device_id'],
+                        'lineIdKey' => (string)$subscription['line_id_key'],
+                        'lastStatusText' => $statusRow['status'],
+                        'lastStatusNormalized' => $classification['normalizedStatus'],
+                        'isProblemOpen' => 1,
+                        'lastProblemStatus' => $statusRow['status'],
+                        'lastProblemNormalized' => $classification['normalizedStatus'],
+                        'problemNotifiedAt' => $now,
+                        'lastRecoverySentAt' => $lastRecoverySentAt
+                    ]);
+                } else {
+                    if ($this->isApnsInvalidTokenReason($sendResult['reason'] ?? null)) {
+                        $this->disableDevicePushForInvalidToken((int)$subscription['device_id']);
+                    }
+                    $this->upsertDeliveryState([
+                        'deviceId' => (int)$subscription['device_id'],
+                        'lineIdKey' => (string)$subscription['line_id_key'],
+                        'lastStatusText' => $statusRow['status'],
+                        'lastStatusNormalized' => $classification['normalizedStatus'],
+                        'isProblemOpen' => 0,
+                        'lastProblemStatus' => null,
+                        'lastProblemNormalized' => null,
+                        'problemNotifiedAt' => null,
+                        'lastRecoverySentAt' => $lastRecoverySentAt
+                    ]);
+                }
+                continue;
+            }
+
+            if (!$isProblemOpen) {
+                $this->upsertDeliveryState([
+                    'deviceId' => (int)$subscription['device_id'],
+                    'lineIdKey' => (string)$subscription['line_id_key'],
+                    'lastStatusText' => $statusRow['status'],
+                    'lastStatusNormalized' => $classification['normalizedStatus'],
+                    'isProblemOpen' => 0,
+                    'lastProblemStatus' => null,
+                    'lastProblemNormalized' => null,
+                    'problemNotifiedAt' => null,
+                    'lastRecoverySentAt' => $lastRecoverySentAt
+                ]);
+                continue;
+            }
+
+            $canSendRecovery = $this->shouldSendRecoveryNotification($problemNotifiedAt, $now);
+            if ($canSendRecovery) {
+                $sendResult = $this->sendRailStatusNotification(
+                    $apnsConfig,
+                    $subscription,
+                    $statusRow,
+                    self::NOTIFICATION_TYPE_RECOVERY,
+                    $classification
+                );
+
+                $this->insertNotificationLog(
+                    $subscription,
+                    $statusRow,
+                    self::NOTIFICATION_TYPE_RECOVERY,
+                    $classification,
+                    $sendResult
+                );
+
+                if (!empty($sendResult['success'])) {
+                    $this->upsertDeliveryState([
+                        'deviceId' => (int)$subscription['device_id'],
+                        'lineIdKey' => (string)$subscription['line_id_key'],
+                        'lastStatusText' => $statusRow['status'],
+                        'lastStatusNormalized' => $classification['normalizedStatus'],
+                        'isProblemOpen' => 0,
+                        'lastProblemStatus' => null,
+                        'lastProblemNormalized' => null,
+                        'problemNotifiedAt' => null,
+                        'lastRecoverySentAt' => $now
+                    ]);
+                } else {
+                    $this->upsertDeliveryState([
+                        'deviceId' => (int)$subscription['device_id'],
+                        'lineIdKey' => (string)$subscription['line_id_key'],
+                        'lastStatusText' => $statusRow['status'],
+                        'lastStatusNormalized' => $classification['normalizedStatus'],
+                        'isProblemOpen' => 1,
+                        'lastProblemStatus' => $lastProblemStatus,
+                        'lastProblemNormalized' => $lastProblemNormalized,
+                        'problemNotifiedAt' => $problemNotifiedAt,
+                        'lastRecoverySentAt' => $lastRecoverySentAt
+                    ]);
+                }
+                continue;
+            }
+
+            // Out-of-day or orphaned open incident: close silently without sending "normal".
+            $this->upsertDeliveryState([
+                'deviceId' => (int)$subscription['device_id'],
+                'lineIdKey' => (string)$subscription['line_id_key'],
+                'lastStatusText' => $statusRow['status'],
+                'lastStatusNormalized' => $classification['normalizedStatus'],
+                'isProblemOpen' => 0,
+                'lastProblemStatus' => null,
+                'lastProblemNormalized' => null,
+                'problemNotifiedAt' => null,
+                'lastRecoverySentAt' => $lastRecoverySentAt
+            ]);
+        }
+    }
+
+    private function fetchActiveAlertSubscriptionsForNotifications($installationId = null) {
+        $sql = "
+            SELECT
+                s.device_id,
+                s.line_id_key,
+                s.source,
+                s.line_number,
+                s.line_name,
+                d.installation_id,
+                d.apns_token,
+                d.notifications_enabled,
+                d.authorization_status,
+                st.is_problem_open,
+                st.problem_notified_at,
+                st.last_problem_status_text,
+                st.last_problem_normalized,
+                st.last_recovery_sent_at
+            FROM sp_transit_alert_line_subscriptions s
+            INNER JOIN sp_transit_alert_devices d
+                ON d.device_id = s.device_id
+            LEFT JOIN sp_transit_alert_delivery_state st
+                ON st.device_id = s.device_id
+               AND st.line_id_key = s.line_id_key
+            WHERE s.is_active = 1
+              AND d.notifications_enabled = 1
+              AND d.platform = 'ios'
+              AND d.apns_token IS NOT NULL
+              AND d.apns_token <> ''
+              AND (d.authorization_status IS NULL OR d.authorization_status <> 'denied')
+        ";
+        $params = [];
+        $types = '';
+        $normalizedInstallationId = $installationId !== null ? trim((string)$installationId) : '';
+        if ($normalizedInstallationId !== '') {
+            $sql .= " AND d.installation_id = ?";
+            $types .= 's';
+            $params[] = $normalizedInstallationId;
+        }
+        $sql .= " ORDER BY s.device_id, s.source, s.line_number, s.line_name";
+
+        if (!empty($params)) {
+            $this->con->ExecutaPrepared($sql, $types, $params);
+        } else {
+            $this->con->Executa($sql);
+        }
+
+        $rows = [];
+        while ($row = $this->con->Linha()) {
+            $rows[] = $row;
+        }
+        return $rows;
+    }
+
+    private function buildLatestStatusIndex($latestBySource) {
+        $index = [
+            'byNumber' => [],
+            'byName' => []
+        ];
+
+        $sources = [self::SOURCE_METRO, self::SOURCE_CPTM];
+        foreach ($sources as $source) {
+            $sourcePayload = is_array($latestBySource) && isset($latestBySource[$source]) && is_array($latestBySource[$source])
+                ? $latestBySource[$source]
+                : null;
+
+            if (!$sourcePayload || empty($sourcePayload['lines']) || !is_array($sourcePayload['lines'])) {
+                continue;
+            }
+
+            foreach ($sourcePayload['lines'] as $line) {
+                if (!is_array($line)) {
+                    continue;
+                }
+
+                $lineNumber = trim((string)($line['lineNumber'] ?? ''));
+                $lineName = $this->normalizeText((string)($line['lineName'] ?? ''));
+                $statusText = $this->normalizeText((string)($line['status'] ?? ''));
+                $statusDetail = $this->normalizeText((string)($line['statusDetail'] ?? ''));
+                $statusColor = $this->normalizeHexColor((string)($line['statusColor'] ?? ''));
+                $sourceUpdatedAt = $line['sourceUpdatedAt'] ?? null;
+
+                if ($statusText === '') {
+                    continue;
+                }
+
+                $entry = [
+                    'source' => $source,
+                    'lineNumber' => $lineNumber,
+                    'lineName' => $lineName,
+                    'status' => $statusText,
+                    'statusDetail' => $statusDetail,
+                    'statusColor' => $statusColor !== null ? ltrim($statusColor, '#') : '',
+                    'sourceUpdatedAt' => $sourceUpdatedAt
+                ];
+
+                $numberKey = $this->normalizeLineKey($lineNumber);
+                if ($numberKey !== '') {
+                    $index['byNumber'][$source . '|' . $numberKey] = $entry;
+                }
+
+                $nameKey = $this->normalizeStatusForMatch($lineName);
+                if ($nameKey !== '') {
+                    $index['byName'][$source . '|' . $nameKey] = $entry;
+                }
+            }
+        }
+
+        return $index;
+    }
+
+    private function resolveLatestStatusForSubscription($subscription, $latestIndex) {
+        $source = strtolower(trim((string)($subscription['source'] ?? '')));
+        if ($source !== self::SOURCE_METRO && $source !== self::SOURCE_CPTM) {
+            return null;
+        }
+
+        $lineNumberKey = $this->normalizeLineKey((string)($subscription['line_number'] ?? ''));
+        if ($lineNumberKey !== '') {
+            $mapKey = $source . '|' . $lineNumberKey;
+            if (isset($latestIndex['byNumber'][$mapKey])) {
+                return $latestIndex['byNumber'][$mapKey];
+            }
+        }
+
+        $lineNameKey = $this->normalizeStatusForMatch((string)($subscription['line_name'] ?? ''));
+        if ($lineNameKey !== '') {
+            $mapKey = $source . '|' . $lineNameKey;
+            if (isset($latestIndex['byName'][$mapKey])) {
+                return $latestIndex['byName'][$mapKey];
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizeLineKey($value) {
+        $normalized = $this->normalizeStatusForMatch($value);
+        if ($normalized === '') {
+            return '';
+        }
+        $normalized = preg_replace('/[^a-z0-9]+/', '', $normalized);
+        return trim((string)$normalized);
+    }
+
+    private function shouldSendRecoveryNotification($problemNotifiedAt, $now) {
+        if (empty($problemNotifiedAt) || empty($now)) {
+            return false;
+        }
+        return $this->isSameLocalDay($problemNotifiedAt, $now);
+    }
+
+    private function isSameLocalDay($firstDateTime, $secondDateTime) {
+        if (empty($firstDateTime) || empty($secondDateTime)) {
+            return false;
+        }
+        return substr((string)$firstDateTime, 0, 10) === substr((string)$secondDateTime, 0, 10);
+    }
+
+    private function upsertDeliveryState($state) {
+        $deviceId = (int)($state['deviceId'] ?? 0);
+        $lineIdKey = trim((string)($state['lineIdKey'] ?? ''));
+        if ($deviceId <= 0 || $lineIdKey === '') {
+            return;
+        }
+
+        $now = $this->nowString();
+
+        $this->con->ExecutaPrepared(
+            "INSERT INTO sp_transit_alert_delivery_state
+                (device_id, line_id_key, last_status_text, last_status_normalized, is_problem_open, last_problem_status_text, last_problem_normalized, problem_notified_at, last_recovery_sent_at, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE
+                last_status_text = VALUES(last_status_text),
+                last_status_normalized = VALUES(last_status_normalized),
+                is_problem_open = VALUES(is_problem_open),
+                last_problem_status_text = VALUES(last_problem_status_text),
+                last_problem_normalized = VALUES(last_problem_normalized),
+                problem_notified_at = VALUES(problem_notified_at),
+                last_recovery_sent_at = VALUES(last_recovery_sent_at),
+                updated_at = VALUES(updated_at)",
+            "isssissssss",
+            [
+                $deviceId,
+                $lineIdKey,
+                $state['lastStatusText'] ?? null,
+                $state['lastStatusNormalized'] ?? null,
+                (int)($state['isProblemOpen'] ?? 0),
+                $state['lastProblemStatus'] ?? null,
+                $state['lastProblemNormalized'] ?? null,
+                $state['problemNotifiedAt'] ?? null,
+                $state['lastRecoverySentAt'] ?? null,
+                $now,
+                $now
+            ]
+        );
+    }
+
+    private function insertNotificationLog($subscription, $statusRow, $notificationType, $classification, $sendResult) {
+        $statusCode = isset($sendResult['statusCode']) ? (int)$sendResult['statusCode'] : 0;
+
+        $this->con->ExecutaPrepared(
+            "INSERT INTO sp_transit_alert_notification_log
+                (device_id, line_id_key, source, line_number, line_name, notification_type, status_text, status_detail, impact_level, sent_success, provider_response_code, provider_response_reason, provider_message_id, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "issssssssiisss",
+            [
+                (int)($subscription['device_id'] ?? 0),
+                (string)($subscription['line_id_key'] ?? ''),
+                (string)($subscription['source'] ?? ''),
+                (string)($subscription['line_number'] ?? ''),
+                (string)($subscription['line_name'] ?? ''),
+                (string)$notificationType,
+                (string)($statusRow['status'] ?? ''),
+                (string)($statusRow['statusDetail'] ?? ''),
+                (string)($classification['impactLevel'] ?? 'none'),
+                !empty($sendResult['success']) ? 1 : 0,
+                $statusCode,
+                isset($sendResult['reason']) ? (string)$sendResult['reason'] : null,
+                isset($sendResult['messageId']) ? (string)$sendResult['messageId'] : null,
+                $this->nowString()
+            ]
+        );
+    }
+
+    private function sendRailStatusNotification($apnsConfig, $subscription, $statusRow, $notificationType, $classification) {
+        if (empty($apnsConfig['ready'])) {
+            return [
+                'success' => false,
+                'statusCode' => 0,
+                'reason' => 'APNS_CONFIG_MISSING',
+                'messageId' => null
+            ];
+        }
+        if (!function_exists('curl_init')) {
+            return [
+                'success' => false,
+                'statusCode' => 0,
+                'reason' => 'CURL_NOT_AVAILABLE',
+                'messageId' => null
+            ];
+        }
+
+        $apnsToken = preg_replace('/\s+/', '', (string)($subscription['apns_token'] ?? ''));
+        $apnsToken = trim((string)$apnsToken, '<>');
+        if ($apnsToken === '') {
+            return [
+                'success' => false,
+                'statusCode' => 0,
+                'reason' => 'MISSING_DEVICE_TOKEN',
+                'messageId' => null
+            ];
+        }
+
+        $jwt = $this->buildApnsJwt($apnsConfig);
+        if ($jwt === null) {
+            return [
+                'success' => false,
+                'statusCode' => 0,
+                'reason' => 'FAILED_TO_BUILD_APNS_JWT',
+                'messageId' => null
+            ];
+        }
+
+        $lineNumber = trim((string)($statusRow['lineNumber'] ?? ($subscription['line_number'] ?? '')));
+        $lineName = trim((string)($statusRow['lineName'] ?? ($subscription['line_name'] ?? '')));
+        $lineLabel = $lineNumber !== '' ? ('Linha ' . $lineNumber) : 'Linha';
+        if ($lineName !== '') {
+            $lineLabel .= ' - ' . $lineName;
+        }
+
+        $statusText = $this->normalizeText((string)($statusRow['status'] ?? ''));
+        $statusDetail = $this->normalizeText((string)($statusRow['statusDetail'] ?? ''));
+        $source = strtolower(trim((string)($subscription['source'] ?? '')));
+        $messageId = $this->generateUuidV4();
+
+        if ($notificationType === self::NOTIFICATION_TYPE_RECOVERY) {
+            $title = $lineLabel . ' normalizada';
+            $body = 'A linha voltou ao status normal.';
+        } else {
+            $title = 'Disrupcao em ' . $lineLabel;
+            $body = $statusText !== '' ? ('Status: ' . $statusText . '.') : 'Foi detectado um problema na operacao.';
+            if ($statusDetail !== '') {
+                $body .= ' ' . $statusDetail;
+            }
+        }
+
+        $payload = [
+            'aps' => [
+                'alert' => [
+                    'title' => $title,
+                    'body' => $body
+                ],
+                'sound' => 'default'
+            ],
+            'type' => 'rail_status_' . $notificationType,
+            'source' => $source,
+            'lineId' => (string)($subscription['line_id_key'] ?? ''),
+            'lineNumber' => $lineNumber,
+            'lineName' => $lineName,
+            'status' => $statusText,
+            'statusDetail' => $statusDetail,
+            'impactLevel' => (string)($classification['impactLevel'] ?? 'none'),
+            'impactScore' => (int)($classification['impactScore'] ?? 0),
+            'updatedAt' => $statusRow['sourceUpdatedAt'] ?? null
+        ];
+
+        $bodyJson = json_encode($payload, JSON_UNESCAPED_UNICODE);
+        if (!is_string($bodyJson) || $bodyJson === '') {
+            return [
+                'success' => false,
+                'statusCode' => 0,
+                'reason' => 'INVALID_PAYLOAD_JSON',
+                'messageId' => $messageId
+            ];
+        }
+
+        $lineCollapse = $source . '-' . $this->normalizeLineKey($lineNumber !== '' ? $lineNumber : $lineName);
+        if ($lineCollapse === $source . '-') {
+            $lineCollapse = $source . '-rail';
+        }
+
+        $url = 'https://' . $apnsConfig['host'] . '/3/device/' . rawurlencode($apnsToken);
+        $headers = [
+            'apns-topic: ' . $apnsConfig['topic'],
+            'apns-push-type: alert',
+            'apns-priority: 10',
+            'apns-id: ' . $messageId,
+            'apns-collapse-id: ' . substr($lineCollapse, 0, 64),
+            'authorization: bearer ' . $jwt,
+            'content-type: application/json'
+        ];
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $bodyJson,
+            CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_TIMEOUT => 20,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_2_0
+        ]);
+
+        $responseBody = curl_exec($ch);
+        $statusCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        if ($responseBody === false || $curlError !== '') {
+            return [
+                'success' => false,
+                'statusCode' => $statusCode,
+                'reason' => $curlError !== '' ? $curlError : 'APNS_CURL_FAILED',
+                'messageId' => $messageId
+            ];
+        }
+
+        $reason = null;
+        $decoded = json_decode((string)$responseBody, true);
+        if (is_array($decoded) && isset($decoded['reason'])) {
+            $reason = (string)$decoded['reason'];
+        }
+        if ($reason === null || $reason === '') {
+            $reason = $statusCode === 200 ? 'OK' : ('HTTP_' . $statusCode);
+        }
+
+        return [
+            'success' => $statusCode === 200,
+            'statusCode' => $statusCode,
+            'reason' => $reason,
+            'messageId' => $messageId
+        ];
+    }
+
+    private function buildApnsConfig() {
+        $keyPath = $this->readConfigValue('APNS_AUTH_KEY_PATH') ?? '../../../keys/AuthKey_6D4W4NCU46.p8';
+        $keyId = $this->readConfigValue('APNS_KEY_ID') ?? '6D4W4NCU46';
+        $teamId = $this->readConfigValue('APNS_TEAM_ID') ?? '666GZ2659S';
+        $topic = $this->readConfigValue('APNS_BUNDLE_ID') ?? 'com.lolados.sp.Sao-Paulo-Onibus';
+        $sandboxRaw = strtolower(trim((string)$this->readConfigValue('APNS_USE_SANDBOX')));
+        $useSandbox = true; //in_array($sandboxRaw, ['1', 'true', 'yes', 'on'], true);
+
+        if ($keyPath !== null && $keyPath !== '' && $keyPath[0] !== '/') {
+            $candidate = realpath(__DIR__ . '/../' . $keyPath);
+            if ($candidate !== false) {
+                $keyPath = $candidate;
+            }
+        }
+
+        $ready = true;
+        if ($keyPath === null || $keyPath === '' || !is_file($keyPath)) {
+            $ready = false;
+        }
+        if ($keyId === null || $keyId === '' || $teamId === null || $teamId === '' || $topic === null || $topic === '') {
+            $ready = false;
+        }
+        if (!function_exists('openssl_sign')) {
+            $ready = false;
+        }
+
+        return [
+            'ready' => $ready,
+            'keyPath' => $keyPath,
+            'keyId' => $keyId,
+            'teamId' => $teamId,
+            'topic' => $topic,
+            'host' => $useSandbox ? 'api.sandbox.push.apple.com' : 'api.push.apple.com'
+        ];
+    }
+
+    private function readConfigValue($key) {
+        $value = getenv($key);
+        if ($value !== false && $value !== null) {
+            $trimmed = trim((string)$value);
+            if ($trimmed !== '') {
+                return $trimmed;
+            }
+        }
+
+        if (isset($_ENV[$key])) {
+            $trimmed = trim((string)$_ENV[$key]);
+            if ($trimmed !== '') {
+                return $trimmed;
+            }
+        }
+
+        if (isset($_SERVER[$key])) {
+            $trimmed = trim((string)$_SERVER[$key]);
+            if ($trimmed !== '') {
+                return $trimmed;
+            }
+        }
+
+        return null;
+    }
+
+    private function buildApnsJwt($apnsConfig) {
+        static $cachedJwt = [
+            'cacheKey' => null,
+            'token' => null,
+            'issuedAt' => 0
+        ];
+
+        $cacheKey = implode('|', [
+            (string)($apnsConfig['keyPath'] ?? ''),
+            (string)($apnsConfig['keyId'] ?? ''),
+            (string)($apnsConfig['teamId'] ?? '')
+        ]);
+
+        $nowTs = time();
+        if ($cachedJwt['cacheKey'] === $cacheKey
+            && !empty($cachedJwt['token'])
+            && ($nowTs - (int)$cachedJwt['issuedAt']) < 3000) {
+            return (string)$cachedJwt['token'];
+        }
+
+        $keyPath = (string)($apnsConfig['keyPath'] ?? '');
+        $privateKeyContents = @file_get_contents($keyPath);
+        if (!is_string($privateKeyContents) || $privateKeyContents === '') {
+            return null;
+        }
+
+        $privateKey = openssl_pkey_get_private($privateKeyContents);
+        if ($privateKey === false) {
+            return null;
+        }
+
+        $header = ['alg' => 'ES256', 'kid' => (string)$apnsConfig['keyId']];
+        $payload = ['iss' => (string)$apnsConfig['teamId'], 'iat' => $nowTs];
+
+        $encodedHeader = $this->base64UrlEncode(json_encode($header));
+        $encodedPayload = $this->base64UrlEncode(json_encode($payload));
+        if ($encodedHeader === '' || $encodedPayload === '') {
+            return null;
+        }
+
+        $unsigned = $encodedHeader . '.' . $encodedPayload;
+        $signature = '';
+        $signed = openssl_sign($unsigned, $signature, $privateKey, OPENSSL_ALGO_SHA256);
+        if (function_exists('openssl_pkey_free')) {
+            openssl_pkey_free($privateKey);
+        }
+        if (!$signed) {
+            return null;
+        }
+
+        $token = $unsigned . '.' . $this->base64UrlEncode($signature);
+        $cachedJwt['cacheKey'] = $cacheKey;
+        $cachedJwt['token'] = $token;
+        $cachedJwt['issuedAt'] = $nowTs;
+
+        return $token;
+    }
+
+    private function base64UrlEncode($value) {
+        $encoded = base64_encode((string)$value);
+        $encoded = str_replace(['+', '/', '='], ['-', '_', ''], $encoded);
+        return (string)$encoded;
+    }
+
+    private function generateUuidV4() {
+        if (function_exists('random_bytes')) {
+            $bytes = random_bytes(16);
+            $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
+            $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
+            return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
+        }
+
+        $hash = md5(uniqid((string)mt_rand(), true));
+        return substr($hash, 0, 8) . '-' . substr($hash, 8, 4) . '-' . substr($hash, 12, 4) . '-' . substr($hash, 16, 4) . '-' . substr($hash, 20, 12);
+    }
+
+    private function isApnsInvalidTokenReason($reason) {
+        $normalized = strtolower(trim((string)$reason));
+        if ($normalized === '') {
+            return false;
+        }
+
+        $invalidReasons = [
+            'baddevicetoken',
+            'devicetokennotfortopic',
+            'unregistered',
+            'badtopic',
+            'topicdisallowed'
+        ];
+
+        return in_array($normalized, $invalidReasons, true);
+    }
+
+    private function disableDevicePushForInvalidToken($deviceId) {
+        $deviceId = (int)$deviceId;
+        if ($deviceId <= 0) {
+            return;
+        }
+
+        $this->con->ExecutaPrepared(
+            "UPDATE sp_transit_alert_devices
+             SET apns_token = NULL,
+                 notifications_enabled = 0,
+                 authorization_status = 'invalid_token',
+                 updated_at = ?
+             WHERE device_id = ?",
+            "si",
+            [$this->nowString(), $deviceId]
+        );
+    }
+
     private function nowString() {
         $dt = new DateTimeImmutable('now', $this->timezone);
         return $dt->format('Y-m-d H:i:s');
@@ -1540,6 +2397,97 @@ class RailStatusService {
                 consecutive_failures INT UNSIGNED NOT NULL DEFAULT 0,
                 last_error_message TEXT NULL,
                 PRIMARY KEY (source)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+
+        $this->con->Executa("
+            CREATE TABLE IF NOT EXISTS sp_transit_alert_devices (
+                device_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                installation_id VARCHAR(64) NOT NULL,
+                platform VARCHAR(16) NOT NULL DEFAULT 'ios',
+                apns_token VARCHAR(255) NULL,
+                notifications_enabled TINYINT(1) NOT NULL DEFAULT 0,
+                authorization_status VARCHAR(32) NULL,
+                locale VARCHAR(16) NULL,
+                timezone VARCHAR(64) NULL,
+                app_version VARCHAR(32) NULL,
+                build_version VARCHAR(32) NULL,
+                last_seen_at DATETIME NOT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY (device_id),
+                UNIQUE KEY uniq_alert_devices_installation (installation_id),
+                KEY idx_alert_devices_apns_token (apns_token),
+                KEY idx_alert_devices_platform (platform)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+
+        $this->con->Executa("
+            CREATE TABLE IF NOT EXISTS sp_transit_alert_line_subscriptions (
+                subscription_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                device_id BIGINT UNSIGNED NOT NULL,
+                line_id_key VARCHAR(128) NOT NULL,
+                source ENUM('metro','cptm') NOT NULL,
+                line_number VARCHAR(32) NOT NULL,
+                line_name VARCHAR(128) NOT NULL,
+                is_active TINYINT(1) NOT NULL DEFAULT 1,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY (subscription_id),
+                UNIQUE KEY uniq_alert_device_line (device_id, line_id_key),
+                KEY idx_alert_line_source_number (source, line_number),
+                KEY idx_alert_line_active (is_active),
+                CONSTRAINT fk_alert_line_device
+                    FOREIGN KEY (device_id) REFERENCES sp_transit_alert_devices(device_id)
+                    ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+
+        $this->con->Executa("
+            CREATE TABLE IF NOT EXISTS sp_transit_alert_delivery_state (
+                device_id BIGINT UNSIGNED NOT NULL,
+                line_id_key VARCHAR(128) NOT NULL,
+                last_status_text VARCHAR(255) NULL,
+                last_status_normalized VARCHAR(255) NULL,
+                is_problem_open TINYINT(1) NOT NULL DEFAULT 0,
+                last_problem_status_text VARCHAR(255) NULL,
+                last_problem_normalized VARCHAR(255) NULL,
+                problem_notified_at DATETIME NULL,
+                last_recovery_sent_at DATETIME NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY (device_id, line_id_key),
+                KEY idx_alert_delivery_open (is_problem_open),
+                KEY idx_alert_delivery_problem_at (problem_notified_at),
+                CONSTRAINT fk_alert_delivery_device
+                    FOREIGN KEY (device_id) REFERENCES sp_transit_alert_devices(device_id)
+                    ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+
+        $this->con->Executa("
+            CREATE TABLE IF NOT EXISTS sp_transit_alert_notification_log (
+                notification_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                device_id BIGINT UNSIGNED NOT NULL,
+                line_id_key VARCHAR(128) NOT NULL,
+                source ENUM('metro','cptm') NOT NULL,
+                line_number VARCHAR(32) NOT NULL,
+                line_name VARCHAR(128) NOT NULL,
+                notification_type ENUM('problem','recovery') NOT NULL,
+                status_text VARCHAR(255) NOT NULL,
+                status_detail VARCHAR(512) NULL,
+                impact_level VARCHAR(16) NOT NULL DEFAULT 'none',
+                sent_success TINYINT(1) NOT NULL DEFAULT 0,
+                provider_response_code SMALLINT NULL,
+                provider_response_reason VARCHAR(255) NULL,
+                provider_message_id VARCHAR(64) NULL,
+                created_at DATETIME NOT NULL,
+                PRIMARY KEY (notification_id),
+                KEY idx_alert_notification_device_line (device_id, line_id_key),
+                KEY idx_alert_notification_created (created_at),
+                CONSTRAINT fk_alert_notification_device
+                    FOREIGN KEY (device_id) REFERENCES sp_transit_alert_devices(device_id)
+                    ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
     }

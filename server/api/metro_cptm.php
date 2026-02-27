@@ -22,12 +22,32 @@ include(__DIR__ . '/../config.php');
 require_once(__DIR__ . '/../inc/RailStatusService.class.php');
 
 $forceRefresh = isset($_REQUEST['refresh']) && (string)$_REQUEST['refresh'] === '1';
+$testPush = isset($_REQUEST['test_push']) && (string)$_REQUEST['test_push'] === '1';
+$testInstallationId = isset($_REQUEST['installation_id']) ? trim((string)$_REQUEST['installation_id']) : null;
+$testSource = isset($_REQUEST['test_source']) ? trim((string)$_REQUEST['test_source']) : null;
+$testLineNumber = isset($_REQUEST['test_line_number']) ? trim((string)$_REQUEST['test_line_number']) : null;
 
 $cConexao->Conecta();
 
 try {
     $service = new RailStatusService($cConexao);
     $response = $service->getLatestStatus($forceRefresh);
+
+    if ($testPush) {
+        try {
+            $response['testPush'] = $service->sendTestNotification(
+                $testInstallationId,
+                $testSource,
+                $testLineNumber
+            );
+        } catch (Throwable $e) {
+            $response['testPush'] = [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+            error_log('[rail-status][test-push] ' . $e->getMessage());
+        }
+    }
 
     $hasMetro = !empty($response['metro']['available']);
     $hasCptm = !empty($response['cptm']['available']);

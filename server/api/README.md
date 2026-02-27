@@ -25,10 +25,19 @@ If cached data is older than 30 minutes, the API refreshes from:
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `refresh` | integer | No | 0 | Set to `1` to force refresh from source |
+| `test_push` | integer | No | 0 | Set to `1` to send one test push notification |
+| `installation_id` | string | No | - | Target a specific installation for `test_push` |
+| `test_source` | string | No | - | Optional filter (`metro` or `cptm`) for `test_push` |
+| `test_line_number` | string | No | - | Optional line number filter for `test_push` |
 
 **Example Request:**
 ```
 GET /api/metro_cptm.php
+```
+
+**Test Push Example:**
+```
+GET /api/metro_cptm.php?test_push=1&installation_id=C7EF1594-FA11-48EE-8F31-37A568CFC8D6
 ```
 
 **Example Response:**

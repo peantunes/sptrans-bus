@@ -82,3 +82,47 @@ CREATE TABLE IF NOT EXISTS sp_transit_alert_line_subscriptions (
         FOREIGN KEY (device_id) REFERENCES sp_transit_alert_devices(device_id)
         ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS sp_transit_alert_delivery_state (
+    device_id BIGINT UNSIGNED NOT NULL,
+    line_id_key VARCHAR(128) NOT NULL,
+    last_status_text VARCHAR(255) NULL,
+    last_status_normalized VARCHAR(255) NULL,
+    is_problem_open TINYINT(1) NOT NULL DEFAULT 0,
+    last_problem_status_text VARCHAR(255) NULL,
+    last_problem_normalized VARCHAR(255) NULL,
+    problem_notified_at DATETIME NULL,
+    last_recovery_sent_at DATETIME NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    PRIMARY KEY (device_id, line_id_key),
+    KEY idx_alert_delivery_open (is_problem_open),
+    KEY idx_alert_delivery_problem_at (problem_notified_at),
+    CONSTRAINT fk_alert_delivery_device
+        FOREIGN KEY (device_id) REFERENCES sp_transit_alert_devices(device_id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS sp_transit_alert_notification_log (
+    notification_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    device_id BIGINT UNSIGNED NOT NULL,
+    line_id_key VARCHAR(128) NOT NULL,
+    source ENUM('metro','cptm') NOT NULL,
+    line_number VARCHAR(32) NOT NULL,
+    line_name VARCHAR(128) NOT NULL,
+    notification_type ENUM('problem','recovery') NOT NULL,
+    status_text VARCHAR(255) NOT NULL,
+    status_detail VARCHAR(512) NULL,
+    impact_level VARCHAR(16) NOT NULL DEFAULT 'none',
+    sent_success TINYINT(1) NOT NULL DEFAULT 0,
+    provider_response_code SMALLINT NULL,
+    provider_response_reason VARCHAR(255) NULL,
+    provider_message_id VARCHAR(64) NULL,
+    created_at DATETIME NOT NULL,
+    PRIMARY KEY (notification_id),
+    KEY idx_alert_notification_device_line (device_id, line_id_key),
+    KEY idx_alert_notification_created (created_at),
+    CONSTRAINT fk_alert_notification_device
+        FOREIGN KEY (device_id) REFERENCES sp_transit_alert_devices(device_id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
