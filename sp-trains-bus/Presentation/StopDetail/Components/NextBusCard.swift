@@ -27,6 +27,18 @@ struct NextBusCard: View {
                                 .foregroundColor(AppColors.text.opacity(0.7))
                                 .lineLimit(1)
                         }
+
+                        if arrival.isLiveFromOlhoVivo {
+                            HStack(spacing: 4) {
+                                Image(systemName: "dot.radiowaves.up.forward")
+                                    .font(.caption)
+                                Text("Live")
+                                    .font(AppFonts.caption())
+                            }
+                            .foregroundColor(.teal)
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel("Live data")
+                        }
                     }
 
                     Spacer()
@@ -113,7 +125,8 @@ struct NextBusCard: View {
                 routeColor: "509E2F",
                 routeTextColor: "FFFFFF",
                 frequency: 15,
-                waitTime: 3
+                waitTime: 3,
+                isLiveFromOlhoVivo: true
             ))
 
             NextBusCard(arrival: Arrival(

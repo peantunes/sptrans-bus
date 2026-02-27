@@ -3,6 +3,7 @@ import MapKit
 import CoreLocation
 
 struct MapExplorerView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var viewModel: MapExplorerViewModel
     @State private var selectedFilter: TransitFilter = .bus // Default filter
     @State private var selectedStop: Stop?
@@ -148,10 +149,16 @@ struct MapExplorerView: View {
         .onAppear {
             dependencies.analyticsService.trackScreen(name: "MapExplorerView", className: "MapExplorerView")
             dependencies.analyticsService.trackEvent(name: "map_screen_opened")
+            viewModel.setLocationTrackingActive(true)
             viewModel.loadRailNetworkIfNeeded()
             viewModel.loadWeatherIfNeeded()
-            viewModel.loadStopsInVisibleRegion()
             presentPendingStopIfNeeded()
+        }
+        .onDisappear {
+            viewModel.setLocationTrackingActive(false)
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            viewModel.setLocationTrackingActive(newPhase == .active)
         }
         .animation(.easeInOut(duration: 0.3), value: viewModel.showRefreshButton)
 //        .searchable(text: $viewModel.searchQuery, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search places")

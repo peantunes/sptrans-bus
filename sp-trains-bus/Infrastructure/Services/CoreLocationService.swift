@@ -28,12 +28,20 @@ class CoreLocationService: NSObject, LocationServiceProtocol, CLLocationManagerD
         locationManager.stopUpdatingLocation()
     }
 
+    func setLocationUpdateHandler(_ handler: ((Location) -> Void)?) {
+        locationUpdateCompletion = handler
+    }
+
     // MARK: - CLLocationManagerDelegate
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        guard let latestLocation = locations.first else { return }
-        currentLocation = Location(latitude: latestLocation.coordinate.latitude, longitude: latestLocation.coordinate.longitude)
-        locationUpdateCompletion?(currentLocation!)
+        guard let latestLocation = locations.last else { return }
+        let mapped = Location(
+            latitude: latestLocation.coordinate.latitude,
+            longitude: latestLocation.coordinate.longitude
+        )
+        currentLocation = mapped
+        locationUpdateCompletion?(mapped)
     }
 
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
