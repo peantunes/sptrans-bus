@@ -424,7 +424,10 @@ class MapExplorerViewModel: NSObject, ObservableObject {
         if isActive {
             locationService.requestLocationPermission()
             locationService.startUpdatingLocation()
-            resolveInitialCenterIfNeeded(from: locationService.getCurrentLocation())
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                guard let self else { return }
+                resolveInitialCenterIfNeeded(from: locationService.getCurrentLocation())
+            }
         } else {
             locationService.stopUpdatingLocation()
         }
