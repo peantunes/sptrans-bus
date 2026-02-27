@@ -270,6 +270,94 @@ class ViewModelsTests: XCTestCase {
         XCTAssertEqual(mockWeatherService.requestedLocations.count, 1)
     }
 
+    func testMapExplorerViewModelInitialCenterLoadsStopsFromUserLocationInsideSaoPaulo() async throws {
+        let mockGetNearbyStopsUseCase = MockGetNearbyStopsUseCase()
+        let mockLocationService = MockLocationService()
+        let userLocation = Location(latitude: -23.5505, longitude: -46.6333)
+        mockLocationService.currentLocation = userLocation
+        mockGetNearbyStopsUseCase.stopsToReturn = [
+            Stop(
+                stopId: 1,
+                stopName: "Map Stop",
+                location: userLocation,
+                stopSequence: 0,
+                stopCode: "",
+                wheelchairBoarding: 0
+            )
+        ]
+
+        let viewModel = MapExplorerViewModel(
+            getNearbyStopsUseCase: mockGetNearbyStopsUseCase,
+            locationService: mockLocationService,
+            weatherService: MockWeatherService()
+        )
+
+        let expectation = XCTestExpectation(description: "MapExplorerViewModel loads stops from user initial location")
+        viewModel.$stops
+            .dropFirst()
+            .sink { stops in
+                guard !stops.isEmpty else { return }
+                expectation.fulfill()
+            }
+            .store(in: &cancellables)
+
+        await MainActor.run {
+            viewModel.setLocationTrackingActive(true)
+        }
+
+        await fulfillment(of: [expectation], timeout: 1.0)
+        XCTAssertEqual(mockGetNearbyStopsUseCase.requestedLocations.count, 1)
+        XCTAssertEqual(mockGetNearbyStopsUseCase.requestedLocations.first?.latitude, userLocation.latitude, accuracy: 0.0001)
+        XCTAssertEqual(mockGetNearbyStopsUseCase.requestedLocations.first?.longitude, userLocation.longitude, accuracy: 0.0001)
+    }
+
+    func testMapExplorerViewModelInitialCenterFallsBackAndLoadsStopsWhenLocationMissing() async throws {
+        let mockGetNearbyStopsUseCase = MockGetNearbyStopsUseCase()
+        let mockLocationService = MockLocationService()
+        mockGetNearbyStopsUseCase.stopsToReturn = [
+            Stop(
+                stopId: 1,
+                stopName: "Map Stop",
+                location: Location(latitude: -23.5505, longitude: -46.6333),
+                stopSequence: 0,
+                stopCode: "",
+                wheelchairBoarding: 0
+            )
+        ]
+
+        let viewModel = MapExplorerViewModel(
+            getNearbyStopsUseCase: mockGetNearbyStopsUseCase,
+            locationService: mockLocationService,
+            weatherService: MockWeatherService()
+        )
+
+        let expectation = XCTestExpectation(description: "MapExplorerViewModel falls back to default center and loads stops")
+        viewModel.$stops
+            .dropFirst()
+            .sink { stops in
+                guard !stops.isEmpty else { return }
+                expectation.fulfill()
+            }
+            .store(in: &cancellables)
+
+        await MainActor.run {
+            viewModel.setLocationTrackingActive(true)
+        }
+
+        await fulfillment(of: [expectation], timeout: 1.0)
+        XCTAssertEqual(mockGetNearbyStopsUseCase.requestedLocations.count, 1)
+        XCTAssertEqual(
+            mockGetNearbyStopsUseCase.requestedLocations.first?.latitude,
+            MKCoordinateRegion.saoPauloMetro.center.latitude,
+            accuracy: 0.0001
+        )
+        XCTAssertEqual(
+            mockGetNearbyStopsUseCase.requestedLocations.first?.longitude,
+            MKCoordinateRegion.saoPauloMetro.center.longitude,
+            accuracy: 0.0001
+        )
+    }
+
     // MARK: - SearchViewModel Tests
 
     func testSearchViewModelInitialState() {
@@ -293,11 +381,20 @@ class ViewModelsTests: XCTestCase {
 
     class MockLocationService: LocationServiceProtocol {
         var currentLocation: Location?
+        private var handler: ((Location) -> Void)?
 
         func requestLocationPermission() {}
         func getCurrentLocation() -> Location? { currentLocation }
         func startUpdatingLocation() {}
         func stopUpdatingLocation() {}
+        func setLocationUpdateHandler(_ handler: ((Location) -> Void)?) {
+            self.handler = handler
+        }
+
+        func emitLocationUpdate(_ location: Location) {
+            currentLocation = location
+            handler?(location)
+        }
     }
 
     class MockStorageService: StorageServiceProtocol {
@@ -350,6 +447,7 @@ class ViewModelsTests: XCTestCase {
     class MockGetNearbyStopsUseCase: GetNearbyStopsUseCase {
         var stopsToReturn: [Stop] = []
         var shouldThrowError: Bool = false
+        private(set) var requestedLocations: [Location] = []
 
         init() {
             super.init(transitRepository: MockTransitRepository(), locationService: MockLocationService())
@@ -358,6 +456,9 @@ class ViewModelsTests: XCTestCase {
         override func execute(limit: Int = 10, location: Location?) async throws -> [Stop] {
             if shouldThrowError {
                 throw TestError.forcedError
+            }
+            if let location {
+                requestedLocations.append(location)
             }
             return stopsToReturn
         }

@@ -16,6 +16,7 @@ struct Arrival: Identifiable {
     let routeTextColor: String
     let frequency: Int?
     let waitTime: Int
+    var isLiveFromOlhoVivo: Bool = false
 
     /// Returns a color-coded wait time status
     var waitTimeStatus: WaitTimeStatus {

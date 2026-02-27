@@ -14,6 +14,7 @@ struct TransitMapView: UIViewRepresentable {
         let mapView = MKMapView(frame: .zero)
         mapView.delegate = context.coordinator
         mapView.showsCompass = false
+        mapView.showsUserLocation = true
         mapView.setRegion(region, animated: false)
         return mapView
     }
@@ -21,6 +22,7 @@ struct TransitMapView: UIViewRepresentable {
     @MainActor
     func updateUIView(_ mapView: MKMapView, context: Context) {
         context.coordinator.parent = self
+        mapView.showsUserLocation = true
         if !context.coordinator.isUserInteracting &&
             !mapView.region.isApproximatelyEqual(to: region) {
             context.coordinator.isProgrammaticRegionChange = true

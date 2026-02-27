@@ -31,6 +31,9 @@ class MapExplorerViewModel: NSObject, ObservableObject {
     private var railNetworkLoadTask: Task<Void, Never>?
     private var weatherLoadTask: Task<Void, Never>?
     private let railNetworkCacheFileName = "rail_network_cache_v3.json"
+    private var hasResolvedInitialCenter = false
+    private var usedFallbackForInitialCenter = false
+    private var isLocationTrackingActive = false
 
     init(
         getNearbyStopsUseCase: GetNearbyStopsUseCase,
@@ -60,6 +63,7 @@ class MapExplorerViewModel: NSObject, ObservableObject {
         
         setupRegionObserver()
         setupSearchObserver()
+        setupLocationObserver()
         searchCompleter.delegate = self
         searchCompleter.resultTypes = [.address, .pointOfInterest]
         searchCompleter.region = .saoPauloMetro
@@ -94,6 +98,15 @@ class MapExplorerViewModel: NSObject, ObservableObject {
                 }
             }
             .store(in: &cancellables)
+    }
+
+    private func setupLocationObserver() {
+        locationService.setLocationUpdateHandler { [weak self] location in
+            guard let self else { return }
+            Task { @MainActor in
+                self.handleLocationUpdate(location)
+            }
+        }
     }
 
     private func handleRegionChange(_ newRegion: MKCoordinateRegion) {
@@ -370,10 +383,21 @@ class MapExplorerViewModel: NSObject, ObservableObject {
     func centerOnUserLocation() {
         locationService.requestLocationPermission()
         if let userLocation = locationService.getCurrentLocation() {
-            region = MKCoordinateRegion(
-                center: CLLocationCoordinate2D(latitude: userLocation.latitude, longitude: userLocation.longitude),
-                span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+            let userCoordinate = CLLocationCoordinate2D(
+                latitude: userLocation.latitude,
+                longitude: userLocation.longitude
             )
+            if MKCoordinateRegion.saoPauloMetro.contains(userCoordinate) {
+                region = MKCoordinateRegion(
+                    center: userCoordinate,
+                    span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+                )
+            } else {
+                region = MKCoordinateRegion(
+                    center: MKCoordinateRegion.saoPauloMetro.center,
+                    span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+                )
+            }
             loadStopsInVisibleRegion()
             analyticsService.trackEvent(
                 name: "map_center_on_user_location",
@@ -383,8 +407,102 @@ class MapExplorerViewModel: NSObject, ObservableObject {
                 ]
             )
         } else {
+            region = MKCoordinateRegion(
+                center: MKCoordinateRegion.saoPauloMetro.center,
+                span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+            )
+            loadStopsInVisibleRegion()
             analyticsService.trackEvent(name: "map_center_on_user_location_failed")
         }
+    }
+
+    @MainActor
+    func setLocationTrackingActive(_ isActive: Bool) {
+        guard isLocationTrackingActive != isActive else { return }
+        isLocationTrackingActive = isActive
+
+        if isActive {
+            locationService.requestLocationPermission()
+            locationService.startUpdatingLocation()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                guard let self else { return }
+                resolveInitialCenterIfNeeded(from: locationService.getCurrentLocation())
+            }
+        } else {
+            locationService.stopUpdatingLocation()
+        }
+    }
+
+    @MainActor
+    private func handleLocationUpdate(_ location: Location) {
+        if !hasResolvedInitialCenter {
+            resolveInitialCenterIfNeeded(from: location)
+            return
+        }
+
+        guard usedFallbackForInitialCenter else { return }
+
+        let coordinate = CLLocationCoordinate2D(latitude: location.latitude, longitude: location.longitude)
+        guard MKCoordinateRegion.saoPauloMetro.contains(coordinate) else { return }
+
+        usedFallbackForInitialCenter = false
+        region = MKCoordinateRegion(
+            center: coordinate,
+            span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
+        )
+        loadStopsInVisibleRegion()
+        analyticsService.trackEvent(
+            name: "map_initial_center_upgraded_to_user_location",
+            properties: [
+                "latitude": "\(location.latitude)",
+                "longitude": "\(location.longitude)"
+            ]
+        )
+    }
+
+    @MainActor
+    private func resolveInitialCenterIfNeeded(from location: Location?) {
+        guard !hasResolvedInitialCenter else { return }
+
+        if let location {
+            let coordinate = CLLocationCoordinate2D(latitude: location.latitude, longitude: location.longitude)
+            if MKCoordinateRegion.saoPauloMetro.contains(coordinate) {
+                hasResolvedInitialCenter = true
+                usedFallbackForInitialCenter = false
+                region = MKCoordinateRegion(
+                    center: coordinate,
+                    span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
+                )
+                loadStopsInVisibleRegion()
+                analyticsService.trackEvent(
+                    name: "map_initial_center_user_location",
+                    properties: [
+                        "latitude": "\(location.latitude)",
+                        "longitude": "\(location.longitude)"
+                    ]
+                )
+                return
+            }
+
+            hasResolvedInitialCenter = true
+            usedFallbackForInitialCenter = false
+            region = MKCoordinateRegion(
+                center: MKCoordinateRegion.saoPauloMetro.center,
+                span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+            )
+            loadStopsInVisibleRegion()
+            analyticsService.trackEvent(name: "map_initial_center_default_sao_paulo")
+            return
+        }
+
+        hasResolvedInitialCenter = true
+        usedFallbackForInitialCenter = true
+        region = MKCoordinateRegion(
+            center: MKCoordinateRegion.saoPauloMetro.center,
+            span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+        )
+        loadStopsInVisibleRegion()
+        analyticsService.trackEvent(name: "map_initial_center_fallback_no_user_location")
     }
 
     @MainActor
