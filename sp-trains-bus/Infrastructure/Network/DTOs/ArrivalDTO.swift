@@ -14,8 +14,15 @@ struct ArrivalDTO: Decodable {
     let routeTextColor: String
     let frequency: Int?
     let waitTime: Int
+    let serviceDate: String?
+    let scheduledTimestamp: Int?
 }
 
 struct ArrivalsResponse: Decodable {
+    let stopId: String?
+    let queryTime: String?
+    let queryDate: String?
+    let queryTimezone: String?
+    let count: Int?
     let arrivals: [ArrivalDTO]
 }

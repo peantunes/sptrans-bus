@@ -26,6 +26,15 @@ extension APIEndpoint {
 enum TransitAPIEndpoint {
     case nearby(lat: Double, lon: Double, limit: Int)
     case arrivals(stopId: Int, limit: Int)
+    case arrivalsPaged(
+        stopId: Int,
+        limit: Int,
+        date: String?,
+        time: String?,
+        cursorDate: String?,
+        cursorTime: String?,
+        direction: ArrivalsPageDirection
+    )
     case search(query: String)
     case trip(tripId: String)
     case shape(shapeId: String)
@@ -44,6 +53,8 @@ extension TransitAPIEndpoint: APIEndpoint {
         case .nearby:
             return "/nearby.php"
         case .arrivals:
+            return "/arrivals.php"
+        case .arrivalsPaged:
             return "/arrivals.php"
         case .search:
             return "/search.php"
@@ -88,6 +99,25 @@ extension TransitAPIEndpoint: APIEndpoint {
                 URLQueryItem(name: "stop_id", value: "\(stopId)"),
                 URLQueryItem(name: "limit", value: "\(limit)")
             ]
+        case .arrivalsPaged(let stopId, let limit, let date, let time, let cursorDate, let cursorTime, let direction):
+            var items = [
+                URLQueryItem(name: "stop_id", value: "\(stopId)"),
+                URLQueryItem(name: "limit", value: "\(limit)"),
+                URLQueryItem(name: "direction", value: direction.rawValue)
+            ]
+            if let date {
+                items.append(URLQueryItem(name: "date", value: date))
+            }
+            if let time {
+                items.append(URLQueryItem(name: "time", value: time))
+            }
+            if let cursorDate {
+                items.append(URLQueryItem(name: "cursor_date", value: cursorDate))
+            }
+            if let cursorTime {
+                items.append(URLQueryItem(name: "cursor_time", value: cursorTime))
+            }
+            return items
         case .search(let query):
             return [
                 URLQueryItem(name: "q", value: query)

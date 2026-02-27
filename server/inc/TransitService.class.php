@@ -24,6 +24,8 @@ class Arrival {
     public $routeTextColor;
     public $frequency;
     public $waitTime;
+    public $serviceDate;
+    public $scheduledTimestamp;
 }
 
 class TripStop {
@@ -200,6 +202,45 @@ class TransitService {
     }
 
     /**
+     * Convert GTFS date (YYYYMMDD) to ISO date (YYYY-MM-DD) in service timezone.
+     */
+    private function gtfsDateToIso($gtfsDate) {
+        $raw = trim((string)$gtfsDate);
+        if (!preg_match('/^\d{8}$/', $raw)) {
+            return null;
+        }
+
+        $dateTime = DateTimeImmutable::createFromFormat('Ymd', $raw, $this->serviceTimezone);
+        if (!$dateTime || $dateTime->format('Ymd') !== $raw) {
+            return null;
+        }
+
+        return $dateTime->format('Y-m-d');
+    }
+
+    /**
+     * Convert service date + GTFS time (hours may exceed 24) into unix timestamp.
+     */
+    private function gtfsDateTimeToTimestamp($serviceDateIso, $gtfsTime) {
+        $serviceDate = trim((string)$serviceDateIso);
+        if ($serviceDate === '') {
+            return null;
+        }
+
+        $serviceMidnight = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $serviceDate . ' 00:00:00', $this->serviceTimezone);
+        if (!$serviceMidnight || $serviceMidnight->format('Y-m-d') !== $serviceDate) {
+            return null;
+        }
+
+        $seconds = $this->timeToSeconds($gtfsTime);
+        if ($seconds === null) {
+            return null;
+        }
+
+        return $serviceMidnight->getTimestamp() + $seconds;
+    }
+
+    /**
      * Check if calendar_dates exceptions table is available.
      * Uses lazy caching to avoid checking schema on every query.
      */
@@ -208,7 +249,13 @@ class TransitService {
             return $this->hasCalendarDatesTable;
         }
 
-        $this->con->ExecutaPrepared("SHOW TABLES LIKE ?", "s", ["sp_calendar_dates"]);
+        $this->con->Executa("
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+            AND table_name = 'sp_calendar_dates'
+            LIMIT 1
+        ");
         $this->hasCalendarDatesTable = $this->con->Linha() ? true : false;
 
         return $this->hasCalendarDatesTable;
@@ -228,69 +275,115 @@ class TransitService {
      * @param int $limit Maximum number of results (default 20)
      * @return array List of Arrival objects
      */
-    public function getArrivalsAtStop($stopId, $time = null, $date = null, $limit = 20) {
+    public function getArrivalsAtStop($stopId, $time = null, $date = null, $limit = 20, $direction = 'next', $cursorTime = null, $cursorDate = null) {
         $limit = (int)$limit;
         if ($limit <= 0) {
             return [];
         }
 
-        $timestamp = $date ? $this->parseServiceDateTimestamp($date) : null;
-        if ($date !== null && $timestamp === null) {
-            return [];
-        }
-        if ($timestamp === null) {
-            $timestamp = $this->getServiceDateTime()->getTimestamp();
+        $direction = strtolower(trim((string)$direction));
+        if ($direction !== 'previous' && $direction !== 'next') {
+            $direction = 'next';
         }
 
-        $currentTime = $time ?? $this->getCurrentTimeInServiceTimezone();
-        $currentSeconds = $this->timeToSeconds($currentTime);
-        if ($currentSeconds === null) {
+        $referenceTimestamp = $date ? $this->parseServiceDateTimestamp($date) : null;
+        if ($date !== null && $referenceTimestamp === null) {
+            return [];
+        }
+        if ($referenceTimestamp === null) {
+            $referenceTimestamp = $this->getServiceDateTime()->getTimestamp();
+        }
+
+        $referenceTime = $time ?? $this->getCurrentTimeInServiceTimezone();
+        $referenceSeconds = $this->timeToSeconds($referenceTime);
+        if ($referenceSeconds === null) {
             return [];
         }
 
-        $currentDate = $this->getCurrentDateGtfs($timestamp);
-        $dayColumn = $this->getDayOfWeekColumn($timestamp);
-        $arrivals = $this->fetchFrequencyArrivalsAtStop($stopId, $currentTime, $currentDate, $dayColumn, $limit);
+        $referenceDateIso = $this->getServiceDateTime($referenceTimestamp)->format('Y-m-d');
+        $referenceEpoch = $this->gtfsDateTimeToTimestamp($referenceDateIso, $referenceTime);
+        if ($referenceEpoch === null) {
+            $referenceEpoch = $this->getServiceDateTime()->getTimestamp();
+        }
+
+        $cursorTimestamp = $cursorDate ? $this->parseServiceDateTimestamp($cursorDate) : $referenceTimestamp;
+        if ($cursorDate !== null && $cursorTimestamp === null) {
+            return [];
+        }
+        if ($cursorTimestamp === null) {
+            $cursorTimestamp = $referenceTimestamp;
+        }
+
+        $cursorLookupTime = $cursorTime ?? $referenceTime;
+        $cursorLookupSeconds = $this->timeToSeconds($cursorLookupTime);
+        if ($cursorLookupSeconds === null) {
+            return [];
+        }
+
+        $cursorDateGtfs = $this->getCurrentDateGtfs($cursorTimestamp);
+        $cursorDayColumn = $this->getDayOfWeekColumn($cursorTimestamp);
+        $arrivals = $this->fetchFrequencyArrivalsAtStop(
+            $stopId,
+            $cursorLookupTime,
+            $cursorDateGtfs,
+            $cursorDayColumn,
+            $limit,
+            $direction,
+            $referenceEpoch
+        );
 
         // Early morning needs previous service day with GTFS times >= 24:00:00.
+        // Only apply in default "next" mode (without an explicit cursor).
         $overnightCutoffSeconds = 6 * 3600;
-        if ($currentSeconds < $overnightCutoffSeconds) {
-            $previousTimestamp = $this->getServiceDateTime($timestamp)->modify('-1 day')->getTimestamp();
+        if (
+            $direction === 'next'
+            && $cursorTime === null
+            && $cursorDate === null
+            && $cursorLookupSeconds < $overnightCutoffSeconds
+        ) {
+            $previousTimestamp = $this->getServiceDateTime($cursorTimestamp)->modify('-1 day')->getTimestamp();
             $previousDate = $this->getCurrentDateGtfs($previousTimestamp);
             $previousDayColumn = $this->getDayOfWeekColumn($previousTimestamp);
-            $overnightTime = $this->secondsToGtfsTime($currentSeconds + 86400);
+            $overnightTime = $this->secondsToGtfsTime($cursorLookupSeconds + 86400);
 
             $arrivals = array_merge(
                 $arrivals,
-                $this->fetchFrequencyArrivalsAtStop($stopId, $overnightTime, $previousDate, $previousDayColumn, $limit)
+                $this->fetchFrequencyArrivalsAtStop(
+                    $stopId,
+                    $overnightTime,
+                    $previousDate,
+                    $previousDayColumn,
+                    $limit,
+                    $direction,
+                    $referenceEpoch
+                )
             );
         }
 
-        // Remove duplicates after combining today's and previous service-day queries.
+        // Remove duplicates after combining service-day queries.
         $uniqueArrivals = [];
         foreach ($arrivals as $arrival) {
-            $key = $arrival->tripId . '|' . $arrival->arrivalTime . '|' . $arrival->stopSequence;
+            $key = $arrival->tripId . '|' . $arrival->arrivalTime . '|' . $arrival->stopSequence . '|' . ($arrival->serviceDate ?? '');
             $uniqueArrivals[$key] = $arrival;
         }
         $arrivals = array_values($uniqueArrivals);
 
         usort($arrivals, function($a, $b) {
-            $waitDiff = ((int)$a->waitTime) <=> ((int)$b->waitTime);
-            if ($waitDiff !== 0) {
-                return $waitDiff;
-            }
-
-            $aArrival = $this->timeToSeconds($a->arrivalTime) ?? PHP_INT_MAX;
-            $bArrival = $this->timeToSeconds($b->arrivalTime) ?? PHP_INT_MAX;
-            if ($aArrival !== $bArrival) {
-                return $aArrival <=> $bArrival;
+            $aTs = isset($a->scheduledTimestamp) ? (int)$a->scheduledTimestamp : PHP_INT_MAX;
+            $bTs = isset($b->scheduledTimestamp) ? (int)$b->scheduledTimestamp : PHP_INT_MAX;
+            if ($aTs !== $bTs) {
+                return $aTs <=> $bTs;
             }
 
             return strcmp((string)$a->routeShortName, (string)$b->routeShortName);
         });
 
         if (count($arrivals) > $limit) {
-            $arrivals = array_slice($arrivals, 0, $limit);
+            if ($direction === 'previous') {
+                $arrivals = array_slice($arrivals, -$limit);
+            } else {
+                $arrivals = array_slice($arrivals, 0, $limit);
+            }
         }
 
         return $arrivals;
@@ -299,9 +392,14 @@ class TransitService {
     /**
      * Internal frequency-based arrivals query for a specific service day.
      */
-    private function fetchFrequencyArrivalsAtStop($stopId, $currentTime, $currentDate, $dayColumn, $limit) {
+    private function fetchFrequencyArrivalsAtStop($stopId, $cursorTime, $cursorDateGtfs, $dayColumn, $limit, $direction, $referenceEpoch) {
         $allowedDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
         if (!in_array($dayColumn, $allowedDays, true)) {
+            return [];
+        }
+
+        $cursorSeconds = $this->timeToSeconds($cursorTime);
+        if ($cursorSeconds === null) {
             return [];
         }
 
@@ -311,16 +409,11 @@ class TransitService {
         $serviceCalendarConditionSql = "c.$dayColumn = 1
             AND c.start_date <= ?
             AND c.end_date >= ?";
-        $types = "sssssssi";
+        $types = "sss";
         $params = [
-            $currentTime,
             $stopId,
-            $currentTime,
-            $currentTime,
-            $currentDate,
-            $currentDate,
-            $currentTime,
-            $limit
+            $cursorDateGtfs,
+            $cursorDateGtfs
         ];
 
         if ($supportsCalendarDates) {
@@ -340,17 +433,12 @@ class TransitService {
                 )
                 AND (cd.exception_type IS NULL OR cd.exception_type <> 2)";
 
-            $types = "ssssssssi";
+            $types = "ssss";
             $params = [
-                $currentTime,
+                $cursorDateGtfs,
                 $stopId,
-                $currentTime,
-                $currentTime,
-                $currentDate,
-                $currentDate,
-                $currentDate,
-                $currentTime,
-                $limit
+                $cursorDateGtfs,
+                $cursorDateGtfs,
             ];
         }
 
@@ -364,20 +452,10 @@ class TransitService {
                 r.route_color,
                 r.route_text_color,
                 stop_offset.stop_sequence as stop_sequence,
-                -- next arrival time (computed)
-                SEC_TO_TIME(
-                    TIME_TO_SEC(f.start_time)
-                    + (
-                        CEIL(
-                            GREATEST(
-                                0,
-                                TIME_TO_SEC(?) - TIME_TO_SEC(f.start_time) - stop_offset.offset_secs
-                            ) / f.headway_secs
-                        ) * f.headway_secs
-                    )
-                    + stop_offset.offset_secs
-                ) AS arrival_time,
-
+                stop_offset.offset_secs,
+                TIME_TO_SEC(f.start_time) AS frequency_start_secs,
+                TIME_TO_SEC(f.end_time) AS frequency_end_secs,
+                f.headway_secs,
                 ROUND(f.headway_secs / 60) AS frequency_minutes
 
             FROM sp_stop_times st
@@ -403,44 +481,98 @@ class TransitService {
             $calendarJoinSql
 
             WHERE st.stop_id = ?
-            AND f.start_time <= ?
-            AND f.end_time >= ?
+            AND f.headway_secs > 0
             AND $serviceCalendarConditionSql
-
-            HAVING arrival_time >= ?
-
-            ORDER BY arrival_time
-            LIMIT ?";
+            ORDER BY r.route_short_name, st.trip_id, f.start_time";
 
         $this->con->ExecutaPrepared($sql, $types, $params);
 
         $arrivals = [];
-        $currentSeconds = $this->timeToSeconds($currentTime);
+        $serviceDateIso = $this->gtfsDateToIso($cursorDateGtfs);
+        if ($serviceDateIso === null) {
+            $serviceDateIso = $this->getServiceDateTime()->format('Y-m-d');
+        }
+
+        $maxPerTemplate = max($limit, 20);
         while ($this->con->Linha()) {
             $rs = $this->con->rs;
 
-            $arrival = new Arrival();
-            $arrival->tripId = $rs['trip_id'];
-            $arrival->routeId = $rs['route_id'];
-            $arrival->routeShortName = $this->safeEncode($rs['route_short_name']);
-            $arrival->routeLongName = $this->safeEncode($rs['route_long_name']);
-            $arrival->headsign = $this->safeEncode($rs['trip_headsign']);
-            $arrival->arrivalTime = $rs['arrival_time'];
-            $arrival->departureTime = $rs['arrival_time'];
-            $arrival->stopSequence = (int)$rs['stop_sequence'];
-            $arrival->routeType = (int)$rs['route_type'];
-            $arrival->routeColor = $rs['route_color'];
-            $arrival->routeTextColor = $rs['route_text_color'];
-            $arrival->frequency = $rs['frequency_minutes'] ? (int)$rs['frequency_minutes'] : null;
-
-            $arrivalSeconds = $this->timeToSeconds($rs['arrival_time']);
-            if ($arrivalSeconds !== null && $currentSeconds !== null) {
-                $arrival->waitTime = max(0, (int)ceil(($arrivalSeconds - $currentSeconds) / 60));
-            } else {
-                $arrival->waitTime = 0;
+            $offsetSeconds = isset($rs['offset_secs']) ? (int)$rs['offset_secs'] : 0;
+            $frequencyStartSeconds = isset($rs['frequency_start_secs']) ? (int)$rs['frequency_start_secs'] : null;
+            $frequencyEndSeconds = isset($rs['frequency_end_secs']) ? (int)$rs['frequency_end_secs'] : null;
+            $headwaySeconds = isset($rs['headway_secs']) ? (int)$rs['headway_secs'] : 0;
+            if ($frequencyStartSeconds === null || $frequencyEndSeconds === null || $headwaySeconds <= 0) {
+                continue;
             }
 
-            $arrivals[] = $arrival;
+            $firstArrivalSeconds = $frequencyStartSeconds + $offsetSeconds;
+            $lastArrivalSeconds = $frequencyEndSeconds + $offsetSeconds;
+            if ($lastArrivalSeconds < $firstArrivalSeconds) {
+                continue;
+            }
+
+            $occurrenceSeconds = null;
+            if ($direction === 'previous') {
+                if ($cursorSeconds < $firstArrivalSeconds) {
+                    continue;
+                }
+
+                $steps = (int)floor(($cursorSeconds - $firstArrivalSeconds) / $headwaySeconds);
+                $occurrenceSeconds = $firstArrivalSeconds + ($steps * $headwaySeconds);
+                if ($occurrenceSeconds > $lastArrivalSeconds) {
+                    $overshoot = $occurrenceSeconds - $lastArrivalSeconds;
+                    $rollbackSteps = (int)ceil($overshoot / $headwaySeconds);
+                    $occurrenceSeconds -= $rollbackSteps * $headwaySeconds;
+                }
+            } else {
+                if ($cursorSeconds <= $firstArrivalSeconds) {
+                    $occurrenceSeconds = $firstArrivalSeconds;
+                } else {
+                    $steps = (int)ceil(($cursorSeconds - $firstArrivalSeconds) / $headwaySeconds);
+                    $occurrenceSeconds = $firstArrivalSeconds + ($steps * $headwaySeconds);
+                }
+            }
+
+            if ($occurrenceSeconds === null) {
+                continue;
+            }
+
+            $generatedCount = 0;
+            while (
+                $occurrenceSeconds >= $firstArrivalSeconds
+                && $occurrenceSeconds <= $lastArrivalSeconds
+                && $generatedCount < $maxPerTemplate
+            ) {
+                $arrivalTime = $this->secondsToGtfsTime($occurrenceSeconds);
+                $arrival = new Arrival();
+                $arrival->tripId = $rs['trip_id'];
+                $arrival->routeId = $rs['route_id'];
+                $arrival->routeShortName = $this->safeEncode($rs['route_short_name']);
+                $arrival->routeLongName = $this->safeEncode($rs['route_long_name']);
+                $arrival->headsign = $this->safeEncode($rs['trip_headsign']);
+                $arrival->arrivalTime = $arrivalTime;
+                $arrival->departureTime = $arrivalTime;
+                $arrival->stopSequence = (int)$rs['stop_sequence'];
+                $arrival->routeType = (int)$rs['route_type'];
+                $arrival->routeColor = $rs['route_color'];
+                $arrival->routeTextColor = $rs['route_text_color'];
+                $arrival->frequency = $rs['frequency_minutes'] ? (int)$rs['frequency_minutes'] : null;
+                $arrival->serviceDate = $serviceDateIso;
+                $arrival->scheduledTimestamp = $this->gtfsDateTimeToTimestamp($serviceDateIso, $arrivalTime);
+                if ($arrival->scheduledTimestamp !== null) {
+                    $arrival->waitTime = max(0, (int)ceil((((int)$arrival->scheduledTimestamp) - ((int)$referenceEpoch)) / 60));
+                } else {
+                    $arrival->waitTime = 0;
+                }
+
+                $arrivals[] = $arrival;
+                $generatedCount++;
+                if ($direction === 'previous') {
+                    $occurrenceSeconds -= $headwaySeconds;
+                } else {
+                    $occurrenceSeconds += $headwaySeconds;
+                }
+            }
         }
 
         return $arrivals;

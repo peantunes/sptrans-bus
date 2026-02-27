@@ -179,8 +179,11 @@ Returns upcoming bus arrivals at a specific stop, considering the current day's 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `stop_id` | string | Yes | - | The stop ID |
-| `time` | string | No | Current time | Time in HH:MM:SS format |
-| `date` | string | No | Today | Date in YYYY-MM-DD format |
+| `time` | string | No | Current São Paulo time | Reference time in HH:MM:SS format |
+| `date` | string | No | Current São Paulo date | Reference date in YYYY-MM-DD format |
+| `direction` | string | No | `next` | `next` or `previous` |
+| `cursor_time` | string | No | `time` | Cursor time in HH:MM:SS format for pagination |
+| `cursor_date` | string | No | `date` | Cursor date in YYYY-MM-DD format for pagination |
 | `limit` | integer | No | 20 | Maximum number of results |
 
 **Example Request:**
@@ -194,6 +197,10 @@ GET /api/arrivals.php?stop_id=18848&limit=10
   "stopId": "18848",
   "queryTime": "14:30:00",
   "queryDate": "2024-02-01",
+  "queryTimezone": "America/Sao_Paulo",
+  "direction": "next",
+  "cursorTime": null,
+  "cursorDate": null,
   "count": 10,
   "arrivals": [
     {
@@ -209,7 +216,9 @@ GET /api/arrivals.php?stop_id=18848&limit=10
       "routeColor": "509E2F",
       "routeTextColor": "FFFFFF",
       "frequency": 20,
-      "waitTime": 5
+      "waitTime": 5,
+      "serviceDate": "2024-02-01",
+      "scheduledTimestamp": 1706812500
     }
   ]
 }

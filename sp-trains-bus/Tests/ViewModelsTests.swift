@@ -105,7 +105,7 @@ class ViewModelsTests: XCTestCase {
         XCTAssertNil(viewModel.errorMessage)
     }
 
-    func testStopDetailViewModelFormatsTimeAndExpandsFrequency() async throws {
+    func testStopDetailViewModelFormatsTimeWithoutSyntheticExpansion() async throws {
         let mockGetArrivalsUseCase = MockGetArrivalsUseCase()
         let mockStorageService = MockStorageService()
         mockGetArrivalsUseCase.arrivalsToReturn = [
@@ -136,14 +136,13 @@ class ViewModelsTests: XCTestCase {
             storageService: mockStorageService
         )
 
-        let expectation = XCTestExpectation(description: "StopDetailViewModel expands frequency arrivals")
+        let expectation = XCTestExpectation(description: "StopDetailViewModel normalizes arrival time")
         viewModel.$arrivals
             .dropFirst()
             .sink { arrivals in
-                XCTAssertEqual(arrivals.count, 10)
-                XCTAssertTrue(arrivals.allSatisfy { $0.arrivalTime.count == 5 && $0.arrivalTime.contains(":") })
-                XCTAssertEqual(arrivals[0].waitTime, 2)
-                XCTAssertEqual(arrivals[1].waitTime, 7)
+                XCTAssertEqual(arrivals.count, 1)
+                XCTAssertEqual(arrivals.first?.arrivalTime, "08:37")
+                XCTAssertTrue(arrivals.first?.waitTime ?? -1 >= 0)
                 expectation.fulfill()
             }
             .store(in: &cancellables)

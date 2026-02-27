@@ -19,8 +19,23 @@ class StopDetailViewModel: ObservableObject {
     private let storageService: StorageServiceProtocol
     private let analyticsService: AnalyticsServiceProtocol
     private let watchSnapshotSync: WatchSnapshotSyncing
-    private let calendar: Calendar
+    private let saoPauloCalendar: Calendar
+    private let serviceTimezone: TimeZone
+    private let serviceDateFormatter: DateFormatter
+    private let serviceTimeFormatter: DateFormatter
     private let outputTimeFormatter: DateFormatter
+    private let pageSize = 20
+    private var referenceDate: String?
+    private var referenceTime: String?
+    private var newestCursorDate: String?
+    private var newestCursorTime: String?
+    private var oldestCursorDate: String?
+    private var oldestCursorTime: String?
+    private var isLoadingNextPage = false
+    private var isLoadingPreviousPage = false
+    private var hasMoreNextPage = true
+    private var hasMorePreviousPage = true
+    private var didObserveTopBoundary = false
     private var timer: Timer?
 
     init(
@@ -30,8 +45,7 @@ class StopDetailViewModel: ObservableObject {
         getRouteShapeUseCase: GetRouteShapeUseCase,
         storageService: StorageServiceProtocol,
         analyticsService: AnalyticsServiceProtocol = NoOpAnalyticsService(),
-        watchSnapshotSync: WatchSnapshotSyncing = NoOpWatchSnapshotSync(),
-        calendar: Calendar = .current
+        watchSnapshotSync: WatchSnapshotSyncing = NoOpWatchSnapshotSync()
     ) {
         self.stop = stop
         self.getArrivalsUseCase = getArrivalsUseCase
@@ -40,10 +54,27 @@ class StopDetailViewModel: ObservableObject {
         self.storageService = storageService
         self.analyticsService = analyticsService
         self.watchSnapshotSync = watchSnapshotSync
-        self.calendar = calendar
+        self.serviceTimezone = TimeZone(identifier: "America/Sao_Paulo") ?? .current
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = self.serviceTimezone
+        self.saoPauloCalendar = calendar
+
+        self.serviceDateFormatter = DateFormatter()
+        self.serviceDateFormatter.calendar = calendar
+        self.serviceDateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        self.serviceDateFormatter.timeZone = self.serviceTimezone
+        self.serviceDateFormatter.dateFormat = "yyyy-MM-dd"
+
+        self.serviceTimeFormatter = DateFormatter()
+        self.serviceTimeFormatter.calendar = calendar
+        self.serviceTimeFormatter.locale = Locale(identifier: "en_US_POSIX")
+        self.serviceTimeFormatter.timeZone = self.serviceTimezone
+        self.serviceTimeFormatter.dateFormat = "HH:mm:ss"
+
         self.outputTimeFormatter = DateFormatter()
         self.outputTimeFormatter.calendar = calendar
         self.outputTimeFormatter.locale = Locale(identifier: "en_US_POSIX")
+        self.outputTimeFormatter.timeZone = self.serviceTimezone
         self.outputTimeFormatter.dateFormat = "HH:mm"
         self.isFavorite = storageService.isFavorite(stopId: stop.stopId)
     }
@@ -51,13 +82,15 @@ class StopDetailViewModel: ObservableObject {
     func loadArrivals() {
         isLoading = true
         errorMessage = nil
+        captureReferenceNow()
+        resetPaginationState()
         analyticsService.trackEvent(
             name: "stop_arrivals_load_requested",
             properties: ["stop_id": "\(stop.stopId)"]
         )
 
         Task {
-            await fetchArrivals()
+            await fetchInitialArrivals()
         }
     }
 
@@ -65,6 +98,8 @@ class StopDetailViewModel: ObservableObject {
     func refreshArrivals() async {
         isLoading = true
         errorMessage = nil
+        captureReferenceNow()
+        resetPaginationState()
         analyticsService.trackEvent(
             name: "stop_arrivals_load_requested",
             properties: [
@@ -72,37 +107,76 @@ class StopDetailViewModel: ObservableObject {
                 "trigger": "refresh"
             ]
         )
-        await fetchArrivals()
+        await fetchInitialArrivals()
     }
 
     @MainActor
-    private func fetchArrivals() async {
+    func loadNextPageIfNeeded(currentArrival: Arrival) {
+        guard hasMoreNextPage else { return }
+        guard !isLoadingNextPage else { return }
+        guard let lastTimestamp = arrivals.last?.scheduledTimestamp else { return }
+        guard currentArrival.scheduledTimestamp == lastTimestamp else { return }
+        guard let cursorDate = newestCursorDate, let cursorTime = newestCursorTime else { return }
+
+        isLoadingNextPage = true
+        Task {
+            await fetchPagedArrivals(direction: .next, cursorDate: cursorDate, cursorTime: cursorTime)
+            await MainActor.run {
+                self.isLoadingNextPage = false
+            }
+        }
+    }
+
+    @MainActor
+    func loadPreviousPageIfNeeded(currentArrival: Arrival) {
+        guard hasMorePreviousPage else { return }
+        guard !isLoadingPreviousPage else { return }
+        guard let firstTimestamp = arrivals.first?.scheduledTimestamp else { return }
+        guard currentArrival.scheduledTimestamp == firstTimestamp else { return }
+        guard let cursorDate = oldestCursorDate, let cursorTime = oldestCursorTime else { return }
+        if !didObserveTopBoundary {
+            didObserveTopBoundary = true
+            return
+        }
+
+        isLoadingPreviousPage = true
+        Task {
+            await fetchPagedArrivals(direction: .previous, cursorDate: cursorDate, cursorTime: cursorTime)
+            await MainActor.run {
+                self.isLoadingPreviousPage = false
+            }
+        }
+    }
+
+    @MainActor
+    private func fetchInitialArrivals() async {
+        guard let referenceDate, let referenceTime else {
+            isLoading = false
+            errorMessage = "Could not determine Sao Paulo time."
+            return
+        }
+
         do {
-            let fetchedArrivals = try await getArrivalsUseCase.execute(stopId: stop.stopId, limit: 20)
-            self.arrivals = normalizedAndExpandedArrivals(
-                from: fetchedArrivals,
-                now: Date(),
-                displayLimit: 10
+            let fetchedArrivals = try await getArrivalsUseCase.execute(
+                stopId: stop.stopId,
+                limit: pageSize,
+                date: referenceDate,
+                time: referenceTime,
+                direction: .next
             )
-            let watchArrivals = self.arrivals
-                .sorted { $0.waitTime < $1.waitTime }
-                .prefix(8)
-                .map { arrival in
-                    WatchArrivalSnapshot(
-                        routeShortName: arrival.routeShortName,
-                        headsign: arrival.headsign,
-                        arrivalTime: arrival.arrivalTime,
-                        waitTime: arrival.waitTime,
-                        routeColorHex: arrival.routeColor
-                    )
-                }
-            watchSnapshotSync.syncArrivals(stopID: stop.stopId, arrivals: Array(watchArrivals))
+            let normalized = normalizeArrivals(from: fetchedArrivals, now: Date())
+            arrivals = normalized
+            hasMoreNextPage = fetchedArrivals.count >= pageSize
+            hasMorePreviousPage = true
+            refreshBoundaryCursors(from: fetchedArrivals)
+            syncWatchArrivals()
             self.isLoading = false
             analyticsService.trackEvent(
                 name: "stop_arrivals_load_succeeded",
                 properties: [
                     "stop_id": "\(stop.stopId)",
-                    "arrivals_count": "\(self.arrivals.count)"
+                    "arrivals_count": "\(self.arrivals.count)",
+                    "direction": "next"
                 ]
             )
         } catch {
@@ -118,137 +192,221 @@ class StopDetailViewModel: ObservableObject {
         }
     }
 
-    private func normalizedAndExpandedArrivals(
-        from sourceArrivals: [Arrival],
-        now: Date,
-        displayLimit: Int
-    ) -> [Arrival] {
-        let expanded = sourceArrivals.flatMap { expand(arrival: $0, now: now, perLineLimit: displayLimit) }
+    @MainActor
+    private func fetchPagedArrivals(direction: ArrivalsPageDirection, cursorDate: String, cursorTime: String) async {
+        guard let referenceDate, let referenceTime else { return }
+        do {
+            let page = try await getArrivalsUseCase.execute(
+                stopId: stop.stopId,
+                limit: pageSize,
+                date: referenceDate,
+                time: referenceTime,
+                cursorDate: cursorDate,
+                cursorTime: cursorTime,
+                direction: direction
+            )
 
-        return expanded
-            .sorted { lhs, rhs in
-                if lhs.waitTime == rhs.waitTime {
-                    if lhs.routeShortName == rhs.routeShortName {
-                        return lhs.arrivalTime < rhs.arrivalTime
-                    }
-                    return lhs.routeShortName < rhs.routeShortName
+            if page.isEmpty {
+                if direction == .next {
+                    hasMoreNextPage = false
+                } else {
+                    hasMorePreviousPage = false
                 }
-                return lhs.waitTime < rhs.waitTime
+                return
             }
-            .prefix(displayLimit)
-            .map { $0 }
+
+            let normalized = normalizeArrivals(from: page, now: Date())
+            mergeArrivals(normalized, direction: direction)
+            updateBoundaryCursor(from: page, direction: direction)
+            if direction == .next {
+                hasMoreNextPage = page.count >= pageSize
+            } else {
+                hasMorePreviousPage = page.count >= pageSize
+            }
+            syncWatchArrivals()
+        } catch {
+            analyticsService.trackEvent(
+                name: "stop_arrivals_pagination_failed",
+                properties: [
+                    "stop_id": "\(stop.stopId)",
+                    "direction": direction.rawValue,
+                    "error": error.localizedDescription
+                ]
+            )
+        }
     }
 
-    private func expand(arrival: Arrival, now: Date, perLineLimit: Int) -> [Arrival] {
-        let firstArrivalDate = resolvedBaseDate(for: arrival, now: now)
-        let firstWait = max(0, Int(firstArrivalDate.timeIntervalSince(now) / 60))
+    private func normalizeArrivals(from sourceArrivals: [Arrival], now: Date) -> [Arrival] {
+        sourceArrivals
+            .compactMap { source in
+                guard let arrivalDate = scheduledDate(for: source, timeValue: source.arrivalTime) else {
+                    return nil
+                }
 
-        var expanded: [Arrival] = [
-            makeArrivalDisplayItem(
-                from: arrival,
-                arrivalDate: firstArrivalDate,
-                departureDate: resolvedBaseDate(timeString: arrival.departureTime, now: now) ?? firstArrivalDate,
-                waitTime: firstWait,
-                keepFrequency: arrival.frequency
-            )
-        ]
+                let departureDate = scheduledDate(for: source, timeValue: source.departureTime) ?? arrivalDate
+                let waitTime = max(0, Int(ceil(arrivalDate.timeIntervalSince(now) / 60)))
+                let serviceDate = source.serviceDate ?? serviceDateFormatter.string(from: arrivalDate)
+                let scheduledTimestamp = source.scheduledTimestamp ?? Int(arrivalDate.timeIntervalSince1970)
 
-        guard let frequency = arrival.frequency, frequency > 0 else {
-            return expanded
-        }
-
-        var nextDate = firstArrivalDate
-        for _ in 1..<perLineLimit {
-            guard let projectedDate = calendar.date(byAdding: .minute, value: frequency, to: nextDate) else {
-                continue
-            }
-            nextDate = projectedDate
-            let projectedWait = max(0, Int(projectedDate.timeIntervalSince(now) / 60))
-            expanded.append(
-                makeArrivalDisplayItem(
-                    from: arrival,
-                    arrivalDate: projectedDate,
-                    departureDate: projectedDate,
-                    waitTime: projectedWait,
-                    keepFrequency: frequency
+                return Arrival(
+                    tripId: source.tripId,
+                    routeId: source.routeId,
+                    routeShortName: source.routeShortName,
+                    routeLongName: source.routeLongName,
+                    headsign: source.headsign,
+                    arrivalTime: outputTimeFormatter.string(from: arrivalDate),
+                    departureTime: outputTimeFormatter.string(from: departureDate),
+                    stopId: source.stopId,
+                    stopSequence: source.stopSequence,
+                    routeType: source.routeType,
+                    routeColor: source.routeColor,
+                    routeTextColor: source.routeTextColor,
+                    frequency: source.frequency,
+                    waitTime: waitTime,
+                    serviceDate: serviceDate,
+                    scheduledTimestamp: scheduledTimestamp
                 )
-            )
-        }
-
-        return expanded
+            }
+            .sorted { lhs, rhs in
+                if let lhsTs = lhs.scheduledTimestamp, let rhsTs = rhs.scheduledTimestamp, lhsTs != rhsTs {
+                    return lhsTs < rhsTs
+                }
+                return lhs.arrivalTime < rhs.arrivalTime
+            }
     }
 
-    private func makeArrivalDisplayItem(
-        from arrival: Arrival,
-        arrivalDate: Date,
-        departureDate: Date,
-        waitTime: Int,
-        keepFrequency: Int?
-    ) -> Arrival {
-        Arrival(
-            tripId: arrival.tripId,
-            routeId: arrival.routeId,
-            routeShortName: arrival.routeShortName,
-            routeLongName: arrival.routeLongName,
-            headsign: arrival.headsign,
-            arrivalTime: outputTimeFormatter.string(from: arrivalDate),
-            departureTime: outputTimeFormatter.string(from: departureDate),
-            stopId: arrival.stopId,
-            stopSequence: arrival.stopSequence,
-            routeType: arrival.routeType,
-            routeColor: arrival.routeColor,
-            routeTextColor: arrival.routeTextColor,
-            frequency: keepFrequency,
-            waitTime: waitTime
-        )
-    }
-
-    private func resolvedBaseDate(for arrival: Arrival, now: Date) -> Date {
-        let expectedDate = calendar.date(byAdding: .minute, value: max(arrival.waitTime, 0), to: now) ?? now
-
-        guard let parsedDate = resolvedBaseDate(timeString: arrival.arrivalTime, now: now) else {
-            return expectedDate
+    private func scheduledDate(for arrival: Arrival, timeValue: String) -> Date? {
+        if let timestamp = arrival.scheduledTimestamp {
+            return Date(timeIntervalSince1970: TimeInterval(timestamp))
         }
 
-        // Service and client clocks may differ; prefer parsed time when reasonably close.
-        let toleranceSeconds: TimeInterval = 3 * 60 * 60
-        let timeGap = abs(parsedDate.timeIntervalSince(expectedDate))
-        return timeGap <= toleranceSeconds ? parsedDate : expectedDate
+        guard let serviceDate = arrival.serviceDate ?? referenceDate else { return nil }
+        guard let seconds = gtfsSeconds(from: timeValue) else { return nil }
+        guard let midnight = serviceMidnight(for: serviceDate) else { return nil }
+        return midnight.addingTimeInterval(TimeInterval(seconds))
     }
 
-    private func resolvedBaseDate(timeString: String, now: Date) -> Date? {
-        let rawValue = timeString.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !rawValue.isEmpty else { return nil }
+    private func captureReferenceNow() {
+        let now = Date()
+        referenceDate = serviceDateFormatter.string(from: now)
+        referenceTime = serviceTimeFormatter.string(from: now)
+    }
 
-        let withoutFraction = rawValue.split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false).first.map(String.init) ?? rawValue
-        let parts = withoutFraction.split(separator: ":")
-        guard parts.count >= 2,
-              let rawHour = Int(parts[0]),
-              let minute = Int(parts[1]) else {
-            return nil
+    private func resetPaginationState() {
+        newestCursorDate = nil
+        newestCursorTime = nil
+        oldestCursorDate = nil
+        oldestCursorTime = nil
+        hasMoreNextPage = true
+        hasMorePreviousPage = true
+        isLoadingNextPage = false
+        isLoadingPreviousPage = false
+        didObserveTopBoundary = false
+    }
+
+    private func refreshBoundaryCursors(from rawArrivals: [Arrival]) {
+        updateBoundaryCursor(from: rawArrivals, direction: .next)
+        updateBoundaryCursor(from: rawArrivals, direction: .previous)
+    }
+
+    private func updateBoundaryCursor(from rawArrivals: [Arrival], direction: ArrivalsPageDirection) {
+        guard !rawArrivals.isEmpty else { return }
+        if direction == .next {
+            guard let boundary = rawArrivals.last,
+                  let serviceDate = boundary.serviceDate,
+                  let shifted = shiftedCursor(serviceDate: serviceDate, gtfsTime: boundary.arrivalTime, deltaSeconds: 1) else { return }
+            newestCursorDate = shifted.date
+            newestCursorTime = shifted.time
+            return
         }
 
+        guard let boundary = rawArrivals.first,
+              let serviceDate = boundary.serviceDate,
+              let shifted = shiftedCursor(serviceDate: serviceDate, gtfsTime: boundary.arrivalTime, deltaSeconds: -1) else { return }
+        oldestCursorDate = shifted.date
+        oldestCursorTime = shifted.time
+    }
+
+    private func mergeArrivals(_ incoming: [Arrival], direction: ArrivalsPageDirection) {
+        let combined = direction == .previous ? (incoming + arrivals) : (arrivals + incoming)
+        var seen: Set<String> = []
+        let deduplicated = combined.filter { arrival in
+            let key = arrivalIdentity(arrival)
+            if seen.contains(key) { return false }
+            seen.insert(key)
+            return true
+        }
+
+        arrivals = deduplicated.sorted { lhs, rhs in
+            if let lhsTs = lhs.scheduledTimestamp, let rhsTs = rhs.scheduledTimestamp, lhsTs != rhsTs {
+                return lhsTs < rhsTs
+            }
+            return lhs.arrivalTime < rhs.arrivalTime
+        }
+    }
+
+    private func arrivalIdentity(_ arrival: Arrival) -> String {
+        "\(arrival.tripId)|\(arrival.serviceDate ?? "")|\(arrival.scheduledTimestamp ?? 0)|\(arrival.stopSequence)"
+    }
+
+    private func shiftedCursor(serviceDate: String, gtfsTime: String, deltaSeconds: Int) -> (date: String, time: String)? {
+        guard let baseDate = serviceMidnight(for: serviceDate) else { return nil }
+        guard let baseSeconds = gtfsSeconds(from: gtfsTime) else { return nil }
+
+        var totalSeconds = baseSeconds + deltaSeconds
+        var cursorDate = baseDate
+
+        while totalSeconds < 0 {
+            totalSeconds += 24 * 3600
+            guard let updatedDate = saoPauloCalendar.date(byAdding: .day, value: -1, to: cursorDate) else {
+                return nil
+            }
+            cursorDate = updatedDate
+        }
+
+        let date = serviceDateFormatter.string(from: cursorDate)
+        let time = gtfsTimeString(from: totalSeconds)
+        return (date, time)
+    }
+
+    private func serviceMidnight(for serviceDate: String) -> Date? {
+        guard let date = serviceDateFormatter.date(from: serviceDate) else { return nil }
+        return saoPauloCalendar.startOfDay(for: date)
+    }
+
+    private func gtfsSeconds(from timeValue: String) -> Int? {
+        let raw = timeValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !raw.isEmpty else { return nil }
+        let clean = raw.split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false).first.map(String.init) ?? raw
+        let parts = clean.split(separator: ":")
+        guard parts.count >= 2 else { return nil }
+        guard let hour = Int(parts[0]), let minute = Int(parts[1]) else { return nil }
         let second = parts.count >= 3 ? (Int(parts[2]) ?? 0) : 0
-        let dayOffset = max(0, rawHour / 24)
-        let hour = rawHour % 24
+        return (hour * 3600) + (minute * 60) + second
+    }
 
-        guard let startOfDay = calendar.dateInterval(of: .day, for: now)?.start,
-              let dayShifted = calendar.date(byAdding: .day, value: dayOffset, to: startOfDay),
-              let composed = calendar.date(
-                bySettingHour: hour,
-                minute: minute,
-                second: second,
-                of: dayShifted
-              ) else {
-            return nil
-        }
+    private func gtfsTimeString(from totalSeconds: Int) -> String {
+        let safeSeconds = max(0, totalSeconds)
+        let hours = safeSeconds / 3600
+        let minutes = (safeSeconds % 3600) / 60
+        let seconds = safeSeconds % 60
+        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+    }
 
-        // Keep a forward-looking schedule when the service wraps around midnight.
-        if composed < now, let nextDay = calendar.date(byAdding: .day, value: 1, to: composed) {
-            return nextDay
-        }
-
-        return composed
+    private func syncWatchArrivals() {
+        let watchArrivals = self.arrivals
+            .sorted { $0.waitTime < $1.waitTime }
+            .prefix(8)
+            .map { arrival in
+                WatchArrivalSnapshot(
+                    routeShortName: arrival.routeShortName,
+                    headsign: arrival.headsign,
+                    arrivalTime: arrival.arrivalTime,
+                    waitTime: arrival.waitTime,
+                    routeColorHex: arrival.routeColor
+                )
+            }
+        watchSnapshotSync.syncArrivals(stopID: stop.stopId, arrivals: Array(watchArrivals))
     }
 
     func toggleFavorite() {

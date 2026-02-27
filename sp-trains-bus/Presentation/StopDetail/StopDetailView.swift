@@ -40,7 +40,7 @@ struct StopDetailView: View {
                             ErrorView(message: errorMessage) {
                                 viewModel.loadArrivals()
                             }
-                        } else if let nextArrival = viewModel.arrivals.first {
+                        } else if !viewModel.arrivals.isEmpty {
                             // Upcoming arrivals list
                             UpcomingBusList(
                                 arrivals: viewModel.arrivals,
@@ -48,6 +48,12 @@ struct StopDetailView: View {
                                 onArrivalTap: { arrival in
                                     viewModel.selectArrival(arrival)
                                     isShowingJourneyDetail = true
+                                },
+                                onReachTop: { arrival in
+                                    viewModel.loadPreviousPageIfNeeded(currentArrival: arrival)
+                                },
+                                onReachBottom: { arrival in
+                                    viewModel.loadNextPageIfNeeded(currentArrival: arrival)
                                 }
                             )
                         } else {

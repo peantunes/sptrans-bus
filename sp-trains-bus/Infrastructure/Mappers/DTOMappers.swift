@@ -40,7 +40,9 @@ extension ArrivalDTO {
             routeColor: routeColor,
             routeTextColor: routeTextColor,
             frequency: frequency,
-            waitTime: waitTime
+            waitTime: waitTime,
+            serviceDate: serviceDate,
+            scheduledTimestamp: scheduledTimestamp
         )
     }
 }

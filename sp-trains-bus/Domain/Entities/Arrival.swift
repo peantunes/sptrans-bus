@@ -17,6 +17,46 @@ struct Arrival: Identifiable {
     let frequency: Int?
     let waitTime: Int
     var isLiveFromOlhoVivo: Bool = false
+    let serviceDate: String?
+    let scheduledTimestamp: Int?
+
+    init(
+        tripId: String,
+        routeId: String,
+        routeShortName: String,
+        routeLongName: String,
+        headsign: String,
+        arrivalTime: String,
+        departureTime: String,
+        stopId: Int,
+        stopSequence: Int,
+        routeType: Int,
+        routeColor: String,
+        routeTextColor: String,
+        frequency: Int?,
+        waitTime: Int,
+        isLiveFromOlhoVivo: Bool = false,
+        serviceDate: String? = nil,
+        scheduledTimestamp: Int? = nil
+    ) {
+        self.tripId = tripId
+        self.routeId = routeId
+        self.routeShortName = routeShortName
+        self.routeLongName = routeLongName
+        self.headsign = headsign
+        self.arrivalTime = arrivalTime
+        self.departureTime = departureTime
+        self.stopId = stopId
+        self.stopSequence = stopSequence
+        self.routeType = routeType
+        self.routeColor = routeColor
+        self.routeTextColor = routeTextColor
+        self.frequency = frequency
+        self.waitTime = waitTime
+        self.isLiveFromOlhoVivo = isLiveFromOlhoVivo
+        self.serviceDate = serviceDate
+        self.scheduledTimestamp = scheduledTimestamp
+    }
 
     /// Returns a color-coded wait time status
     var waitTimeStatus: WaitTimeStatus {

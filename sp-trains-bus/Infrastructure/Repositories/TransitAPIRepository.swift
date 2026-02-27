@@ -17,6 +17,29 @@ class TransitAPIRepository: TransitRepositoryProtocol {
         return response.arrivals.map { $0.toDomain(stopId: stopId) }
     }
 
+    func getArrivals(
+        stopId: Int,
+        limit: Int,
+        date: String?,
+        time: String?,
+        cursorDate: String?,
+        cursorTime: String?,
+        direction: ArrivalsPageDirection
+    ) async throws -> [Arrival] {
+        let response: ArrivalsResponse = try await apiClient.request(
+            endpoint: TransitAPIEndpoint.arrivalsPaged(
+                stopId: stopId,
+                limit: limit,
+                date: date,
+                time: time,
+                cursorDate: cursorDate,
+                cursorTime: cursorTime,
+                direction: direction
+            )
+        )
+        return response.arrivals.map { $0.toDomain(stopId: stopId) }
+    }
+
     func searchStops(query: String, limit: Int) async throws -> [Stop] {
         let response: SearchStopsResponse = try await apiClient.request(endpoint: TransitAPIEndpoint.search(query: query))
         return response.stops.map { $0.toDomain() }

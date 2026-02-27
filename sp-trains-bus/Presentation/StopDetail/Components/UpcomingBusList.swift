@@ -4,6 +4,8 @@ struct UpcomingBusList: View {
     let arrivals: [Arrival]
     let selectedArrivalKey: String?
     var onArrivalTap: ((Arrival) -> Void)?
+    var onReachTop: ((Arrival) -> Void)? = nil
+    var onReachBottom: ((Arrival) -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -21,6 +23,14 @@ struct UpcomingBusList: View {
                     )
                     .contentShape(Rectangle())
                     .padding(.horizontal)
+                    .onAppear {
+                        if index == 0 {
+                            onReachTop?(arrival)
+                        }
+                        if index >= max(0, arrivals.count - 2) {
+                            onReachBottom?(arrival)
+                        }
+                    }
                     .onTapGesture {
                         onArrivalTap?(arrival)
                     }
