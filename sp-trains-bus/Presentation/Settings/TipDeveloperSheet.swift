@@ -12,17 +12,17 @@ struct TipDeveloperSheet: View {
 
     private let options: [TipOption] = [
         TipOption(
-            id: "app.lolados.sptrans.tip.small",
+            id: StatusAnalyticsTipProduct.small,
             titleKey: "settings.tip.option.small.title",
             subtitleKey: "settings.tip.option.small.subtitle"
         ),
         TipOption(
-            id: "app.lolados.sptrans.tip.medium",
+            id: StatusAnalyticsTipProduct.medium,
             titleKey: "settings.tip.option.medium.title",
             subtitleKey: "settings.tip.option.medium.subtitle"
         ),
         TipOption(
-            id: "app.lolados.sptrans.tip.large",
+            id: StatusAnalyticsTipProduct.large,
             titleKey: "settings.tip.option.large.title",
             subtitleKey: "settings.tip.option.large.subtitle"
         )
@@ -160,10 +160,14 @@ struct TipDeveloperSheet: View {
                 switch verification {
                 case .verified(let transaction):
                     await transaction.finish()
+                    StatusAnalyticsAccessGate.recordSuccessfulPurchase(productID: option.id)
                     alertMessage = localized("settings.tip.purchase.thank_you")
                     analyticsService.trackEvent(
                         name: "tip_purchase_succeeded",
-                        properties: ["product_id": option.id]
+                        properties: [
+                            "product_id": option.id,
+                            "analytics_unlocked": StatusAnalyticsAccessGate.hasAccess() ? "true" : "false"
+                        ]
                     )
                 case .unverified:
                     alertMessage = localized("settings.tip.purchase.unverified")

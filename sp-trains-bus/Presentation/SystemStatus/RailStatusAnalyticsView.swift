@@ -1,8 +1,13 @@
 import SwiftUI
 import Charts
+import StoreKit
 
 struct RailStatusAnalyticsView: View {
     @StateObject private var viewModel: RailStatusAnalyticsViewModel
+    @State private var promotedProductsByID: [String: Product] = [:]
+    @State private var isLoadingPromotedProducts = false
+    @State private var activePromotedPurchaseID: String?
+    @State private var purchaseAlertMessage: String?
 
     init(viewModel: RailStatusAnalyticsViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
@@ -25,7 +30,9 @@ struct RailStatusAnalyticsView: View {
                         .foregroundColor(AppColors.text.opacity(0.72))
                 }
 
-                if viewModel.isLoading {
+                if !viewModel.isAccessGranted {
+                    lockedPlaceholderSection
+                } else if viewModel.isLoading {
                     HStack {
                         Spacer()
                         LoadingView()
@@ -60,11 +67,164 @@ struct RailStatusAnalyticsView: View {
         )
         .navigationTitle(localized("status.analytics.title"))
         .navigationBarTitleDisplayMode(.inline)
+        .task(id: viewModel.isAccessGranted) {
+            guard !viewModel.isAccessGranted else { return }
+            await loadPromotedProductsIfNeeded()
+        }
+        .alert(
+            localized("settings.tip.purchase.alert.title"),
+            isPresented: Binding(
+                get: { purchaseAlertMessage != nil },
+                set: { _ in purchaseAlertMessage = nil }
+            )
+        ) {
+            Button(localized("common.ok"), role: .cancel) {}
+        } message: {
+            Text(purchaseAlertMessage ?? "")
+        }
         .onAppear {
             viewModel.trackScreenOpened()
-            if viewModel.lines.isEmpty {
+            if viewModel.lines.isEmpty || !viewModel.isAccessGranted {
                 viewModel.loadReport()
             }
+        }
+    }
+
+    private var lockedPlaceholderSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            GlassCard {
+                VStack(alignment: .leading, spacing: 10) {
+                    Label(localized("status.analytics.locked.title"), systemImage: "lock.fill")
+                        .font(AppFonts.headline())
+                        .foregroundColor(AppColors.text)
+
+                    Text(localized("status.analytics.locked.message"))
+                        .font(AppFonts.body())
+                        .foregroundColor(AppColors.text.opacity(0.85))
+
+                    Text(localized("status.analytics.locked.how_to"))
+                        .font(AppFonts.caption())
+                        .foregroundColor(AppColors.text.opacity(0.75))
+
+                    Text(localized("status.analytics.locked.cta_title"))
+                        .font(AppFonts.subheadline())
+                        .fontWeight(.semibold)
+                        .foregroundColor(AppColors.text)
+                        .padding(.top, 2)
+
+                    promotedPurchaseButtons
+
+                    #if DEBUG
+                    Text(localized("status.analytics.locked.debug_note"))
+                        .font(AppFonts.caption())
+                        .foregroundColor(AppColors.statusNormal)
+                    #endif
+                }
+            }
+
+            placeholderImpactByLineChart
+            placeholderTrendChart
+        }
+    }
+
+    private var promotedPurchaseButtons: some View {
+        VStack(spacing: 8) {
+            promotedPurchaseButton(
+                productID: StatusAnalyticsTipProduct.medium,
+                titleKey: "settings.tip.option.medium.title",
+                tint: AppColors.statusWarning
+            )
+
+            promotedPurchaseButton(
+                productID: StatusAnalyticsTipProduct.large,
+                titleKey: "settings.tip.option.large.title",
+                tint: AppColors.accent
+            )
+        }
+    }
+
+    @ViewBuilder
+    private func promotedPurchaseButton(productID: String, titleKey: String, tint: Color) -> some View {
+        let isPurchasing = activePromotedPurchaseID == productID
+        let price = promotedProductsByID[productID]?.displayPrice ?? localized("settings.tip.unavailable")
+        let isEnabled = promotedProductsByID[productID] != nil && activePromotedPurchaseID == nil
+
+        Button {
+            Task {
+                await purchasePromotedTip(productID: productID)
+            }
+        } label: {
+            HStack {
+                if isPurchasing {
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .tint(.white)
+                } else {
+                    Image(systemName: "heart.fill")
+                        .font(.caption)
+                }
+
+                Text(String(format: localized("status.analytics.locked.buy_button_format"), localized(titleKey), price))
+                    .font(AppFonts.subheadline())
+                    .fontWeight(.semibold)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .foregroundColor(.white)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(isEnabled ? tint : AppColors.lightGray.opacity(0.55))
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled || isLoadingPromotedProducts)
+    }
+
+    private var placeholderImpactByLineChart: some View {
+        GlassCard {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(localized("status.analytics.chart.lines_impact_title"))
+                    .font(AppFonts.headline())
+                    .foregroundColor(AppColors.text)
+
+                Chart(placeholderLineImpact) { item in
+                    BarMark(
+                        x: .value("Line", item.line),
+                        y: .value("Impact", item.impactPercent)
+                    )
+                    .foregroundStyle(AppColors.statusWarning.opacity(0.45))
+                    .cornerRadius(4)
+                }
+                .frame(height: 200)
+            }
+            .redacted(reason: .placeholder)
+        }
+    }
+
+    private var placeholderTrendChart: some View {
+        GlassCard {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(localized("status.analytics.chart.daily_title_placeholder"))
+                    .font(AppFonts.headline())
+                    .foregroundColor(AppColors.text)
+
+                Chart(placeholderDailyTrend) { item in
+                    AreaMark(
+                        x: .value("Day", item.day),
+                        y: .value("Impact", item.impactPercent)
+                    )
+                    .foregroundStyle(AppColors.statusAlert.opacity(0.2))
+
+                    LineMark(
+                        x: .value("Day", item.day),
+                        y: .value("Impact", item.impactPercent)
+                    )
+                    .foregroundStyle(AppColors.statusAlert.opacity(0.55))
+                }
+                .frame(height: 200)
+            }
+            .redacted(reason: .placeholder)
         }
     }
 
@@ -428,4 +588,82 @@ struct RailStatusAnalyticsView: View {
     private func localized(_ key: String) -> String {
         NSLocalizedString(key, comment: "")
     }
+
+    private func loadPromotedProductsIfNeeded() async {
+        guard promotedProductsByID.isEmpty else { return }
+        isLoadingPromotedProducts = true
+        defer { isLoadingPromotedProducts = false }
+
+        do {
+            let ids = Set([StatusAnalyticsTipProduct.medium, StatusAnalyticsTipProduct.large])
+            let products = try await Product.products(for: ids)
+            promotedProductsByID = Dictionary(uniqueKeysWithValues: products.map { ($0.id, $0) })
+        } catch {
+            purchaseAlertMessage = localized("settings.tip.error.load_products")
+        }
+    }
+
+    private func purchasePromotedTip(productID: String) async {
+        guard let product = promotedProductsByID[productID] else {
+            purchaseAlertMessage = localized("settings.tip.error.option_unavailable")
+            return
+        }
+
+        activePromotedPurchaseID = productID
+        defer { activePromotedPurchaseID = nil }
+
+        do {
+            let result = try await product.purchase()
+            switch result {
+            case .success(let verification):
+                switch verification {
+                case .verified(let transaction):
+                    await transaction.finish()
+                    StatusAnalyticsAccessGate.recordSuccessfulPurchase(productID: productID)
+                    purchaseAlertMessage = localized("status.analytics.locked.purchase_success")
+                    viewModel.loadReport()
+                case .unverified:
+                    purchaseAlertMessage = localized("settings.tip.purchase.unverified")
+                }
+            case .pending:
+                purchaseAlertMessage = localized("settings.tip.purchase.pending")
+            case .userCancelled:
+                break
+            @unknown default:
+                purchaseAlertMessage = localized("settings.tip.error.purchase_failed")
+            }
+        } catch {
+            purchaseAlertMessage = localized("settings.tip.error.purchase_failed")
+        }
+    }
 }
+
+private struct PlaceholderLineImpact: Identifiable {
+    let line: String
+    let impactPercent: Double
+    var id: String { line }
+}
+
+private struct PlaceholderDailyImpact: Identifiable {
+    let day: Int
+    let impactPercent: Double
+    var id: Int { day }
+}
+
+private let placeholderLineImpact: [PlaceholderLineImpact] = [
+    PlaceholderLineImpact(line: "M1", impactPercent: 12),
+    PlaceholderLineImpact(line: "M3", impactPercent: 7),
+    PlaceholderLineImpact(line: "C7", impactPercent: 16),
+    PlaceholderLineImpact(line: "C10", impactPercent: 9),
+    PlaceholderLineImpact(line: "C11", impactPercent: 14)
+]
+
+private let placeholderDailyTrend: [PlaceholderDailyImpact] = [
+    PlaceholderDailyImpact(day: 1, impactPercent: 8),
+    PlaceholderDailyImpact(day: 2, impactPercent: 12),
+    PlaceholderDailyImpact(day: 3, impactPercent: 10),
+    PlaceholderDailyImpact(day: 4, impactPercent: 14),
+    PlaceholderDailyImpact(day: 5, impactPercent: 9),
+    PlaceholderDailyImpact(day: 6, impactPercent: 11),
+    PlaceholderDailyImpact(day: 7, impactPercent: 7)
+]

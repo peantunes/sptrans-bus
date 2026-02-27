@@ -169,7 +169,8 @@ class SystemStatusViewModel: ObservableObject {
     func makeAnalyticsViewModel() -> RailStatusAnalyticsViewModel {
         RailStatusAnalyticsViewModel(
             apiClient: apiClient,
-            analyticsService: analyticsService
+            analyticsService: analyticsService,
+            userDefaults: userDefaults
         )
     }
 

@@ -67,6 +67,7 @@
 "status.analytics.line_picker" = "Linha para detalhar";
 "status.analytics.section.other" = "Outros";
 "status.analytics.chart.daily_title" = "Tendência diária - %@";
+"status.analytics.chart.daily_title_placeholder" = "Tendência diária (prévia)";
 "status.analytics.chart.status_mix_title" = "Distribuição de status";
 "status.analytics.chart.changes_title" = "Mudanças de status no período";
 "status.analytics.chart.changes_none" = "Nenhuma mudança de status registrada nesse período.";
@@ -74,6 +75,13 @@
 "status.analytics.impact.none" = "Sem impacto";
 "status.analytics.impact.low" = "Impacto moderado";
 "status.analytics.impact.high" = "Impacto alto";
+"status.analytics.locked.title" = "Analytics bloqueado";
+"status.analytics.locked.message" = "Este painel detalhado está disponível para quem apoia o desenvolvimento com contribuição média ou grande.";
+"status.analytics.locked.how_to" = "Para liberar: Configurações > Apoiar o desenvolvedor > escolha contribuição média ou grande.";
+"status.analytics.locked.cta_title" = "Desbloqueie agora direto por aqui";
+"status.analytics.locked.buy_button_format" = "%@ • %@";
+"status.analytics.locked.purchase_success" = "Obrigado pelo apoio! Analytics desbloqueado.";
+"status.analytics.locked.debug_note" = "Modo DEBUG: desbloqueado automaticamente para desenvolvimento.";
 
 "local_data.import_error.title" = "Erro de importação";
 "local_data.header.title" = "Dados Locais de Transporte";

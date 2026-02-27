@@ -135,16 +135,21 @@ final class RailStatusAnalyticsViewModel: ObservableObject {
     @Published private(set) var rangeText: String?
     @Published private(set) var isLoading: Bool = false
     @Published private(set) var errorMessage: String?
+    @Published private(set) var isAccessGranted: Bool = false
 
     private let apiClient: APIClient?
     private let analyticsService: AnalyticsServiceProtocol
+    private let userDefaults: UserDefaults
 
     init(
         apiClient: APIClient?,
-        analyticsService: AnalyticsServiceProtocol = NoOpAnalyticsService()
+        analyticsService: AnalyticsServiceProtocol = NoOpAnalyticsService(),
+        userDefaults: UserDefaults = .standard
     ) {
         self.apiClient = apiClient
         self.analyticsService = analyticsService
+        self.userDefaults = userDefaults
+        self.isAccessGranted = StatusAnalyticsAccessGate.hasAccess(userDefaults: userDefaults)
     }
 
     var selectedLine: RailStatusAnalyticsLine? {
@@ -154,7 +159,10 @@ final class RailStatusAnalyticsViewModel: ObservableObject {
 
     func trackScreenOpened() {
         analyticsService.trackScreen(name: "RailStatusAnalyticsView", className: "RailStatusAnalyticsView")
-        analyticsService.trackEvent(name: "status_analytics_screen_opened")
+        analyticsService.trackEvent(
+            name: "status_analytics_screen_opened",
+            properties: ["is_access_granted": isAccessGranted ? "true" : "false"]
+        )
     }
 
     func selectPeriod(_ period: RailStatusReportPeriod) {
@@ -173,6 +181,18 @@ final class RailStatusAnalyticsViewModel: ObservableObject {
     }
 
     func loadReport() {
+        isAccessGranted = StatusAnalyticsAccessGate.hasAccess(userDefaults: userDefaults)
+        guard isAccessGranted else {
+            lines = []
+            totals = .empty
+            generatedAtText = nil
+            rangeText = nil
+            errorMessage = nil
+            isLoading = false
+            analyticsService.trackEvent(name: "status_analytics_load_blocked_locked")
+            return
+        }
+
         isLoading = true
         errorMessage = nil
         let period = selectedPeriod

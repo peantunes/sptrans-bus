@@ -67,6 +67,7 @@
 "status.analytics.line_picker" = "Line details";
 "status.analytics.section.other" = "Other";
 "status.analytics.chart.daily_title" = "Daily trend - %@";
+"status.analytics.chart.daily_title_placeholder" = "Daily trend (preview)";
 "status.analytics.chart.status_mix_title" = "Status distribution";
 "status.analytics.chart.changes_title" = "Status changes in period";
 "status.analytics.chart.changes_none" = "No status changes recorded in this period.";
@@ -74,6 +75,13 @@
 "status.analytics.impact.none" = "No impact";
 "status.analytics.impact.low" = "Moderate";
 "status.analytics.impact.high" = "High";
+"status.analytics.locked.title" = "Analytics locked";
+"status.analytics.locked.message" = "This detailed panel is available to users who support development with a medium or big tip.";
+"status.analytics.locked.how_to" = "To unlock: Settings > Tip the Developer > choose Medium Tip or Big Tip.";
+"status.analytics.locked.cta_title" = "Unlock right here";
+"status.analytics.locked.buy_button_format" = "%@ • %@";
+"status.analytics.locked.purchase_success" = "Thanks for your support! Analytics unlocked.";
+"status.analytics.locked.debug_note" = "DEBUG mode: automatically unlocked for development.";
 
 "local_data.import_error.title" = "Import Error";
 "local_data.header.title" = "Local Transit Data";
