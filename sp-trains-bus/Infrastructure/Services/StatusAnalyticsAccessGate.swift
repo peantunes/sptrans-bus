@@ -7,6 +7,10 @@ enum StatusAnalyticsTipTier: Int {
     case large = 3
 
     var unlocksAnalytics: Bool {
+        rawValue >= StatusAnalyticsTipTier.large.rawValue
+    }
+
+    var unlocksArrivalsHistory: Bool {
         rawValue >= StatusAnalyticsTipTier.medium.rawValue
     }
 }
@@ -27,9 +31,17 @@ enum StatusAnalyticsAccessGate {
 
     static func hasAccess(userDefaults: UserDefaults = .standard) -> Bool {
         #if DEBUG
-        return true
+        return false
         #else
         return currentTier(userDefaults: userDefaults).unlocksAnalytics
+        #endif
+    }
+
+    static func hasArrivalsHistoryAccess(userDefaults: UserDefaults = .standard) -> Bool {
+        #if DEBUG
+        return false
+        #else
+        return currentTier(userDefaults: userDefaults).unlocksArrivalsHistory
         #endif
     }
 
@@ -53,4 +65,3 @@ enum StatusAnalyticsAccessGate {
         }
     }
 }
-

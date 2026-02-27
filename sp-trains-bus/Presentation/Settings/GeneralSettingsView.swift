@@ -10,7 +10,7 @@ struct GeneralSettingsView: View {
 
     private let appWebsiteURL = URL(string: "https://sptrans.lolados.app")
     private let supportURL = URL(string: "https://lolados.app/contact.php")
-    private let policyURL = URL(string: "https://sptrans.lolados.app/privacy.html")
+    private let privacyURL = URL(string: "https://sptrans.lolados.app/privacy.html")
     private let termsURL = URL(string: "https://sptrans.lolados.app/terms.html")
 
     init(analyticsService: AnalyticsServiceProtocol = NoOpAnalyticsService()) {
@@ -125,16 +125,16 @@ struct GeneralSettingsView: View {
             }
 
             Section(localized("settings.section.legal")) {
-                if let policyURL {
+                if let privacyURL {
                     NavigationLink {
                         SettingsWebView(
-                            title: localized("settings.legal.policy"),
-                            url: policyURL,
+                            title: localized("settings.legal.privacy"),
+                            url: privacyURL,
                             analyticsService: analyticsService,
-                            analyticsSource: "policy"
+                            analyticsSource: "privacy"
                         )
                     } label: {
-                        settingsRow(title: localized("settings.legal.policy"), systemImage: "doc.text")
+                        settingsRow(title: localized("settings.legal.privacy"), systemImage: "doc.text")
                     }
                 }
 

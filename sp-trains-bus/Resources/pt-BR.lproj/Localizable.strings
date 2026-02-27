@@ -10,11 +10,11 @@
 "settings.support.tip_developer" = "Apoiar o desenvolvedor";
 "settings.support.website" = "Website";
 "settings.support.contact_us" = "Fale conosco";
-"settings.legal.policy" = "Política";
+"settings.legal.privacy" = "Privacidade";
 "settings.legal.terms" = "Termos de Uso";
 
 "settings.tip.title" = "Apoiar o desenvolvedor";
-"settings.tip.description" = "Escolha uma contribuição única para apoiar o desenvolvimento.";
+"settings.tip.description" = "Escolha uma contribuição única para apoiar o desenvolvimento e desbloquear recursos avançados.";
 "settings.tip.options.title" = "Opções de contribuição";
 "settings.tip.loading_products" = "Carregando produtos...";
 "settings.tip.unavailable" = "Indisponível";
@@ -25,13 +25,16 @@
 "settings.tip.error.load_products" = "Não foi possível carregar os produtos de contribuição. Tente novamente mais tarde.";
 "settings.tip.error.option_unavailable" = "Esta opção de contribuição não está disponível no momento.";
 "settings.tip.error.purchase_failed" = "A compra falhou. Tente novamente.";
+"settings.tip.restore.button" = "Recarregar compras anteriores";
+"settings.tip.restore.success" = "As compras anteriores foram recarregadas.";
+"settings.tip.restore.failed" = "Não foi possível recarregar as compras anteriores.";
 
 "settings.tip.option.small.title" = "Contribuição pequena";
 "settings.tip.option.small.subtitle" = "Ajude a manter as atualizações.";
 "settings.tip.option.medium.title" = "Contribuição média";
-"settings.tip.option.medium.subtitle" = "Apoie o desenvolvimento e os custos de servidor.";
+"settings.tip.option.medium.subtitle" = "Desbloqueia a linha do tempo avançada de chegadas: seletor de horário e partidas anteriores/seguintes.";
 "settings.tip.option.large.title" = "Contribuição grande";
-"settings.tip.option.large.subtitle" = "Muito obrigado por apoiar o app.";
+"settings.tip.option.large.subtitle" = "Desbloqueia tudo: analytics, alertas de interrupção e linha do tempo avançada de chegadas.";
 
 "common.done" = "Concluir";
 "common.ok" = "OK";
@@ -52,6 +55,9 @@
 "status.updated_at_format" = "Atualizado às %@";
 "status.line.updated_format" = "Atualizado: %@";
 "status.line.updated_now" = "Atualizado: agora";
+"status.line.read_more" = "Ler mais";
+"status.line.details_title" = "Detalhes do status";
+"status.line.detail_title" = "Mensagem completa";
 "status.alerts.navigation_title" = "Alertas de Interrupção";
 "status.alerts.title" = "Receber alertas por linha";
 "status.alerts.subtitle" = "Selecione as linhas para receber notificação sempre que houver problema disruptivo no serviço.";
@@ -67,8 +73,8 @@
 "status.alerts.notifications_blocked.message" = "Para receber alertas de interrupção, permita notificações deste app nos Ajustes do iPhone.";
 "status.alerts.notifications_blocked.open_settings" = "Abrir Ajustes";
 "status.alerts.locked.title" = "Alertas bloqueados";
-"status.alerts.locked.message" = "Os alertas de interrupção ferroviária estão disponíveis para quem apoia o desenvolvimento com contribuição média ou grande.";
-"status.alerts.locked.how_to" = "Para liberar: Configurações > Apoiar o desenvolvedor > escolha contribuição média ou grande.";
+"status.alerts.locked.message" = "Os alertas de interrupção ferroviária estão disponíveis para quem apoia o desenvolvimento com contribuição grande.";
+"status.alerts.locked.how_to" = "Para liberar: Configurações > Apoiar o desenvolvedor > escolha contribuição grande.";
 "status.alerts.locked.cta_title" = "Desbloqueie os alertas agora";
 "status.alerts.locked.buy_button_format" = "%@ • %@";
 "status.alerts.locked.purchase_success" = "Obrigado pelo apoio! Alertas desbloqueados.";
@@ -98,8 +104,8 @@
 "status.analytics.impact.low" = "Impacto moderado";
 "status.analytics.impact.high" = "Impacto alto";
 "status.analytics.locked.title" = "Analytics bloqueado";
-"status.analytics.locked.message" = "Este painel detalhado está disponível para quem apoia o desenvolvimento com contribuição média ou grande.";
-"status.analytics.locked.how_to" = "Para liberar: Configurações > Apoiar o desenvolvedor > escolha contribuição média ou grande.";
+"status.analytics.locked.message" = "Este painel detalhado está disponível para quem apoia o desenvolvimento com contribuição grande.";
+"status.analytics.locked.how_to" = "Para liberar: Configurações > Apoiar o desenvolvedor > escolha contribuição grande.";
 "status.analytics.locked.cta_title" = "Desbloqueie agora direto por aqui";
 "status.analytics.locked.buy_button_format" = "%@ • %@";
 "status.analytics.locked.purchase_success" = "Obrigado pelo apoio! Analytics desbloqueado.";
@@ -224,3 +230,7 @@
 "stop_detail.stop_sequence_format" = "Parada %d";
 "stop_detail.current_stop" = "Parada atual";
 "stop_detail.focused" = "Focada";
+"stop_detail.history_locked.title" = "Desbloqueie a linha do tempo completa";
+"stop_detail.history_locked.message" = "Para ver chegadas por horário personalizado e carregar partidas anteriores e seguintes, apoie o app com uma contribuição média ou grande.";
+"stop_detail.history_locked.how_to" = "Após a compra, o recurso é desbloqueado imediatamente.";
+"stop_detail.history_locked.support_now" = "Apoiar agora";

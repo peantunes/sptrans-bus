@@ -128,19 +128,11 @@ struct RailStatusAnalyticsView: View {
     }
 
     private var promotedPurchaseButtons: some View {
-        VStack(spacing: 8) {
-            promotedPurchaseButton(
-                productID: StatusAnalyticsTipProduct.medium,
-                titleKey: "settings.tip.option.medium.title",
-                tint: AppColors.statusWarning
-            )
-
-            promotedPurchaseButton(
-                productID: StatusAnalyticsTipProduct.large,
-                titleKey: "settings.tip.option.large.title",
-                tint: AppColors.accent
-            )
-        }
+        promotedPurchaseButton(
+            productID: StatusAnalyticsTipProduct.large,
+            titleKey: "settings.tip.option.large.title",
+            tint: AppColors.accent
+        )
     }
 
     @ViewBuilder
@@ -595,7 +587,7 @@ struct RailStatusAnalyticsView: View {
         defer { isLoadingPromotedProducts = false }
 
         do {
-            let ids = Set([StatusAnalyticsTipProduct.medium, StatusAnalyticsTipProduct.large])
+            let ids = Set([StatusAnalyticsTipProduct.large])
             let products = try await Product.products(for: ids)
             promotedProductsByID = Dictionary(uniqueKeysWithValues: products.map { ($0.id, $0) })
         } catch {

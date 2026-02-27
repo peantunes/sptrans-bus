@@ -3,9 +3,11 @@ import StoreKit
 
 struct TipDeveloperSheet: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.presentationMode) private var presentationMode
 
     @State private var productsByID: [String: Product] = [:]
     @State private var isLoadingProducts = true
+    @State private var isRestoringPurchases = false
     @State private var activePurchaseID: String?
     @State private var alertMessage: String?
     let analyticsService: AnalyticsServiceProtocol
@@ -47,6 +49,29 @@ struct TipDeveloperSheet: View {
                         tipOptionRow(option)
                     }
                 }
+
+                Section {
+                    Button {
+                        Task {
+                            await restorePurchases()
+                        }
+                    } label: {
+                        HStack(spacing: 10) {
+                            if isRestoringPurchases {
+                                ProgressView()
+                                    .controlSize(.small)
+                            } else {
+                                Image(systemName: "arrow.clockwise.circle")
+                                    .foregroundColor(AppColors.primary)
+                            }
+
+                            Text(localized("settings.tip.restore.button"))
+                                .font(AppFonts.body())
+                                .foregroundColor(AppColors.text)
+                        }
+                    }
+                    .disabled(isRestoringPurchases || activePurchaseID != nil)
+                }
             }
             .overlay {
                 if isLoadingProducts {
@@ -58,9 +83,9 @@ struct TipDeveloperSheet: View {
             .navigationTitle(localized("settings.tip.title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .cancellationAction) {
                     Button(localized("common.done")) {
-                        dismiss()
+                        closeSheet()
                     }
                 }
             }
@@ -204,6 +229,39 @@ struct TipDeveloperSheet: View {
                     "error": error.localizedDescription
                 ]
             )
+        }
+    }
+
+    private func restorePurchases() async {
+        isRestoringPurchases = true
+        defer { isRestoringPurchases = false }
+
+        do {
+            try await AppStore.sync()
+            await syncPurchasedTierFromEntitlements()
+            alertMessage = localized("settings.tip.restore.success")
+            analyticsService.trackEvent(name: "tip_restore_succeeded")
+        } catch {
+            alertMessage = localized("settings.tip.restore.failed")
+            analyticsService.trackEvent(
+                name: "tip_restore_failed",
+                properties: ["error": error.localizedDescription]
+            )
+        }
+    }
+
+    private func syncPurchasedTierFromEntitlements() async {
+        for await result in Transaction.currentEntitlements {
+            guard case .verified(let transaction) = result else { continue }
+            StatusAnalyticsAccessGate.recordSuccessfulPurchase(productID: transaction.productID)
+        }
+    }
+
+    private func closeSheet() {
+        if presentationMode.wrappedValue.isPresented {
+            presentationMode.wrappedValue.dismiss()
+        } else {
+            dismiss()
         }
     }
 

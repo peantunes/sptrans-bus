@@ -5,6 +5,8 @@ struct StopDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var isShowingJourneyDetail: Bool = false
     @State private var isShowingReferencePicker: Bool = false
+    @State private var isShowingHistoryUnlockInfo: Bool = false
+    @State private var isShowingTipSheet: Bool = false
     @State private var selectedReferenceDate: Date = Date()
 
     init(viewModel: StopDetailViewModel) {
@@ -47,8 +49,12 @@ struct StopDetailView: View {
                             UpcomingBusList(
                                 arrivals: viewModel.arrivals,
                                 selectedArrivalKey: viewModel.selectedArrival?.selectionKey,
-                                canLoadPreviousPage: viewModel.hasMorePreviousPage && !viewModel.isLoadingPreviousPage,
-                                canLoadNextPage: viewModel.hasMoreNextPage && !viewModel.isLoadingNextPage,
+                                canLoadPreviousPage: hasArrivalsHistoryAccess
+                                ? (viewModel.hasMorePreviousPage && !viewModel.isLoadingPreviousPage)
+                                : true,
+                                canLoadNextPage: hasArrivalsHistoryAccess
+                                ? (viewModel.hasMoreNextPage && !viewModel.isLoadingNextPage)
+                                : true,
                                 isLoadingPreviousPage: viewModel.isLoadingPreviousPage,
                                 isLoadingNextPage: viewModel.isLoadingNextPage,
                                 onArrivalTap: { arrival in
@@ -56,10 +62,18 @@ struct StopDetailView: View {
                                     isShowingJourneyDetail = true
                                 },
                                 onLoadPreviousTap: {
-                                    viewModel.loadPreviousPage()
+                                    if hasArrivalsHistoryAccess {
+                                        viewModel.loadPreviousPage()
+                                    } else {
+                                        isShowingHistoryUnlockInfo = true
+                                    }
                                 },
                                 onLoadNextTap: {
-                                    viewModel.loadNextPage()
+                                    if hasArrivalsHistoryAccess {
+                                        viewModel.loadNextPage()
+                                    } else {
+                                        isShowingHistoryUnlockInfo = true
+                                    }
                                 }
                             )
                         } else {
@@ -104,12 +118,20 @@ struct StopDetailView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 12) {
                         Button(action: {
-                            selectedReferenceDate = viewModel.currentReferenceDate
-                            isShowingReferencePicker = true
+                            if hasArrivalsHistoryAccess {
+                                selectedReferenceDate = viewModel.currentReferenceDate
+                                isShowingReferencePicker = true
+                            } else {
+                                isShowingHistoryUnlockInfo = true
+                            }
                         }) {
-                            Image(systemName: "clock")
+                            Image(systemName: hasArrivalsHistoryAccess ? "clock" : "clock.badge.lock")
                                 .font(.title3)
-                                .foregroundColor(viewModel.isUsingCustomReference ? .orange : AppColors.text.opacity(0.6))
+                                .foregroundColor(
+                                    hasArrivalsHistoryAccess
+                                    ? (viewModel.isUsingCustomReference ? .orange : AppColors.text.opacity(0.6))
+                                    : AppColors.statusWarning
+                                )
                         }
 
                         // Favorite button
@@ -177,7 +199,65 @@ struct StopDetailView: View {
                     }
                 }
             }
+            .sheet(isPresented: $isShowingHistoryUnlockInfo) {
+                ArrivalsHistoryUnlockInfoSheet(
+                    onSupportNow: {
+                        isShowingHistoryUnlockInfo = false
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            isShowingTipSheet = true
+                        }
+                    }
+                )
+                .presentationDetents([.height(280)])
+                .presentationDragIndicator(.visible)
+            }
+            .sheet(isPresented: $isShowingTipSheet) {
+                TipDeveloperSheet()
+            }
         }
+    }
+
+    private var hasArrivalsHistoryAccess: Bool {
+        StatusAnalyticsAccessGate.hasArrivalsHistoryAccess()
+    }
+
+    private func localized(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
+    }
+}
+
+private struct ArrivalsHistoryUnlockInfoSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let onSupportNow: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(localized("stop_detail.history_locked.title"))
+                .font(AppFonts.headline())
+                .foregroundColor(AppColors.text)
+
+            Text(localized("stop_detail.history_locked.message"))
+                .font(AppFonts.body())
+                .foregroundColor(AppColors.text.opacity(0.85))
+
+            Text(localized("stop_detail.history_locked.how_to"))
+                .font(AppFonts.caption())
+                .foregroundColor(AppColors.text.opacity(0.75))
+
+            HStack(spacing: 10) {
+                Button(localized("common.cancel")) {
+                    dismiss()
+                }
+                .buttonStyle(.bordered)
+
+                Button(localized("stop_detail.history_locked.support_now")) {
+                    onSupportNow()
+                }
+                .buttonStyle(.borderedProminent)
+            }
+            .padding(.top, 4)
+        }
+        .padding(16)
     }
 
     private func localized(_ key: String) -> String {

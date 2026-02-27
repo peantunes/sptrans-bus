@@ -10,11 +10,11 @@
 "settings.support.tip_developer" = "Tip the Developer";
 "settings.support.website" = "Website";
 "settings.support.contact_us" = "Contact Us";
-"settings.legal.policy" = "Policy";
+"settings.legal.privacy" = "Privacy";
 "settings.legal.terms" = "Terms of Use";
 
 "settings.tip.title" = "Tip the Developer";
-"settings.tip.description" = "Choose a one-time tip to support development.";
+"settings.tip.description" = "Choose a one-time tip to support development and unlock advanced features.";
 "settings.tip.options.title" = "Tip Options";
 "settings.tip.loading_products" = "Loading products...";
 "settings.tip.unavailable" = "Unavailable";
@@ -25,13 +25,16 @@
 "settings.tip.error.load_products" = "Could not load tip products. Please try again later.";
 "settings.tip.error.option_unavailable" = "This tip option is not available right now.";
 "settings.tip.error.purchase_failed" = "Purchase failed. Please try again.";
+"settings.tip.restore.button" = "Reload previous purchases";
+"settings.tip.restore.success" = "Previous purchases were reloaded.";
+"settings.tip.restore.failed" = "Could not reload previous purchases.";
 
 "settings.tip.option.small.title" = "Small Tip";
 "settings.tip.option.small.subtitle" = "Help keep updates coming.";
 "settings.tip.option.medium.title" = "Medium Tip";
-"settings.tip.option.medium.subtitle" = "Support development and server costs.";
+"settings.tip.option.medium.subtitle" = "Unlock advanced arrivals timeline: time selector and previous/next departures.";
 "settings.tip.option.large.title" = "Big Tip";
-"settings.tip.option.large.subtitle" = "A huge thanks for supporting the app.";
+"settings.tip.option.large.subtitle" = "Unlock everything: analytics, disruption alerts, and advanced arrivals timeline.";
 
 "common.done" = "Done";
 "common.ok" = "OK";
@@ -52,6 +55,9 @@
 "status.updated_at_format" = "Updated at %@";
 "status.line.updated_format" = "Updated: %@";
 "status.line.updated_now" = "Updated: just now";
+"status.line.read_more" = "Read more";
+"status.line.details_title" = "Status details";
+"status.line.detail_title" = "Full message";
 "status.alerts.navigation_title" = "Disruption Alerts";
 "status.alerts.title" = "Get alerts by line";
 "status.alerts.subtitle" = "Select lines to be notified whenever there is a disruptive issue in rail service.";
@@ -67,8 +73,8 @@
 "status.alerts.notifications_blocked.message" = "To receive disruption alerts, allow notifications for this app in iPhone Settings.";
 "status.alerts.notifications_blocked.open_settings" = "Open Settings";
 "status.alerts.locked.title" = "Alerts locked";
-"status.alerts.locked.message" = "Rail disruption alerts are available for users who support development with a medium or big tip.";
-"status.alerts.locked.how_to" = "To unlock: Settings > Tip the Developer > choose Medium Tip or Big Tip.";
+"status.alerts.locked.message" = "Rail disruption alerts are available for users who support development with a big tip.";
+"status.alerts.locked.how_to" = "To unlock: Settings > Tip the Developer > choose Big Tip.";
 "status.alerts.locked.cta_title" = "Unlock alerts now";
 "status.alerts.locked.buy_button_format" = "%@ • %@";
 "status.alerts.locked.purchase_success" = "Thanks for your support! Alerts unlocked.";
@@ -98,8 +104,8 @@
 "status.analytics.impact.low" = "Moderate";
 "status.analytics.impact.high" = "High";
 "status.analytics.locked.title" = "Analytics locked";
-"status.analytics.locked.message" = "This detailed panel is available to users who support development with a medium or big tip.";
-"status.analytics.locked.how_to" = "To unlock: Settings > Tip the Developer > choose Medium Tip or Big Tip.";
+"status.analytics.locked.message" = "This detailed panel is available to users who support development with a big tip.";
+"status.analytics.locked.how_to" = "To unlock: Settings > Tip the Developer > choose Big Tip.";
 "status.analytics.locked.cta_title" = "Unlock right here";
 "status.analytics.locked.buy_button_format" = "%@ • %@";
 "status.analytics.locked.purchase_success" = "Thanks for your support! Analytics unlocked.";
@@ -224,3 +230,7 @@
 "stop_detail.stop_sequence_format" = "Stop %d";
 "stop_detail.current_stop" = "Current stop";
 "stop_detail.focused" = "Focused";
+"stop_detail.history_locked.title" = "Unlock full arrivals timeline";
+"stop_detail.history_locked.message" = "To view arrivals by custom time and load previous or next departures, support the app with a Medium or Big tip.";
+"stop_detail.history_locked.how_to" = "After purchase, this feature unlocks instantly.";
+"stop_detail.history_locked.support_now" = "Support now";
