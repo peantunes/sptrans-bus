@@ -3,17 +3,39 @@ import SwiftUI
 struct UpcomingBusList: View {
     let arrivals: [Arrival]
     let selectedArrivalKey: String?
+    var canLoadPreviousPage: Bool = false
+    var canLoadNextPage: Bool = false
+    var isLoadingPreviousPage: Bool = false
+    var isLoadingNextPage: Bool = false
     var onArrivalTap: ((Arrival) -> Void)?
-    var onReachTop: ((Arrival) -> Void)? = nil
-    var onReachBottom: ((Arrival) -> Void)? = nil
+    var onLoadPreviousTap: (() -> Void)? = nil
+    var onLoadNextTap: (() -> Void)? = nil
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if arrivals.count > 1 {
+        LazyVStack(alignment: .leading, spacing: 12) {
+            if !arrivals.isEmpty {
                 Text(localized("stop_detail.upcoming_arrivals"))
                     .font(AppFonts.headline())
                     .foregroundColor(AppColors.text)
                     .padding(.horizontal)
+            }
+
+            if !arrivals.isEmpty {
+                if isLoadingPreviousPage {
+                    PaginationLoadingRow(text: "Loading previous arrivals...")
+                        .padding(.horizontal)
+                } else {
+                    Button {
+                        onLoadPreviousTap?()
+                    } label: {
+                        Text("Load previous 20")
+                            .font(AppFonts.caption().weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .padding(.horizontal)
+                    .disabled(!canLoadPreviousPage)
+                }
 
                 ForEach(Array(arrivals.enumerated()), id: \.element.id) { index, arrival in
                     UpcomingBusRow(
@@ -23,17 +45,25 @@ struct UpcomingBusList: View {
                     )
                     .contentShape(Rectangle())
                     .padding(.horizontal)
-                    .onAppear {
-                        if index == 0 {
-                            onReachTop?(arrival)
-                        }
-                        if index >= max(0, arrivals.count - 2) {
-                            onReachBottom?(arrival)
-                        }
-                    }
                     .onTapGesture {
                         onArrivalTap?(arrival)
                     }
+                }
+
+                if isLoadingNextPage {
+                    PaginationLoadingRow(text: "Loading more arrivals...")
+                        .padding(.horizontal)
+                } else {
+                    Button {
+                        onLoadNextTap?()
+                    } label: {
+                        Text("Load next 20")
+                            .font(AppFonts.caption().weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .padding(.horizontal)
+                    .disabled(!canLoadNextPage)
                 }
             } else if arrivals.isEmpty {
                 VStack(spacing: 12) {
@@ -57,6 +87,22 @@ struct UpcomingBusList: View {
 
     private func localized(_ key: String) -> String {
         NSLocalizedString(key, comment: "")
+    }
+}
+
+private struct PaginationLoadingRow: View {
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ProgressView()
+                .controlSize(.small)
+            Text(text)
+                .font(AppFonts.caption())
+                .foregroundColor(AppColors.text.opacity(0.6))
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.vertical, 6)
     }
 }
 
@@ -128,6 +174,8 @@ struct UpcomingBusRow: View {
 
     private var waitTimeColor: Color {
         switch arrival.waitTimeStatus {
+        case .past:
+            return AppColors.text.opacity(0.45)
         case .arriving:
             return AppColors.statusAlert
         case .soon:

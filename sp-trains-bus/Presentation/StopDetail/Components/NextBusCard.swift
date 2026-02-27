@@ -45,7 +45,7 @@ struct NextBusCard: View {
                 }
 
                 // Progress indicator
-                BusProgressIndicator(progress: 1 - Double(arrival.waitTime)/Double(min(arrival.waitTime, 10)), estimatedTime: arrival.formattedWaitTime)
+                BusProgressIndicator(progress: progressValue, estimatedTime: arrival.formattedWaitTime)
 
                 // Countdown and time info
                 HStack(alignment: .bottom) {
@@ -91,6 +91,8 @@ struct NextBusCard: View {
 
     private var waitTimeColor: Color {
         switch arrival.waitTimeStatus {
+        case .past:
+            return AppColors.text.opacity(0.45)
         case .arriving:
             return AppColors.statusAlert
         case .soon:
@@ -98,6 +100,11 @@ struct NextBusCard: View {
         case .scheduled:
             return AppColors.statusNormal
         }
+    }
+
+    private var progressValue: Double {
+        let clamped = min(max(arrival.waitTime, 0), 10)
+        return 1.0 - (Double(clamped) / 10.0)
     }
 
     private func localized(_ key: String) -> String {

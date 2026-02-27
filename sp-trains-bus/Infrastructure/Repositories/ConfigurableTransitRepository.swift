@@ -34,6 +34,38 @@ final class ConfigurableTransitRepository: TransitRepositoryProtocol {
         })
     }
 
+    func getArrivals(
+        stopId: Int,
+        limit: Int,
+        date: String?,
+        time: String?,
+        cursorDate: String?,
+        cursorTime: String?,
+        direction: ArrivalsPageDirection
+    ) async throws -> [Arrival] {
+        try await execute(local: {
+            try await localRepository.getArrivals(
+                stopId: stopId,
+                limit: limit,
+                date: date,
+                time: time,
+                cursorDate: cursorDate,
+                cursorTime: cursorTime,
+                direction: direction
+            )
+        }, remote: {
+            try await remoteRepository.getArrivals(
+                stopId: stopId,
+                limit: limit,
+                date: date,
+                time: time,
+                cursorDate: cursorDate,
+                cursorTime: cursorTime,
+                direction: direction
+            )
+        })
+    }
+
     func searchStops(query: String, limit: Int) async throws -> [Stop] {
         try await execute(local: {
             try await localRepository.searchStops(query: query, limit: limit)

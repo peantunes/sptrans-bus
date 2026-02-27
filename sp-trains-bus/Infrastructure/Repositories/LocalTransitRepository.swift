@@ -116,6 +116,20 @@ final class LocalTransitRepository: TransitRepositoryProtocol {
             .map { $0 }
     }
 
+    func getArrivals(
+        stopId: Int,
+        limit: Int,
+        date: String?,
+        time: String?,
+        cursorDate: String?,
+        cursorTime: String?,
+        direction: ArrivalsPageDirection
+    ) async throws -> [Arrival] {
+        // Local repository currently supports only basic "next arrivals from now".
+        // Let the configurable repository fall back to remote API for cursor/time paging.
+        throw LocalTransitRepositoryError.unsupportedLocalOperation
+    }
+
     func searchStops(query: String, limit: Int) async throws -> [Stop] {
         let context = ModelContext(modelContainer)
         try ensureGTFSData(in: context)

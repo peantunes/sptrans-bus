@@ -61,6 +61,7 @@ struct Arrival: Identifiable {
     /// Returns a color-coded wait time status
     var waitTimeStatus: WaitTimeStatus {
         switch waitTime {
+        case ..<0: return .past
         case 0...3: return .arriving
         case 4...10: return .soon
         default: return .scheduled
@@ -69,10 +70,31 @@ struct Arrival: Identifiable {
 
     /// Formatted wait time string
     var formattedWaitTime: String {
-        if waitTime <= 0 {
-            return "Now"
+        if waitTime < 0 {
+            let absoluteMinutes = abs(waitTime)
+            if absoluteMinutes >= 60 {
+                let hours = absoluteMinutes / 60
+                let minutes = absoluteMinutes % 60
+                if minutes == 0 {
+                    return "\(hours)h ago"
+                }
+                return "\(hours)h \(minutes)m ago"
+            }
+            if absoluteMinutes == 1 {
+                return "1 min ago"
+            }
+            return "\(absoluteMinutes) min ago"
+        } else if waitTime == 0 {
+            return "Due"
         } else if waitTime == 1 {
             return "1 min"
+        } else if waitTime >= 60 {
+            let hours = waitTime / 60
+            let minutes = waitTime % 60
+            if minutes == 0 {
+                return "\(hours)h"
+            }
+            return "\(hours)h \(minutes)m"
         } else {
             return "\(waitTime) min"
         }
@@ -85,6 +107,7 @@ struct Arrival: Identifiable {
 }
 
 enum WaitTimeStatus {
+    case past
     case arriving   // 0-3 min (red/urgent)
     case soon       // 4-10 min (yellow/warning)
     case scheduled  // 10+ min (green/normal)

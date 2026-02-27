@@ -27,14 +27,15 @@ class StopDetailViewModel: ObservableObject {
     private let pageSize = 20
     private var referenceDate: String?
     private var referenceTime: String?
+    private var customReferenceDate: Date?
     private var newestCursorDate: String?
     private var newestCursorTime: String?
     private var oldestCursorDate: String?
     private var oldestCursorTime: String?
-    private var isLoadingNextPage = false
-    private var isLoadingPreviousPage = false
-    private var hasMoreNextPage = true
-    private var hasMorePreviousPage = true
+    @Published private(set) var isLoadingNextPage = false
+    @Published private(set) var isLoadingPreviousPage = false
+    @Published private(set) var hasMoreNextPage = true
+    @Published private(set) var hasMorePreviousPage = true
     private var didObserveTopBoundary = false
     private var timer: Timer?
 
@@ -82,7 +83,7 @@ class StopDetailViewModel: ObservableObject {
     func loadArrivals() {
         isLoading = true
         errorMessage = nil
-        captureReferenceNow()
+        captureReference(using: customReferenceDate ?? Date())
         resetPaginationState()
         analyticsService.trackEvent(
             name: "stop_arrivals_load_requested",
@@ -98,7 +99,7 @@ class StopDetailViewModel: ObservableObject {
     func refreshArrivals() async {
         isLoading = true
         errorMessage = nil
-        captureReferenceNow()
+        captureReference(using: customReferenceDate ?? Date())
         resetPaginationState()
         analyticsService.trackEvent(
             name: "stop_arrivals_load_requested",
@@ -111,11 +112,46 @@ class StopDetailViewModel: ObservableObject {
     }
 
     @MainActor
+    func loadArrivals(at date: Date) {
+        customReferenceDate = date
+        loadArrivals()
+    }
+
+    @MainActor
+    func clearCustomReferenceAndLoadNow() {
+        customReferenceDate = nil
+        loadArrivals()
+    }
+
+    var currentReferenceDate: Date {
+        customReferenceDate ?? Date()
+    }
+
+    var isUsingCustomReference: Bool {
+        customReferenceDate != nil
+    }
+
+    @MainActor
     func loadNextPageIfNeeded(currentArrival: Arrival) {
         guard hasMoreNextPage else { return }
         guard !isLoadingNextPage else { return }
         guard let lastTimestamp = arrivals.last?.scheduledTimestamp else { return }
         guard currentArrival.scheduledTimestamp == lastTimestamp else { return }
+        guard let cursorDate = newestCursorDate, let cursorTime = newestCursorTime else { return }
+
+        isLoadingNextPage = true
+        Task {
+            await fetchPagedArrivals(direction: .next, cursorDate: cursorDate, cursorTime: cursorTime)
+            await MainActor.run {
+                self.isLoadingNextPage = false
+            }
+        }
+    }
+
+    @MainActor
+    func loadNextPage() {
+        guard hasMoreNextPage else { return }
+        guard !isLoadingNextPage else { return }
         guard let cursorDate = newestCursorDate, let cursorTime = newestCursorTime else { return }
 
         isLoadingNextPage = true
@@ -149,6 +185,21 @@ class StopDetailViewModel: ObservableObject {
     }
 
     @MainActor
+    func loadPreviousPage() {
+        guard hasMorePreviousPage else { return }
+        guard !isLoadingPreviousPage else { return }
+        guard let cursorDate = oldestCursorDate, let cursorTime = oldestCursorTime else { return }
+
+        isLoadingPreviousPage = true
+        Task {
+            await fetchPagedArrivals(direction: .previous, cursorDate: cursorDate, cursorTime: cursorTime)
+            await MainActor.run {
+                self.isLoadingPreviousPage = false
+            }
+        }
+    }
+
+    @MainActor
     private func fetchInitialArrivals() async {
         guard let referenceDate, let referenceTime else {
             isLoading = false
@@ -164,7 +215,7 @@ class StopDetailViewModel: ObservableObject {
                 time: referenceTime,
                 direction: .next
             )
-            let normalized = normalizeArrivals(from: fetchedArrivals, now: Date())
+            let normalized = normalizeArrivals(from: fetchedArrivals, now: referenceAnchorDate())
             arrivals = normalized
             hasMoreNextPage = fetchedArrivals.count >= pageSize
             hasMorePreviousPage = true
@@ -215,7 +266,7 @@ class StopDetailViewModel: ObservableObject {
                 return
             }
 
-            let normalized = normalizeArrivals(from: page, now: Date())
+            let normalized = normalizeArrivals(from: page, now: referenceAnchorDate())
             mergeArrivals(normalized, direction: direction)
             updateBoundaryCursor(from: page, direction: direction)
             if direction == .next {
@@ -244,7 +295,7 @@ class StopDetailViewModel: ObservableObject {
                 }
 
                 let departureDate = scheduledDate(for: source, timeValue: source.departureTime) ?? arrivalDate
-                let waitTime = max(0, Int(ceil(arrivalDate.timeIntervalSince(now) / 60)))
+                let waitTime = Int(ceil(arrivalDate.timeIntervalSince(now) / 60))
                 let serviceDate = source.serviceDate ?? serviceDateFormatter.string(from: arrivalDate)
                 let scheduledTimestamp = source.scheduledTimestamp ?? Int(arrivalDate.timeIntervalSince1970)
 
@@ -286,10 +337,20 @@ class StopDetailViewModel: ObservableObject {
         return midnight.addingTimeInterval(TimeInterval(seconds))
     }
 
-    private func captureReferenceNow() {
-        let now = Date()
-        referenceDate = serviceDateFormatter.string(from: now)
-        referenceTime = serviceTimeFormatter.string(from: now)
+    private func captureReference(using date: Date) {
+        referenceDate = serviceDateFormatter.string(from: date)
+        referenceTime = serviceTimeFormatter.string(from: date)
+    }
+
+    private func referenceAnchorDate() -> Date {
+        guard let referenceDate, let referenceTime else {
+            return Date()
+        }
+        guard let midnight = serviceMidnight(for: referenceDate),
+              let seconds = gtfsSeconds(from: referenceTime) else {
+            return Date()
+        }
+        return midnight.addingTimeInterval(TimeInterval(seconds))
     }
 
     private func resetPaginationState() {

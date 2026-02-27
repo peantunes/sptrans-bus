@@ -4,6 +4,8 @@ struct StopDetailView: View {
     @StateObject private var viewModel: StopDetailViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var isShowingJourneyDetail: Bool = false
+    @State private var isShowingReferencePicker: Bool = false
+    @State private var selectedReferenceDate: Date = Date()
 
     init(viewModel: StopDetailViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
@@ -45,15 +47,19 @@ struct StopDetailView: View {
                             UpcomingBusList(
                                 arrivals: viewModel.arrivals,
                                 selectedArrivalKey: viewModel.selectedArrival?.selectionKey,
+                                canLoadPreviousPage: viewModel.hasMorePreviousPage && !viewModel.isLoadingPreviousPage,
+                                canLoadNextPage: viewModel.hasMoreNextPage && !viewModel.isLoadingNextPage,
+                                isLoadingPreviousPage: viewModel.isLoadingPreviousPage,
+                                isLoadingNextPage: viewModel.isLoadingNextPage,
                                 onArrivalTap: { arrival in
                                     viewModel.selectArrival(arrival)
                                     isShowingJourneyDetail = true
                                 },
-                                onReachTop: { arrival in
-                                    viewModel.loadPreviousPageIfNeeded(currentArrival: arrival)
+                                onLoadPreviousTap: {
+                                    viewModel.loadPreviousPage()
                                 },
-                                onReachBottom: { arrival in
-                                    viewModel.loadNextPageIfNeeded(currentArrival: arrival)
+                                onLoadNextTap: {
+                                    viewModel.loadNextPage()
                                 }
                             )
                         } else {
@@ -97,6 +103,15 @@ struct StopDetailView: View {
 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 12) {
+                        Button(action: {
+                            selectedReferenceDate = viewModel.currentReferenceDate
+                            isShowingReferencePicker = true
+                        }) {
+                            Image(systemName: "clock")
+                                .font(.title3)
+                                .foregroundColor(viewModel.isUsingCustomReference ? .orange : AppColors.text.opacity(0.6))
+                        }
+
                         // Favorite button
                         Button(action: {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
@@ -126,6 +141,41 @@ struct StopDetailView: View {
             .onDisappear(perform: viewModel.stopRefreshingArrivals)
             .navigationDestination(isPresented: $isShowingJourneyDetail) {
                 JourneyDetailView(viewModel: viewModel)
+            }
+            .sheet(isPresented: $isShowingReferencePicker) {
+                NavigationStack {
+                    Form {
+                        Section("Select date and time") {
+                            DatePicker(
+                                "Reference",
+                                selection: $selectedReferenceDate,
+                                displayedComponents: [.date, .hourAndMinute]
+                            )
+                            .datePickerStyle(.graphical)
+                        }
+                    }
+                    .navigationTitle("Arrivals Time")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel") {
+                                isShowingReferencePicker = false
+                            }
+                        }
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Apply") {
+                                viewModel.loadArrivals(at: selectedReferenceDate)
+                                isShowingReferencePicker = false
+                            }
+                        }
+                        ToolbarItem(placement: .bottomBar) {
+                            Button("Use current time") {
+                                viewModel.clearCustomReferenceAndLoadNow()
+                                isShowingReferencePicker = false
+                            }
+                        }
+                    }
+                }
             }
         }
     }
