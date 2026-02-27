@@ -12,6 +12,7 @@ import SwiftData
 struct sp_trains_busApp: App {
     @Environment(\.scenePhase) private var scenePhase
     let dependencies = AppDependencies()
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var navigationCoordinator = AppNavigationCoordinator()
     @AppStorage(AppTheme.selectedPrimaryColorHexKey) private var selectedPrimaryColorHex = AppTheme.defaultPrimaryColorHex
     @State private var hasTrackedAppOpen = false

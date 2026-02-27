@@ -17,6 +17,7 @@ class APIClient {
 
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = endpoint.method
+        urlRequest.httpBody = endpoint.body
 
         if let headers = endpoint.headers {
             for (key, value) in headers {

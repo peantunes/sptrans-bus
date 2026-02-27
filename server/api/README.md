@@ -109,6 +109,56 @@ GET /api/rail_status_report.php?period_days=14
 
 ---
 
+### 0c. Rail Alert Subscriptions (Device Notifications)
+
+Stores per-device APNs metadata and selected rail lines for disruption alerts.
+
+**Endpoint:** `GET/POST /api/rail_alert_subscriptions.php`
+
+**GET Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `installation_id` | string | Yes | Stable app installation/device identifier |
+
+**POST Body (JSON):**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `installationId` | string | Yes | Stable app installation/device identifier |
+| `action` | string | No | `set` (default), `subscribe`, or `unsubscribe` |
+| `apnsToken` | string/null | No | Device push token (if available) |
+| `notificationsEnabled` | bool | No | Whether notifications are currently enabled on device |
+| `authorizationStatus` | string | No | iOS notification authorization status |
+| `locale` | string | No | Device locale |
+| `timezone` | string | No | Device timezone |
+| `appVersion` | string | No | App version |
+| `buildVersion` | string | No | App build version |
+| `lines` | array | No | List of selected lines with `lineId`, `source`, `lineNumber`, `lineName` |
+
+**Example POST:**
+```json
+{
+  "installationId": "C7EF1594-FA11-48EE-8F31-37A568CFC8D6",
+  "action": "set",
+  "apnsToken": "f2c1...",
+  "notificationsEnabled": true,
+  "authorizationStatus": "authorized",
+  "locale": "pt_BR",
+  "timezone": "America/Sao_Paulo",
+  "lines": [
+    {
+      "lineId": "metro-1-azul",
+      "source": "metro",
+      "lineNumber": "1",
+      "lineName": "Azul"
+    }
+  ]
+}
+```
+
+---
+
 ### 1. Get Arrivals at Stop
 
 Returns upcoming bus arrivals at a specific stop, considering the current day's service calendar.

@@ -43,3 +43,42 @@ CREATE TABLE IF NOT EXISTS sp_transit_status_errors (
     PRIMARY KEY (source)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Device notification subscriptions for rail disruption alerts
+CREATE TABLE IF NOT EXISTS sp_transit_alert_devices (
+    device_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    installation_id VARCHAR(64) NOT NULL,
+    platform VARCHAR(16) NOT NULL DEFAULT 'ios',
+    apns_token VARCHAR(255) NULL,
+    notifications_enabled TINYINT(1) NOT NULL DEFAULT 0,
+    authorization_status VARCHAR(32) NULL,
+    locale VARCHAR(16) NULL,
+    timezone VARCHAR(64) NULL,
+    app_version VARCHAR(32) NULL,
+    build_version VARCHAR(32) NULL,
+    last_seen_at DATETIME NOT NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    PRIMARY KEY (device_id),
+    UNIQUE KEY uniq_alert_devices_installation (installation_id),
+    KEY idx_alert_devices_apns_token (apns_token),
+    KEY idx_alert_devices_platform (platform)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS sp_transit_alert_line_subscriptions (
+    subscription_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    device_id BIGINT UNSIGNED NOT NULL,
+    line_id_key VARCHAR(128) NOT NULL,
+    source ENUM('metro','cptm') NOT NULL,
+    line_number VARCHAR(32) NOT NULL,
+    line_name VARCHAR(128) NOT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    PRIMARY KEY (subscription_id),
+    UNIQUE KEY uniq_alert_device_line (device_id, line_id_key),
+    KEY idx_alert_line_source_number (source, line_number),
+    KEY idx_alert_line_active (is_active),
+    CONSTRAINT fk_alert_line_device
+        FOREIGN KEY (device_id) REFERENCES sp_transit_alert_devices(device_id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

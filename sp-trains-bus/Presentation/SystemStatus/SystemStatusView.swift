@@ -66,6 +66,15 @@ struct SystemStatusView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 NavigationLink {
+                    RailDisruptionAlertsView(viewModel: viewModel.makeDisruptionAlertsViewModel())
+                } label: {
+                    Image(systemName: "bell.badge")
+                        .font(.headline)
+                }
+                .accessibilityLabel(localized("status.alerts.navigation_title"))
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink {
                     RailStatusAnalyticsView(viewModel: viewModel.makeAnalyticsViewModel())
                 } label: {
                     Image(systemName: "chart.xyaxis.line")

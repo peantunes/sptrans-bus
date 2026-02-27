@@ -6,6 +6,7 @@ protocol APIEndpoint {
     var method: String { get }
     var headers: [String: String]? { get }
     var parameters: [URLQueryItem] { get }
+    var body: Data? { get }
 }
 
 extension APIEndpoint {
@@ -15,6 +16,10 @@ extension APIEndpoint {
 
     var headers: [String: String]? {
         return ["Content-Type": "application/json"]
+    }
+
+    var body: Data? {
+        return nil
     }
 }
 
@@ -28,6 +33,8 @@ enum TransitAPIEndpoint {
     case routes
     case metroCPTM(refresh: Bool)
     case railStatusReport(periodDays: Int)
+    case railAlertSubscriptionsState(installationId: String)
+    case railAlertSubscriptionsUpdate(payload: RailAlertSubscriptionUpdateRequestDTO)
     case plan(origin: Location, destination: Location, maxAlternatives: Int, rankingPriority: String)
 }
 
@@ -52,13 +59,20 @@ extension TransitAPIEndpoint: APIEndpoint {
             return "/metro_cptm.php"
         case .railStatusReport:
             return "/rail_status_report.php"
+        case .railAlertSubscriptionsState, .railAlertSubscriptionsUpdate:
+            return "/rail_alert_subscriptions.php"
         case .plan:
             return "/plan.php"
         }
     }
 
     var method: String {
-        return "GET"
+        switch self {
+        case .railAlertSubscriptionsUpdate:
+            return "POST"
+        default:
+            return "GET"
+        }
     }
 
     var parameters: [URLQueryItem] {
@@ -98,6 +112,12 @@ extension TransitAPIEndpoint: APIEndpoint {
             return [
                 URLQueryItem(name: "period_days", value: "\(periodDays)")
             ]
+        case .railAlertSubscriptionsState(let installationId):
+            return [
+                URLQueryItem(name: "installation_id", value: installationId)
+            ]
+        case .railAlertSubscriptionsUpdate:
+            return []
         case .plan(let origin, let destination, let maxAlternatives, let rankingPriority):
             return [
                 URLQueryItem(name: "origin_lat", value: "\(origin.latitude)"),
@@ -107,6 +127,15 @@ extension TransitAPIEndpoint: APIEndpoint {
                 URLQueryItem(name: "max_alternatives", value: "\(maxAlternatives)"),
                 URLQueryItem(name: "ranking_priority", value: rankingPriority)
             ]
+        }
+    }
+
+    var body: Data? {
+        switch self {
+        case .railAlertSubscriptionsUpdate(let payload):
+            return try? JSONEncoder().encode(payload)
+        default:
+            return nil
         }
     }
 }

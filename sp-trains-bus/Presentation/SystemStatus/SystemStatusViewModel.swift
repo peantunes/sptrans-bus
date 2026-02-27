@@ -174,6 +174,15 @@ class SystemStatusViewModel: ObservableObject {
         )
     }
 
+    func makeDisruptionAlertsViewModel() -> RailDisruptionAlertsViewModel {
+        let availableLines = metroLineStatuses + cptmLineStatuses
+        return RailDisruptionAlertsViewModel(
+            apiClient: apiClient,
+            lines: availableLines,
+            analyticsService: analyticsService
+        )
+    }
+
     private func loadFallbackMetroStatus() {
         guard let getMetroStatusUseCase else {
             overallStatus = "No data available"
