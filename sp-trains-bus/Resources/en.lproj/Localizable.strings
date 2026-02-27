@@ -66,6 +66,14 @@
 "status.alerts.notifications_blocked.title" = "Notifications blocked";
 "status.alerts.notifications_blocked.message" = "To receive disruption alerts, allow notifications for this app in iPhone Settings.";
 "status.alerts.notifications_blocked.open_settings" = "Open Settings";
+"status.alerts.locked.title" = "Alerts locked";
+"status.alerts.locked.message" = "Rail disruption alerts are available for users who support development with a medium or big tip.";
+"status.alerts.locked.how_to" = "To unlock: Settings > Tip the Developer > choose Medium Tip or Big Tip.";
+"status.alerts.locked.cta_title" = "Unlock alerts now";
+"status.alerts.locked.buy_button_format" = "%@ • %@";
+"status.alerts.locked.purchase_success" = "Thanks for your support! Alerts unlocked.";
+"status.alerts.locked.debug_note" = "DEBUG mode: automatically unlocked for development.";
+"status.alerts.locked.preview_title" = "Lines available after unlock";
 "status.analytics.button.title" = "Open status analytics";
 "status.analytics.title" = "Line Analytics";
 "status.analytics.period.title" = "Period";

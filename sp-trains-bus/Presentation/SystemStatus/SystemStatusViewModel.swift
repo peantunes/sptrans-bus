@@ -179,7 +179,8 @@ class SystemStatusViewModel: ObservableObject {
         return RailDisruptionAlertsViewModel(
             apiClient: apiClient,
             lines: availableLines,
-            analyticsService: analyticsService
+            analyticsService: analyticsService,
+            userDefaults: userDefaults
         )
     }
 

@@ -66,6 +66,14 @@
 "status.alerts.notifications_blocked.title" = "Notificações bloqueadas";
 "status.alerts.notifications_blocked.message" = "Para receber alertas de interrupção, permita notificações deste app nos Ajustes do iPhone.";
 "status.alerts.notifications_blocked.open_settings" = "Abrir Ajustes";
+"status.alerts.locked.title" = "Alertas bloqueados";
+"status.alerts.locked.message" = "Os alertas de interrupção ferroviária estão disponíveis para quem apoia o desenvolvimento com contribuição média ou grande.";
+"status.alerts.locked.how_to" = "Para liberar: Configurações > Apoiar o desenvolvedor > escolha contribuição média ou grande.";
+"status.alerts.locked.cta_title" = "Desbloqueie os alertas agora";
+"status.alerts.locked.buy_button_format" = "%@ • %@";
+"status.alerts.locked.purchase_success" = "Obrigado pelo apoio! Alertas desbloqueados.";
+"status.alerts.locked.debug_note" = "Modo DEBUG: desbloqueado automaticamente para desenvolvimento.";
+"status.alerts.locked.preview_title" = "Linhas disponíveis após desbloquear";
 "status.analytics.button.title" = "Abrir analytics de status";
 "status.analytics.title" = "Analytics de Linhas";
 "status.analytics.period.title" = "Período";

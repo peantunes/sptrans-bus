@@ -22,6 +22,7 @@ final class RailDisruptionAlertsViewModel: ObservableObject {
     @Published private(set) var selectedLineIDs: Set<String> = []
     @Published private(set) var isLoading: Bool = false
     @Published private(set) var isSaving: Bool = false
+    @Published private(set) var isAccessGranted: Bool = false
     @Published var errorMessage: String?
     @Published var successMessage: String?
     @Published var shouldShowSettingsHint: Bool = false
@@ -29,6 +30,7 @@ final class RailDisruptionAlertsViewModel: ObservableObject {
     private let apiClient: APIClient?
     private let pushNotificationManager: PushNotificationManager
     private let analyticsService: AnalyticsServiceProtocol
+    private let userDefaults: UserDefaults
     private let localeIdentifier: String
     private let timezoneIdentifier: String
 
@@ -36,14 +38,17 @@ final class RailDisruptionAlertsViewModel: ObservableObject {
         apiClient: APIClient?,
         lines: [RailLineStatusItem],
         pushNotificationManager: PushNotificationManager = .shared,
-        analyticsService: AnalyticsServiceProtocol = NoOpAnalyticsService()
+        analyticsService: AnalyticsServiceProtocol = NoOpAnalyticsService(),
+        userDefaults: UserDefaults = .standard
     ) {
         self.apiClient = apiClient
         self.pushNotificationManager = pushNotificationManager
         self.analyticsService = analyticsService
+        self.userDefaults = userDefaults
         self.localeIdentifier = Locale.current.identifier
         self.timezoneIdentifier = TimeZone.current.identifier
         self.lines = Self.buildLines(from: lines)
+        self.isAccessGranted = StatusAnalyticsAccessGate.hasAccess(userDefaults: userDefaults)
     }
 
     var metroLines: [RailDisruptionAlertLine] {
@@ -68,7 +73,14 @@ final class RailDisruptionAlertsViewModel: ObservableObject {
 
     func trackScreenOpened() {
         analyticsService.trackScreen(name: "RailDisruptionAlertsView", className: "RailDisruptionAlertsView")
-        analyticsService.trackEvent(name: "rail_disruption_alerts_screen_opened")
+        analyticsService.trackEvent(
+            name: "rail_disruption_alerts_screen_opened",
+            properties: ["is_access_granted": isAccessGranted ? "true" : "false"]
+        )
+    }
+
+    func refreshAccessStatus() {
+        isAccessGranted = StatusAnalyticsAccessGate.hasAccess(userDefaults: userDefaults)
     }
 
     func isSelected(_ line: RailDisruptionAlertLine) -> Bool {
@@ -93,6 +105,17 @@ final class RailDisruptionAlertsViewModel: ObservableObject {
     }
 
     func loadExistingSubscriptions() {
+        refreshAccessStatus()
+        guard isAccessGranted else {
+            isLoading = false
+            isSaving = false
+            shouldShowSettingsHint = false
+            errorMessage = nil
+            successMessage = nil
+            analyticsService.trackEvent(name: "rail_disruption_alerts_load_blocked_locked")
+            return
+        }
+
         isLoading = true
         errorMessage = nil
         successMessage = nil
@@ -128,6 +151,15 @@ final class RailDisruptionAlertsViewModel: ObservableObject {
     }
 
     func saveSubscriptions() {
+        refreshAccessStatus()
+        guard isAccessGranted else {
+            isSaving = false
+            shouldShowSettingsHint = false
+            errorMessage = NSLocalizedString("status.alerts.locked.message", comment: "")
+            analyticsService.trackEvent(name: "rail_disruption_alerts_save_blocked_locked")
+            return
+        }
+
         isSaving = true
         errorMessage = nil
         successMessage = nil
