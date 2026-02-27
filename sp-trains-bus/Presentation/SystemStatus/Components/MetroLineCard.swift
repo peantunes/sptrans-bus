@@ -6,20 +6,8 @@ struct MetroLineCard: View {
     let onToggleFavorite: () -> Void
     @State private var isShowingDetailSheet = false
 
-    private var statusColor: Color {
-        let providedHex = line.statusColorHex.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !providedHex.isEmpty {
-            return Color(hex: providedHex)
-        }
-
-        switch line.severity {
-        case .normal:
-            return AppColors.statusNormal
-        case .warning:
-            return AppColors.statusWarning
-        case .alert:
-            return AppColors.statusAlert
-        }
+    private var statusStyle: RailStatusVisualStyle {
+        RailStatusVisualStyle.styleFor(line.severity)
     }
 
     private var updatedText: String {
@@ -35,7 +23,6 @@ struct MetroLineCard: View {
 
     var body: some View {
         let lineColor = Color(hex: line.lineColorHex)
-        let statusColor = Color(hex: line.statusColorHex)
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
                 RoundedRectangle(cornerRadius: 8)
@@ -60,10 +47,26 @@ struct MetroLineCard: View {
                 }
                 .buttonStyle(.plain)
             }
-            Text(line.status)
-                .font(AppFonts.body())
-                .fontWeight(.bold)
-                .foregroundColor(statusColor)
+            HStack(spacing: 8) {
+                Image(systemName: statusStyle.iconName)
+                    .font(.caption.bold())
+                    .foregroundColor(statusStyle.textColor)
+
+                Text(line.status)
+                    .font(AppFonts.subheadline().weight(.semibold))
+                    .foregroundColor(statusStyle.textColor)
+            }
+            .padding(.vertical, 6)
+            .padding(.horizontal, 10)
+            .background(
+                Capsule()
+                    .fill(statusStyle.backgroundColor)
+            )
+            .overlay(
+                Capsule()
+                    .stroke(statusStyle.borderColor, lineWidth: 1)
+            )
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             Text(line.detailText)
                 .font(AppFonts.caption())
@@ -96,7 +99,6 @@ struct MetroLineCard: View {
         .sheet(isPresented: $isShowingDetailSheet) {
             RailStatusDetailSheet(
                 line: line,
-                statusColor: statusColor,
                 lineColor: lineColor,
                 updatedText: updatedText
             )
@@ -113,9 +115,11 @@ struct MetroLineCard: View {
 private struct RailStatusDetailSheet: View {
     @Environment(\.dismiss) private var dismiss
     let line: RailLineStatusItem
-    let statusColor: Color
     let lineColor: Color
     let updatedText: String
+    private var statusStyle: RailStatusVisualStyle {
+        RailStatusVisualStyle.styleFor(line.severity)
+    }
 
     var body: some View {
         NavigationStack {
@@ -138,9 +142,26 @@ private struct RailStatusDetailSheet: View {
                         Spacer()
                     }
 
-                    Text(line.status)
-                        .font(AppFonts.headline())
-                        .foregroundColor(statusColor)
+                    HStack(spacing: 8) {
+                        Image(systemName: statusStyle.iconName)
+                            .font(.caption.bold())
+                            .foregroundColor(statusStyle.textColor)
+
+                        Text(line.status)
+                            .font(AppFonts.headline())
+                            .foregroundColor(statusStyle.textColor)
+                    }
+                    .padding(.vertical, 7)
+                    .padding(.horizontal, 12)
+                    .background(
+                        Capsule()
+                            .fill(statusStyle.backgroundColor)
+                    )
+                    .overlay(
+                        Capsule()
+                            .stroke(statusStyle.borderColor, lineWidth: 1)
+                    )
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text(localized("status.line.detail_title"))
@@ -178,6 +199,39 @@ private struct RailStatusDetailSheet: View {
 
     private func localized(_ key: String) -> String {
         NSLocalizedString(key, comment: "")
+    }
+}
+
+private struct RailStatusVisualStyle {
+    let textColor: Color
+    let backgroundColor: Color
+    let borderColor: Color
+    let iconName: String
+
+    static func styleFor(_ severity: RailStatusSeverity) -> RailStatusVisualStyle {
+        switch severity {
+        case .normal:
+            return RailStatusVisualStyle(
+                textColor: Color(hex: "1B5E20"),
+                backgroundColor: Color(hex: "E8F5E9"),
+                borderColor: Color(hex: "A5D6A7"),
+                iconName: "checkmark.circle.fill"
+            )
+        case .warning:
+            return RailStatusVisualStyle(
+                textColor: Color(hex: "7A4F00"),
+                backgroundColor: Color(hex: "FFF4E5"),
+                borderColor: Color(hex: "FFD08A"),
+                iconName: "exclamationmark.triangle.fill"
+            )
+        case .alert:
+            return RailStatusVisualStyle(
+                textColor: Color(hex: "8E1C1C"),
+                backgroundColor: Color(hex: "FDECEC"),
+                borderColor: Color(hex: "F2A8A8"),
+                iconName: "xmark.octagon.fill"
+            )
+        }
     }
 }
 

@@ -53,6 +53,28 @@ final class OlhoVivoTransitRepositoryDecorator: TransitRepositoryProtocol {
         return try await baseRepository.getArrivals(stopId: stopId, limit: limit)
     }
 
+    func getArrivals(
+        stopId: Int,
+        limit: Int,
+        date: String?,
+        time: String?,
+        cursorDate: String?,
+        cursorTime: String?,
+        direction: ArrivalsPageDirection
+    ) async throws -> [Arrival] {
+        // Paged/time-anchored arrivals must preserve date/time/cursor semantics.
+        // Olho Vivo endpoint does not currently support this contract.
+        try await baseRepository.getArrivals(
+            stopId: stopId,
+            limit: limit,
+            date: date,
+            time: time,
+            cursorDate: cursorDate,
+            cursorTime: cursorTime,
+            direction: direction
+        )
+    }
+
     func searchStops(query: String, limit: Int) async throws -> [Stop] {
         try await baseRepository.searchStops(query: query, limit: limit)
     }

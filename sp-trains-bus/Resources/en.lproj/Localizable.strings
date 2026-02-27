@@ -40,6 +40,11 @@
 "common.ok" = "OK";
 "common.cancel" = "Cancel";
 "common.save" = "Save";
+"error.view.title" = "Could not load data";
+"error.view.subtitle" = "This can happen because of connection or temporary service issues.";
+"error.view.generic_message" = "Please try again in a few moments.";
+"error.view.retry" = "Try again";
+"error.view.technical_details" = "Technical details";
 
 "tab.map" = "Map";
 "tab.search" = "Search";

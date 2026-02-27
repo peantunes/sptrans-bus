@@ -40,6 +40,11 @@
 "common.ok" = "OK";
 "common.cancel" = "Cancelar";
 "common.save" = "Salvar";
+"error.view.title" = "Não foi possível carregar os dados";
+"error.view.subtitle" = "Isso pode acontecer por conexão instável ou indisponibilidade temporária do serviço.";
+"error.view.generic_message" = "Tente novamente em alguns instantes.";
+"error.view.retry" = "Tentar novamente";
+"error.view.technical_details" = "Detalhes técnicos";
 
 "tab.map" = "Mapa";
 "tab.search" = "Buscar";

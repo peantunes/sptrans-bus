@@ -31,7 +31,7 @@ enum StatusAnalyticsAccessGate {
 
     static func hasAccess(userDefaults: UserDefaults = .standard) -> Bool {
         #if DEBUG
-        return false
+        return true
         #else
         return currentTier(userDefaults: userDefaults).unlocksAnalytics
         #endif
@@ -39,7 +39,7 @@ enum StatusAnalyticsAccessGate {
 
     static func hasArrivalsHistoryAccess(userDefaults: UserDefaults = .standard) -> Bool {
         #if DEBUG
-        return false
+        return true
         #else
         return currentTier(userDefaults: userDefaults).unlocksArrivalsHistory
         #endif
