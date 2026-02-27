@@ -166,6 +166,13 @@ class SystemStatusViewModel: ObservableObject {
         analyticsService.trackEvent(name: "system_status_screen_opened")
     }
 
+    func makeAnalyticsViewModel() -> RailStatusAnalyticsViewModel {
+        RailStatusAnalyticsViewModel(
+            apiClient: apiClient,
+            analyticsService: analyticsService
+        )
+    }
+
     private func loadFallbackMetroStatus() {
         guard let getMetroStatusUseCase else {
             overallStatus = "No data available"

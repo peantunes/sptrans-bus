@@ -62,6 +62,53 @@ GET /api/metro_cptm.php
 
 ---
 
+### 0b. Rail Status Historical Report
+
+Returns historical rail-status analytics per line, including impact classification and
+status-change history, for the selected period.
+
+**Endpoint:** `GET /api/rail_status_report.php`
+
+**Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `period_days` | integer | No | 7 | Allowed values: `7`, `14`, `30` |
+| `source` | string | No | all | Filter by source: `metro` or `cptm` |
+| `line_number` | string | No | all | Filter by exact line number |
+
+**Example Request:**
+```
+GET /api/rail_status_report.php?period_days=14
+```
+
+**Example Response (trimmed):**
+```json
+{
+  "generatedAt": "2026-02-27 09:12:10",
+  "periodDays": 14,
+  "totals": {
+    "sampleCount": 13440,
+    "impactSampleCount": 134,
+    "impactRatio": 0.01,
+    "changeCount": 52,
+    "lineCount": 12
+  },
+  "statusCatalog": [
+    {
+      "status": "Operação Normal",
+      "count": 12980,
+      "impactingUser": false,
+      "impactLevel": "none",
+      "impactScore": 0
+    }
+  ],
+  "lines": []
+}
+```
+
+---
+
 ### 1. Get Arrivals at Stop
 
 Returns upcoming bus arrivals at a specific stop, considering the current day's service calendar.

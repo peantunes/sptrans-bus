@@ -52,8 +52,8 @@ class RailStatusService {
             self::SOURCE_CPTM => false
         ];
 
-        foreach ($sources as $source) {
-            if ($forceRefresh || $this->isSourceStale($source)) {
+        if ($forceRefresh) {
+            foreach ($sources as $source) {
                 try {
                     $this->refreshSource($source);
                     $refreshed[$source] = true;
@@ -1008,6 +1008,484 @@ class RailStatusService {
             'lastFetchedAt' => $snapshot['fetched_at'] ?? null,
             'lastSourceUpdatedAt' => $snapshot['source_updated_at'] ?? null,
             'lines' => $lines
+        ];
+    }
+
+    /**
+     * Returns historical report data for rail line statuses.
+     *
+     * @param int $periodDays Allowed values: 7, 14, 30
+     * @param string|null $sourceFilter Optional: metro|cptm
+     * @param string|null $lineNumberFilter Optional line number filter
+     * @return array
+     */
+    public function getHistoricalReport($periodDays = 7, $sourceFilter = null, $lineNumberFilter = null) {
+        $this->ensureSchema();
+
+        $days = $this->normalizePeriodDays($periodDays);
+
+        $source = strtolower(trim((string)$sourceFilter));
+        if ($source === '') {
+            $source = null;
+        }
+        if ($source !== null && $source !== self::SOURCE_METRO && $source !== self::SOURCE_CPTM) {
+            throw new InvalidArgumentException('Invalid source filter. Allowed values: metro, cptm');
+        }
+
+        $lineNumber = trim((string)$lineNumberFilter);
+        if ($lineNumber === '') {
+            $lineNumber = null;
+        }
+
+        $endAt = new DateTimeImmutable('now', $this->timezone);
+        $startAt = $endAt->sub(new DateInterval('P' . $days . 'D'));
+
+        $rows = $this->fetchHistoricalRows(
+            $startAt->format('Y-m-d H:i:s'),
+            $source,
+            $lineNumber
+        );
+
+        return $this->buildHistoricalReportPayload(
+            $rows,
+            $days,
+            $startAt,
+            $endAt,
+            $source,
+            $lineNumber
+        );
+    }
+
+    private function normalizePeriodDays($periodDays) {
+        $days = (int)$periodDays;
+        if (!in_array($days, [7, 14, 30], true)) {
+            throw new InvalidArgumentException('Invalid period_days. Allowed values: 7, 14, 30');
+        }
+        return $days;
+    }
+
+    private function fetchHistoricalRows($periodStartAt, $sourceFilter = null, $lineNumberFilter = null) {
+        $sql = "
+            SELECT
+                l.line_id,
+                l.source,
+                l.line_number,
+                l.line_name,
+                l.status_text,
+                l.status_detail,
+                l.status_color,
+                l.source_updated_at,
+                s.fetched_at
+            FROM sp_transit_status_lines l
+            INNER JOIN sp_transit_status_snapshots s ON s.snapshot_id = l.snapshot_id
+            WHERE s.fetched_at >= ?
+        ";
+        $types = 's';
+        $params = [$periodStartAt];
+
+        if ($sourceFilter !== null) {
+            $sql .= " AND l.source = ?";
+            $types .= 's';
+            $params[] = $sourceFilter;
+        }
+
+        if ($lineNumberFilter !== null) {
+            $sql .= " AND l.line_number = ?";
+            $types .= 's';
+            $params[] = $lineNumberFilter;
+        }
+
+        $sql .= " ORDER BY l.source, l.line_number, l.line_name, s.fetched_at ASC, l.line_id ASC";
+
+        $this->con->ExecutaPrepared($sql, $types, $params);
+
+        $rows = [];
+        while ($row = $this->con->Linha()) {
+            $rows[] = $row;
+        }
+
+        return $rows;
+    }
+
+    private function buildHistoricalReportPayload(
+        $rows,
+        $days,
+        $startAt,
+        $endAt,
+        $sourceFilter = null,
+        $lineNumberFilter = null
+    ) {
+        $linesByKey = [];
+        $totals = [
+            'sampleCount' => 0,
+            'impactSampleCount' => 0,
+            'changeCount' => 0
+        ];
+        $statusCatalog = [];
+
+        foreach ($rows as $row) {
+            $source = strtolower(trim((string)($row['source'] ?? '')));
+            if ($source === '') {
+                continue;
+            }
+
+            $lineNumber = trim((string)($row['line_number'] ?? ''));
+            $lineName = $this->normalizeText((string)($row['line_name'] ?? ''));
+            $statusText = $this->normalizeText((string)($row['status_text'] ?? ''));
+            if ($statusText === '') {
+                $statusText = 'Status indisponível';
+            }
+
+            $statusDetail = $this->normalizeText((string)($row['status_detail'] ?? ''));
+            $statusColor = $this->normalizeHexColor((string)($row['status_color'] ?? ''));
+            $eventAt = $row['source_updated_at'] ?? null;
+            if (empty($eventAt)) {
+                $eventAt = $row['fetched_at'] ?? null;
+            }
+            if (empty($eventAt)) {
+                continue;
+            }
+
+            $lineKey = $source . '|' . $lineNumber . '|' . $lineName;
+            if (!isset($linesByKey[$lineKey])) {
+                $lineIdSlug = $lineNumber !== '' ? $lineNumber : preg_replace('/[^a-z0-9]+/i', '-', strtolower($lineName));
+                $lineIdSlug = trim((string)$lineIdSlug, '-');
+                if ($lineIdSlug === '') {
+                    $lineIdSlug = 'unknown';
+                }
+
+                $linesByKey[$lineKey] = [
+                    'lineId' => $source . '-' . $lineIdSlug,
+                    'source' => $source,
+                    'lineNumber' => $lineNumber,
+                    'lineName' => $lineName,
+                    'lineColor' => $this->lineColorHex($source, $lineNumber, $statusColor),
+                    'sampleCount' => 0,
+                    'impactSampleCount' => 0,
+                    'impactRatio' => 0.0,
+                    'changeCount' => 0,
+                    'currentStatus' => null,
+                    'statusDistribution' => [],
+                    'dailyTimeline' => [],
+                    'statusChanges' => [],
+                    '_statusCounts' => [],
+                    '_daily' => [],
+                    '_lastStatusNormalized' => null,
+                    '_lastStatusText' => null
+                ];
+            }
+
+            $classification = $this->classifyStatusImpact($statusText);
+            $day = substr((string)$eventAt, 0, 10);
+
+            $line = &$linesByKey[$lineKey];
+            $line['sampleCount']++;
+            $totals['sampleCount']++;
+
+            if ($classification['impactingUser']) {
+                $line['impactSampleCount']++;
+                $totals['impactSampleCount']++;
+            }
+
+            if (!isset($line['_statusCounts'][$statusText])) {
+                $line['_statusCounts'][$statusText] = [
+                    'status' => $statusText,
+                    'count' => 0,
+                    'impactingUser' => $classification['impactingUser'],
+                    'impactLevel' => $classification['impactLevel'],
+                    'impactScore' => $classification['impactScore']
+                ];
+            }
+            $line['_statusCounts'][$statusText]['count']++;
+
+            if (!isset($statusCatalog[$statusText])) {
+                $statusCatalog[$statusText] = [
+                    'status' => $statusText,
+                    'count' => 0,
+                    'impactingUser' => $classification['impactingUser'],
+                    'impactLevel' => $classification['impactLevel'],
+                    'impactScore' => $classification['impactScore']
+                ];
+            }
+            $statusCatalog[$statusText]['count']++;
+
+            if ($day !== '') {
+                if (!isset($line['_daily'][$day])) {
+                    $line['_daily'][$day] = [
+                        'date' => $day,
+                        'sampleCount' => 0,
+                        'impactSampleCount' => 0,
+                        'impactRatio' => 0.0,
+                        'changeCount' => 0,
+                        'dominantStatus' => '',
+                        '_statusCounts' => []
+                    ];
+                }
+
+                $line['_daily'][$day]['sampleCount']++;
+                if ($classification['impactingUser']) {
+                    $line['_daily'][$day]['impactSampleCount']++;
+                }
+                if (!isset($line['_daily'][$day]['_statusCounts'][$statusText])) {
+                    $line['_daily'][$day]['_statusCounts'][$statusText] = 0;
+                }
+                $line['_daily'][$day]['_statusCounts'][$statusText]++;
+            }
+
+            $isStatusChanged = $line['_lastStatusNormalized'] !== null
+                && $line['_lastStatusNormalized'] !== $classification['normalizedStatus'];
+
+            if ($isStatusChanged) {
+                $line['changeCount']++;
+                $totals['changeCount']++;
+
+                $line['statusChanges'][] = [
+                    'at' => $eventAt,
+                    'fromStatus' => $line['_lastStatusText'],
+                    'toStatus' => $statusText,
+                    'impactingUser' => $classification['impactingUser'],
+                    'impactLevel' => $classification['impactLevel'],
+                    'impactScore' => $classification['impactScore']
+                ];
+
+                if ($day !== '' && isset($line['_daily'][$day])) {
+                    $line['_daily'][$day]['changeCount']++;
+                }
+            }
+
+            $line['_lastStatusNormalized'] = $classification['normalizedStatus'];
+            $line['_lastStatusText'] = $statusText;
+            $line['currentStatus'] = [
+                'status' => $statusText,
+                'statusDetail' => $statusDetail,
+                'statusColor' => $statusColor !== null ? ltrim($statusColor, '#') : '',
+                'at' => $eventAt,
+                'impactingUser' => $classification['impactingUser'],
+                'impactLevel' => $classification['impactLevel'],
+                'impactScore' => $classification['impactScore']
+            ];
+            unset($line);
+        }
+
+        $lines = array_values($linesByKey);
+        foreach ($lines as &$line) {
+            if ($line['sampleCount'] > 0) {
+                $line['impactRatio'] = round($line['impactSampleCount'] / $line['sampleCount'], 4);
+            }
+
+            $distribution = array_values($line['_statusCounts']);
+            usort($distribution, function ($a, $b) {
+                if ((int)$a['count'] === (int)$b['count']) {
+                    return strcmp((string)$a['status'], (string)$b['status']);
+                }
+                return ((int)$b['count'] <=> (int)$a['count']);
+            });
+            foreach ($distribution as &$entry) {
+                $entry['ratio'] = $line['sampleCount'] > 0 ? round($entry['count'] / $line['sampleCount'], 4) : 0.0;
+            }
+            unset($entry);
+            $line['statusDistribution'] = $distribution;
+
+            $daily = array_values($line['_daily']);
+            usort($daily, function ($a, $b) {
+                return strcmp((string)$a['date'], (string)$b['date']);
+            });
+            foreach ($daily as &$dayEntry) {
+                $dayEntry['impactRatio'] = $dayEntry['sampleCount'] > 0
+                    ? round($dayEntry['impactSampleCount'] / $dayEntry['sampleCount'], 4)
+                    : 0.0;
+
+                $dominantStatus = '';
+                $dominantCount = -1;
+                foreach ($dayEntry['_statusCounts'] as $status => $count) {
+                    if ((int)$count > $dominantCount) {
+                        $dominantStatus = (string)$status;
+                        $dominantCount = (int)$count;
+                    }
+                }
+                $dayEntry['dominantStatus'] = $dominantStatus;
+                unset($dayEntry['_statusCounts']);
+            }
+            unset($dayEntry);
+            $line['dailyTimeline'] = $daily;
+
+            unset($line['_statusCounts']);
+            unset($line['_daily']);
+            unset($line['_lastStatusNormalized']);
+            unset($line['_lastStatusText']);
+        }
+        unset($line);
+
+        usort($lines, function ($a, $b) {
+            if ((float)$a['impactRatio'] === (float)$b['impactRatio']) {
+                if ((int)$a['changeCount'] === (int)$b['changeCount']) {
+                    if ((string)$a['source'] === (string)$b['source']) {
+                        $lineA = (string)$a['lineNumber'];
+                        $lineB = (string)$b['lineNumber'];
+                        $numA = preg_replace('/\D+/', '', $lineA);
+                        $numB = preg_replace('/\D+/', '', $lineB);
+                        if ($numA !== '' && $numB !== '' && (int)$numA !== (int)$numB) {
+                            return ((int)$numA <=> (int)$numB);
+                        }
+                        return strcmp($lineA, $lineB);
+                    }
+                    return strcmp((string)$a['source'], (string)$b['source']);
+                }
+                return ((int)$b['changeCount'] <=> (int)$a['changeCount']);
+            }
+            return ((float)$b['impactRatio'] <=> (float)$a['impactRatio']);
+        });
+
+        $catalog = array_values($statusCatalog);
+        usort($catalog, function ($a, $b) {
+            if ((int)$a['count'] === (int)$b['count']) {
+                return strcmp((string)$a['status'], (string)$b['status']);
+            }
+            return ((int)$b['count'] <=> (int)$a['count']);
+        });
+
+        $impactRatio = $totals['sampleCount'] > 0
+            ? round($totals['impactSampleCount'] / $totals['sampleCount'], 4)
+            : 0.0;
+
+        return [
+            'generatedAt' => $this->nowString(),
+            'periodDays' => $days,
+            'startAt' => $startAt->format('Y-m-d H:i:s'),
+            'endAt' => $endAt->format('Y-m-d H:i:s'),
+            'filters' => [
+                'source' => $sourceFilter,
+                'lineNumber' => $lineNumberFilter
+            ],
+            'totals' => [
+                'sampleCount' => $totals['sampleCount'],
+                'impactSampleCount' => $totals['impactSampleCount'],
+                'impactRatio' => $impactRatio,
+                'changeCount' => $totals['changeCount'],
+                'lineCount' => count($lines)
+            ],
+            'statusCatalog' => $catalog,
+            'lines' => $lines
+        ];
+    }
+
+    private function lineColorHex($source, $lineNumber, $fallbackHex = null) {
+        $normalizedLine = trim((string)$lineNumber);
+
+        $metroMap = [
+            '1' => '0455A1',
+            '2' => '007E5E',
+            '3' => 'EE372F',
+            '4' => 'FFD700',
+            '5' => '9B3894',
+            '15' => 'A9A9A9'
+        ];
+
+        $cptmMap = [
+            '7' => 'CA016B',
+            '8' => '97A098',
+            '9' => '01A9A7',
+            '10' => '008B8B',
+            '11' => 'F04E23',
+            '12' => '083D8B',
+            '13' => '00B352'
+        ];
+
+        if ($source === self::SOURCE_METRO && isset($metroMap[$normalizedLine])) {
+            return $metroMap[$normalizedLine];
+        }
+        if ($source === self::SOURCE_CPTM && isset($cptmMap[$normalizedLine])) {
+            return $cptmMap[$normalizedLine];
+        }
+
+        $normalizedFallback = $this->normalizeHexColor((string)$fallbackHex);
+        if ($normalizedFallback !== null) {
+            return ltrim($normalizedFallback, '#');
+        }
+
+        return '64748B';
+    }
+
+    private function normalizeStatusForMatch($statusText) {
+        $normalized = $this->normalizeText((string)$statusText);
+        if ($normalized === '') {
+            return '';
+        }
+
+        $ascii = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $normalized);
+        if ($ascii !== false) {
+            $normalized = $ascii;
+        }
+
+        $normalized = strtolower($normalized);
+        $normalized = preg_replace('/\s+/u', ' ', $normalized);
+        return trim((string)$normalized);
+    }
+
+    private function classifyStatusImpact($statusText) {
+        $normalized = $this->normalizeStatusForMatch($statusText);
+
+        $exactMap = [
+            'operacao normal' => ['impactingUser' => false, 'impactLevel' => 'none', 'impactScore' => 0],
+            'operacao encerrada' => ['impactingUser' => false, 'impactLevel' => 'none', 'impactScore' => 0],
+            'operacoes encerradas' => ['impactingUser' => false, 'impactLevel' => 'none', 'impactScore' => 0],
+            'operacao especial' => ['impactingUser' => false, 'impactLevel' => 'none', 'impactScore' => 0],
+            'paralisada' => ['impactingUser' => true, 'impactLevel' => 'high', 'impactScore' => 2],
+            'velocidade reduzida' => ['impactingUser' => true, 'impactLevel' => 'low', 'impactScore' => 1]
+        ];
+
+        if (isset($exactMap[$normalized])) {
+            return array_merge(['normalizedStatus' => $normalized], $exactMap[$normalized]);
+        }
+
+        $highImpactTerms = [
+            'paralisad', 'interrompid', 'suspens', 'inoperante', 'sem operacao',
+            'indisponivel', 'falha grave', 'fora de servico'
+        ];
+        foreach ($highImpactTerms as $term) {
+            if (strpos($normalized, $term) !== false) {
+                return [
+                    'normalizedStatus' => $normalized,
+                    'impactingUser' => true,
+                    'impactLevel' => 'high',
+                    'impactScore' => 2
+                ];
+            }
+        }
+
+        $lowImpactTerms = [
+            'velocidade reduzida', 'atencao', 'parcial', 'restricao', 'lento', 'lentidao',
+            'desvio', 'intermitente', 'manutencao', 'interferencia', 'oscilacao',
+            'atraso', 'monitorad', 'alerta'
+        ];
+        foreach ($lowImpactTerms as $term) {
+            if (strpos($normalized, $term) !== false) {
+                return [
+                    'normalizedStatus' => $normalized,
+                    'impactingUser' => true,
+                    'impactLevel' => 'low',
+                    'impactScore' => 1
+                ];
+            }
+        }
+
+        $nonImpactTerms = ['normal', 'encerrad', 'operacao especial', 'especial'];
+        foreach ($nonImpactTerms as $term) {
+            if (strpos($normalized, $term) !== false) {
+                return [
+                    'normalizedStatus' => $normalized,
+                    'impactingUser' => false,
+                    'impactLevel' => 'none',
+                    'impactScore' => 0
+                ];
+            }
+        }
+
+        return [
+            'normalizedStatus' => $normalized,
+            'impactingUser' => true,
+            'impactLevel' => 'low',
+            'impactScore' => 1
         ];
     }
 

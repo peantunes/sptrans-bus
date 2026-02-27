@@ -63,6 +63,17 @@ struct SystemStatusView: View {
             }
         }
         .navigationTitle(localized("status.title"))
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink {
+                    RailStatusAnalyticsView(viewModel: viewModel.makeAnalyticsViewModel())
+                } label: {
+                    Image(systemName: "chart.xyaxis.line")
+                        .font(.headline)
+                }
+                .accessibilityLabel(localized("status.analytics.button.title"))
+            }
+        }
         .onAppear {
             viewModel.trackScreenOpened()
             viewModel.loadMetroStatus()
