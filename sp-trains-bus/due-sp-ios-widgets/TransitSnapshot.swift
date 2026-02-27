@@ -1,12 +1,12 @@
 import Foundation
 
-struct WatchTransitSnapshot: Codable {
+struct WidgetTransitSnapshot: Codable {
     var generatedAt: Date
-    var railLines: [WatchRailLineSnapshot]
-    var nearbyStops: [WatchStopSnapshot]
-    var arrivalsByStopID: [String: [WatchArrivalSnapshot]]
+    var railLines: [WidgetRailLineSnapshot]
+    var nearbyStops: [WidgetStopSnapshot]
+    var arrivalsByStopID: [String: [WidgetArrivalSnapshot]]
 
-    static let empty = WatchTransitSnapshot(
+    static let empty = WidgetTransitSnapshot(
         generatedAt: .distantPast,
         railLines: [],
         nearbyStops: [],
@@ -14,7 +14,7 @@ struct WatchTransitSnapshot: Codable {
     )
 }
 
-struct WatchRailLineSnapshot: Codable, Identifiable {
+struct WidgetRailLineSnapshot: Codable, Identifiable {
     let id: String
     let source: String
     let lineNumber: String
@@ -27,7 +27,7 @@ struct WatchRailLineSnapshot: Codable, Identifiable {
     let isFavorite: Bool
 }
 
-struct WatchStopSnapshot: Codable, Identifiable {
+struct WidgetStopSnapshot: Codable, Identifiable {
     var id: Int { stopId }
     let stopId: Int
     let stopName: String
@@ -38,7 +38,7 @@ struct WatchStopSnapshot: Codable, Identifiable {
     let distanceMeters: Int?
 }
 
-struct WatchArrivalSnapshot: Codable, Identifiable {
+struct WidgetArrivalSnapshot: Codable, Identifiable {
     var id: String { "\(routeShortName)-\(arrivalTime)-\(waitTime)" }
     let routeShortName: String
     let headsign: String
@@ -47,11 +47,11 @@ struct WatchArrivalSnapshot: Codable, Identifiable {
     let routeColorHex: String
 }
 
-extension WatchTransitSnapshot {
+extension WidgetTransitSnapshot {
     init(sharedSnapshot: SharedTransitSnapshot) {
         self.generatedAt = sharedSnapshot.generatedAt
         self.railLines = sharedSnapshot.railLines.map {
-            WatchRailLineSnapshot(
+            WidgetRailLineSnapshot(
                 id: $0.id,
                 source: $0.source,
                 lineNumber: $0.lineNumber,
@@ -65,7 +65,7 @@ extension WatchTransitSnapshot {
             )
         }
         self.nearbyStops = sharedSnapshot.nearbyStops.map {
-            WatchStopSnapshot(
+            WidgetStopSnapshot(
                 stopId: $0.stopId,
                 stopName: $0.stopName,
                 latitude: $0.latitude,
@@ -77,7 +77,7 @@ extension WatchTransitSnapshot {
         }
         self.arrivalsByStopID = sharedSnapshot.arrivalsByStopID.mapValues { arrivals in
             arrivals.map {
-                WatchArrivalSnapshot(
+                WidgetArrivalSnapshot(
                     routeShortName: $0.routeShortName,
                     headsign: $0.headsign,
                     arrivalTime: $0.arrivalTime,

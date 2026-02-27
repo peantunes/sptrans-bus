@@ -13,7 +13,7 @@ enum WidgetDeepLink {
         return components.url
     }
 
-    static func stopDetail(stop: WatchStopSnapshot) -> URL? {
+    static func stopDetail(stop: WidgetStopSnapshot) -> URL? {
         var components = URLComponents()
         components.scheme = scheme
         components.host = "stop"

@@ -6,9 +6,27 @@ struct ContentView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                linesSection
-                nearbyStopsSection
+            TabView {
+                List {
+                    if viewModel.isLoading {
+                        HStack {
+                            Spacer()
+                            ProgressView()
+                            Spacer()
+                        }
+                    }
+                    
+                    if let errorMessage = viewModel.errorMessage {
+                        Text(errorMessage)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    linesSection
+                }
+                List {
+                    nearbyStopsSection
+                }
             }
             .navigationTitle("Due SP")
             .toolbar {
@@ -18,6 +36,7 @@ struct ContentView: View {
                     } label: {
                         Image(systemName: "arrow.clockwise")
                     }
+                    .disabled(viewModel.isLoading)
                 }
             }
         }

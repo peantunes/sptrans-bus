@@ -11,6 +11,9 @@
 		9CAE8C3C2F51103600C16D88 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9CAE8C3B2F51103600C16D88 /* WidgetKit.framework */; };
 		9CAE8C3E2F51103600C16D88 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9CAE8C3D2F51103600C16D88 /* SwiftUI.framework */; };
 		9CAE8C4B2F51103600C16D88 /* due-sp-watchExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 9CAE8C392F51103600C16D88 /* due-sp-watchExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A1B2C3012F70000100C16D88 /* due-sp-ios-widgetsExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = A1B2C3062F70000100C16D88 /* due-sp-ios-widgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A1B2C3022F70000100C16D88 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9CAE8C3B2F51103600C16D88 /* WidgetKit.framework */; };
+		A1B2C3032F70000100C16D88 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9CAE8C3D2F51103600C16D88 /* SwiftUI.framework */; };
 		C0A1000A2F6B123400000001 /* AnalyticsSDK in Frameworks */ = {isa = PBXBuildFile; productRef = C0A1000B2F6B123400000001 /* AnalyticsSDK */; };
 /* End PBXBuildFile section */
 
@@ -28,6 +31,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 9CAE8C382F51103600C16D88;
 			remoteInfo = "due-sp-watchExtension";
+		};
+		A1B2C3042F70000100C16D88 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9C022DFE2F2FBEF00073F454 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A1B2C30A2F70000100C16D88;
+			remoteInfo = "due-sp-ios-widgetsExtension";
 		};
 /* End PBXContainerItemProxy section */
 
@@ -54,6 +64,17 @@
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A1B2C3052F70000100C16D88 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				A1B2C3012F70000100C16D88 /* due-sp-ios-widgetsExtension.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -63,6 +84,7 @@
 		9CAE8C392F51103600C16D88 /* due-sp-watchExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "due-sp-watchExtension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		9CAE8C3B2F51103600C16D88 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		9CAE8C3D2F51103600C16D88 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		A1B2C3062F70000100C16D88 /* due-sp-ios-widgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "due-sp-ios-widgetsExtension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -86,6 +108,13 @@
 				app_icon.icon,
 			);
 			target = 9CAE8C252F51101600C16D88 /* due-sp-watch Watch App */;
+		};
+		A1B2C3072F70000100C16D88 /* Exceptions for "due-sp-ios-widgets" folder in "due-sp-ios-widgetsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = A1B2C30A2F70000100C16D88 /* due-sp-ios-widgetsExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -137,6 +166,19 @@
 			path = "due-sp-watch";
 			sourceTree = "<group>";
 		};
+		A1B2C3082F70000100C16D88 /* due-sp-ios-widgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A1B2C3072F70000100C16D88 /* Exceptions for "due-sp-ios-widgets" folder in "due-sp-ios-widgetsExtension" target */,
+			);
+			path = "due-sp-ios-widgets";
+			sourceTree = "<group>";
+		};
+		B1C2D3012F71000100C16D88 /* SharedTransitAPI */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SharedTransitAPI;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -164,6 +206,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A1B2C3092F70000100C16D88 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1B2C3032F70000100C16D88 /* SwiftUI.framework in Frameworks */,
+				A1B2C3022F70000100C16D88 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -178,7 +229,9 @@
 				9C022EA02F2FDAE20073F454 /* Resources */,
 				9C022EA12F2FDAE20073F454 /* sp_trains_bus.entitlements */,
 				9CAE8C272F51101600C16D88 /* due-sp-watch Watch App */,
+				A1B2C3082F70000100C16D88 /* due-sp-ios-widgets */,
 				9CAE8C3F2F51103600C16D88 /* due-sp-watch */,
+				B1C2D3012F71000100C16D88 /* SharedTransitAPI */,
 				9CAE8C3A2F51103600C16D88 /* Frameworks */,
 				9C022E072F2FBEF00073F454 /* Products */,
 			);
@@ -189,6 +242,7 @@
 			children = (
 				9C022E062F2FBEF00073F454 /* sp-trains-bus.app */,
 				9CAE8C262F51101600C16D88 /* due-sp-watch Watch App.app */,
+				A1B2C3062F70000100C16D88 /* due-sp-ios-widgetsExtension.appex */,
 				9CAE8C392F51103600C16D88 /* due-sp-watchExtension.appex */,
 			);
 			name = Products;
@@ -213,11 +267,13 @@
 				9C022E022F2FBEF00073F454 /* Sources */,
 				9C022E032F2FBEF00073F454 /* Frameworks */,
 				9C022E042F2FBEF00073F454 /* Resources */,
+				A1B2C3052F70000100C16D88 /* Embed App Extensions */,
 				9CAE8C342F51101700C16D88 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				A1B2C30B2F70000100C16D88 /* PBXTargetDependency */,
 				9CAE8C2F2F51101700C16D88 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
@@ -252,6 +308,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				9CAE8C272F51101600C16D88 /* due-sp-watch Watch App */,
+				B1C2D3012F71000100C16D88 /* SharedTransitAPI */,
 			);
 			name = "due-sp-watch Watch App";
 			packageProductDependencies = (
@@ -274,12 +331,36 @@
 			);
 			fileSystemSynchronizedGroups = (
 				9CAE8C3F2F51103600C16D88 /* due-sp-watch */,
+				B1C2D3012F71000100C16D88 /* SharedTransitAPI */,
 			);
 			name = "due-sp-watchExtension";
 			packageProductDependencies = (
 			);
 			productName = "due-sp-watchExtension";
 			productReference = 9CAE8C392F51103600C16D88 /* due-sp-watchExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		A1B2C30A2F70000100C16D88 /* due-sp-ios-widgetsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1B2C3102F70000100C16D88 /* Build configuration list for PBXNativeTarget "due-sp-ios-widgetsExtension" */;
+			buildPhases = (
+				A1B2C30D2F70000100C16D88 /* Sources */,
+				A1B2C3092F70000100C16D88 /* Frameworks */,
+				A1B2C30C2F70000100C16D88 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A1B2C3082F70000100C16D88 /* due-sp-ios-widgets */,
+				B1C2D3012F71000100C16D88 /* SharedTransitAPI */,
+			);
+			name = "due-sp-ios-widgetsExtension";
+			packageProductDependencies = (
+			);
+			productName = "due-sp-ios-widgetsExtension";
+			productReference = A1B2C3062F70000100C16D88 /* due-sp-ios-widgetsExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
@@ -299,6 +380,9 @@
 						CreatedOnToolsVersion = 26.2;
 					};
 					9CAE8C382F51103600C16D88 = {
+						CreatedOnToolsVersion = 26.2;
+					};
+					A1B2C30A2F70000100C16D88 = {
 						CreatedOnToolsVersion = 26.2;
 					};
 				};
@@ -323,6 +407,7 @@
 			targets = (
 				9C022E052F2FBEF00073F454 /* sp-trains-bus */,
 				9CAE8C252F51101600C16D88 /* due-sp-watch Watch App */,
+				A1B2C30A2F70000100C16D88 /* due-sp-ios-widgetsExtension */,
 				9CAE8C382F51103600C16D88 /* due-sp-watchExtension */,
 			);
 		};
@@ -344,6 +429,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		9CAE8C372F51103600C16D88 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1B2C30C2F70000100C16D88 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -374,6 +466,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A1B2C30D2F70000100C16D88 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -386,6 +485,11 @@
 			isa = PBXTargetDependency;
 			target = 9CAE8C382F51103600C16D88 /* due-sp-watchExtension */;
 			targetProxy = 9CAE8C492F51103600C16D88 /* PBXContainerItemProxy */;
+		};
+		A1B2C30B2F70000100C16D88 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A1B2C30A2F70000100C16D88 /* due-sp-ios-widgetsExtension */;
+			targetProxy = A1B2C3042F70000100C16D88 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -746,6 +850,69 @@
 			};
 			name = Release;
 		};
+		A1B2C30E2F70000100C16D88 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = "due-sp-ios-widgets/due-sp-ios-widgets.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 666GZ2659S;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "due-sp-ios-widgets/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Due SP Widgets";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 4;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.lolados.sp.Sao-Paulo-Onibus.widgets";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A1B2C30F2F70000100C16D88 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = "due-sp-ios-widgets/due-sp-ios-widgets.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 666GZ2659S;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "due-sp-ios-widgets/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Due SP Widgets";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 4;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.lolados.sp.Sao-Paulo-Onibus.widgets";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -781,6 +948,15 @@
 			buildConfigurations = (
 				9CAE8C4D2F51103600C16D88 /* Debug */,
 				9CAE8C4E2F51103600C16D88 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1B2C3102F70000100C16D88 /* Build configuration list for PBXNativeTarget "due-sp-ios-widgetsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1B2C30E2F70000100C16D88 /* Debug */,
+				A1B2C30F2F70000100C16D88 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

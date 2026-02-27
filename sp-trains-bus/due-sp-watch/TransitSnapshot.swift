@@ -46,3 +46,45 @@ struct WatchArrivalSnapshot: Codable, Identifiable {
     let waitTime: Int
     let routeColorHex: String
 }
+
+extension WatchTransitSnapshot {
+    init(sharedSnapshot: SharedTransitSnapshot) {
+        self.generatedAt = sharedSnapshot.generatedAt
+        self.railLines = sharedSnapshot.railLines.map {
+            WatchRailLineSnapshot(
+                id: $0.id,
+                source: $0.source,
+                lineNumber: $0.lineNumber,
+                lineName: $0.lineName,
+                status: $0.status,
+                detail: $0.detail,
+                statusColorHex: $0.statusColorHex,
+                lineColorHex: $0.lineColorHex,
+                severityRawValue: $0.severityRawValue,
+                isFavorite: $0.isFavorite
+            )
+        }
+        self.nearbyStops = sharedSnapshot.nearbyStops.map {
+            WatchStopSnapshot(
+                stopId: $0.stopId,
+                stopName: $0.stopName,
+                latitude: $0.latitude,
+                longitude: $0.longitude,
+                stopCode: $0.stopCode,
+                routes: $0.routes,
+                distanceMeters: $0.distanceMeters
+            )
+        }
+        self.arrivalsByStopID = sharedSnapshot.arrivalsByStopID.mapValues { arrivals in
+            arrivals.map {
+                WatchArrivalSnapshot(
+                    routeShortName: $0.routeShortName,
+                    headsign: $0.headsign,
+                    arrivalTime: $0.arrivalTime,
+                    waitTime: $0.waitTime,
+                    routeColorHex: $0.routeColorHex
+                )
+            }
+        }
+    }
+}

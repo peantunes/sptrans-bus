@@ -3,6 +3,7 @@ import Foundation
 struct WatchSnapshotStore {
     static let appGroupID = "group.com.lolados.sp.due-sp"
     static let snapshotKey = "watch_transit_snapshot_v1"
+    static let preferredStopIDKey = "widget_preferred_stop_id_v1"
 
     private let userDefaults: UserDefaults
     private let decoder = JSONDecoder()
@@ -16,5 +17,9 @@ struct WatchSnapshotStore {
             return .empty
         }
         return (try? decoder.decode(WatchTransitSnapshot.self, from: data)) ?? .empty
+    }
+
+    func loadPreferredStopID() -> Int? {
+        userDefaults.object(forKey: Self.preferredStopIDKey) as? Int
     }
 }

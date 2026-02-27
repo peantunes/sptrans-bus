@@ -3,7 +3,8 @@
 Due SP is a transit project for Sao Paulo with:
 - a PHP/MySQL backend API (`/server`)
 - a SwiftUI iOS app (`/sp-trains-bus`)
-- a watchOS companion app + complication extension (inside `/sp-trains-bus`)
+- a watchOS companion app + watch complications (inside `/sp-trains-bus`)
+- an iOS WidgetKit extension for Home Screen and Lock Screen widgets (inside `/sp-trains-bus`)
 
 ## Repository Structure
 
@@ -70,11 +71,34 @@ Implemented watch features:
 - Top 4 nearby stops
 - Stop detail screen with next arrivals
 - Open-on-iPhone deep links (`duesp://status`, `duesp://stop?...`)
-- Complications/widgets using the same snapshot data
+- Complications/widgets for rail status, next arrival, and nearby stops
 
 Shared data flow:
-- iOS writes watch snapshot into app group `group.com.lolados.sp.due-sp`
-- Watch app and widget extension read from the same app group key: `watch_transit_snapshot_v1`
+- Watch app and watch complication extension fetch live from API endpoints (`metro_cptm.php`, `nearby.php`, `arrivals.php`)
+- Shared API implementation lives in `/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/SharedTransitAPI`
+- Preferred pinned stop key for widgets: `widget_preferred_stop_id_v1`
+
+## iOS Widgets
+
+iOS widget target (in the same Xcode project):
+- `due-sp-ios-widgetsExtension` (folder: `/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/due-sp-ios-widgets`)
+
+Implemented iOS widgets:
+- Rail status (live from API)
+- Next arrival for preferred stop
+- Nearby stops and ETAs
+- Deep links into app routes (`duesp://status`, `duesp://stop?...`)
+- Rail status layout: up to 1 line on `systemSmall`, up to 3 lines on `systemMedium`
+- Rail status layout optimized to use space with denser rows and clearer line/status hierarchy
+
+Data source:
+- iOS widgets fetch live data from API endpoints (`metro_cptm.php`, `nearby.php`, `arrivals.php`)
+- iOS widgets share the same API implementation used by watch targets (`/SharedTransitAPI`)
+- App group storage is only used for preferred stop pinning (`widget_preferred_stop_id_v1`)
+
+Supported families:
+- Home Screen: `systemSmall`, `systemMedium`, `systemLarge`
+- Lock Screen: `accessoryInline`, `accessoryCircular`, `accessoryRectangular`
 
 ## Localization Workflow
 

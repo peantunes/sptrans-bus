@@ -13,23 +13,42 @@
 
 ---
 
-## Apple Watch Integration (Current)
+## Apple Watch + Widgets Integration (Current)
 
 The same Xcode project now includes:
 - `due-sp-watch Watch App` (watch app UI)
 - `due-sp-watchExtension` (WidgetKit complications)
+- `due-sp-ios-widgetsExtension` (iOS WidgetKit extension)
 
 Watch experience currently covers:
 - Rail status list with favorite lines first
 - Top 4 nearby stops
 - Stop detail with upcoming arrivals
 - Open-on-iPhone deep links to `Status` and `Stop Detail`
-- Complications reading live snapshot data from app group storage
+- Complications/widgets for:
+  - rail status
+  - next arrival (preferred stop)
+  - nearby stops
+
+iOS widgets currently cover:
+- Home Screen widgets (small/medium/large)
+- Lock Screen widgets (inline/circular/rectangular)
+- Rail status, next arrival, and nearby stops
+- Tap-through deep links into `Status` and `Stop Detail`
+- Rail status widget density: up to 1 line on small, up to 3 lines on medium
+- Rail status widget uses compact row design to better fill small/medium space
 
 Data-sharing contract:
 - App Group: `group.com.lolados.sp.due-sp`
-- Shared snapshot key: `watch_transit_snapshot_v1`
+- Preferred stop pinning key: `widget_preferred_stop_id_v1`
 - iOS snapshot writer: `Infrastructure/Watch/WatchSnapshotStore.swift`
+
+Live data source (watch + widgets):
+- Watch app fetches directly from API (`metro_cptm.php`, `nearby.php`, `arrivals.php`)
+- Watch complication extension fetches directly from API (`metro_cptm.php`, `nearby.php`, `arrivals.php`)
+- iOS widgets fetch directly from API (`metro_cptm.php`, `nearby.php`, `arrivals.php`)
+- Shared API module path: `SharedTransitAPI/`
+- App group is only used for preferred stop id (pinning)
 
 Deep-link contract:
 - URL scheme: `duesp`
@@ -979,10 +998,10 @@ All networking, storage, and location services built from scratch using native i
 - [ ] Expand metro status with live updates
 - [ ] Add accessibility support (VoiceOver)
 - [ ] Implement app shortcuts/Siri integration
-- [ ] Add widget support (Lock Screen/Home Screen)
+- [x] Add widget support for Apple Watch + iOS widgets (status, next arrival, nearby)
 
 ---
 
-**Last Updated**: 2026-02-03
+**Last Updated**: 2026-02-27
 **Architecture**: Clean Architecture + MVVM
 **Status**: Production Ready (with TODOs)

@@ -256,6 +256,7 @@ class StopDetailViewModel: ObservableObject {
             storageService.removeFavorite(stop: stop)
         } else {
             storageService.saveFavorite(stop: stop)
+            watchSnapshotSync.syncPreferredStop(stopID: stop.stopId)
         }
         isFavorite.toggle()
         analyticsService.trackEvent(
