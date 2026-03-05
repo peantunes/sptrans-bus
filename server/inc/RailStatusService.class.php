@@ -66,8 +66,9 @@ class RailStatusService {
             }
         }
 
-        $metro = $this->getLatestBySource(self::SOURCE_METRO);
-        $cptm = $this->getLatestBySource(self::SOURCE_CPTM);
+        $latestBySource = $this->getLatestBySources($sources);
+        $metro = $latestBySource[self::SOURCE_METRO];
+        $cptm = $latestBySource[self::SOURCE_CPTM];
 
         if ($forceRefresh) {
             $latestForNotifications = [];
@@ -129,12 +130,17 @@ class RailStatusService {
                 $error = $e->getMessage();
             }
 
-            $latest = $this->getLatestBySource($src);
+            $latest = null;
             $result['sources'][$src] = [
                 'refreshed' => $didRefresh,
                 'latest' => $latest,
                 'error' => $error
             ];
+        }
+
+        $latestBySource = $this->getLatestBySources($sources);
+        foreach ($sources as $src) {
+            $result['sources'][$src]['latest'] = $latestBySource[$src];
         }
 
         return $result;
@@ -180,10 +186,7 @@ class RailStatusService {
             throw new RuntimeException('No active subscriptions available for test push.');
         }
 
-        $latestBySource = [
-            self::SOURCE_METRO => $this->getLatestBySource(self::SOURCE_METRO),
-            self::SOURCE_CPTM => $this->getLatestBySource(self::SOURCE_CPTM)
-        ];
+        $latestBySource = $this->getLatestBySources([self::SOURCE_METRO, self::SOURCE_CPTM]);
         $latestIndex = $this->buildLatestStatusIndex($latestBySource);
 
         $selectedSubscription = null;
@@ -1095,19 +1098,35 @@ class RailStatusService {
     }
 
     private function getLatestBySource($source) {
-        $this->con->ExecutaPrepared(
-            "SELECT snapshot_id, source, fetched_at, source_updated_at, line_count
-             FROM sp_transit_status_snapshots
-             WHERE source = ?
-             ORDER BY snapshot_id DESC
-             LIMIT 1",
-            "s",
-            [$source]
-        );
-        $snapshot = $this->con->Linha();
+        $batch = $this->getLatestBySources([$source]);
+        return isset($batch[$source]) ? $batch[$source] : [
+            'source' => $source,
+            'available' => false,
+            'count' => 0,
+            'lastFetchedAt' => null,
+            'lastSourceUpdatedAt' => null,
+            'lines' => []
+        ];
+    }
 
-        if (!$snapshot) {
-            return [
+    private function getLatestBySources($sources) {
+        $normalized = [];
+        foreach ((array)$sources as $source) {
+            $value = strtolower(trim((string)$source));
+            if ($value !== self::SOURCE_METRO && $value !== self::SOURCE_CPTM) {
+                continue;
+            }
+            $normalized[$value] = true;
+        }
+
+        $sourcesList = array_keys($normalized);
+        if (empty($sourcesList)) {
+            return [];
+        }
+
+        $resultBySource = [];
+        foreach ($sourcesList as $source) {
+            $resultBySource[$source] = [
                 'source' => $source,
                 'available' => false,
                 'count' => 0,
@@ -1117,37 +1136,67 @@ class RailStatusService {
             ];
         }
 
-        $snapshotId = (int)$snapshot['snapshot_id'];
+        $placeholders = implode(', ', array_fill(0, count($sourcesList), '?'));
+        $types = str_repeat('s', count($sourcesList));
 
         $this->con->ExecutaPrepared(
-            "SELECT line_number, line_name, status_text, status_detail, status_color, source_updated_at
-             FROM sp_transit_status_lines
-             WHERE snapshot_id = ?
-             ORDER BY line_number, line_name",
-            "i",
-            [$snapshotId]
+            "SELECT s.snapshot_id,
+                    s.source,
+                    s.fetched_at,
+                    s.source_updated_at,
+                    l.line_number,
+                    l.line_name,
+                    l.status_text,
+                    l.status_detail,
+                    l.status_color,
+                    l.source_updated_at AS line_source_updated_at
+             FROM sp_transit_status_snapshots s
+             INNER JOIN (
+                 SELECT source, MAX(snapshot_id) AS snapshot_id
+                 FROM sp_transit_status_snapshots
+                 WHERE source IN ({$placeholders})
+                 GROUP BY source
+             ) latest ON latest.snapshot_id = s.snapshot_id
+             LEFT JOIN sp_transit_status_lines l ON l.snapshot_id = s.snapshot_id
+             ORDER BY s.source, l.line_number, l.line_name",
+            $types,
+            $sourcesList
         );
 
-        $lines = [];
+        $snapshotSeen = [];
+
         while ($rs = $this->con->Linha()) {
-            $lines[] = [
+            $source = strtolower(trim((string)($rs['source'] ?? '')));
+            if ($source === '' || !isset($resultBySource[$source])) {
+                continue;
+            }
+
+            if (!isset($snapshotSeen[$source])) {
+                $snapshotSeen[$source] = true;
+                $resultBySource[$source]['available'] = true;
+                $resultBySource[$source]['lastFetchedAt'] = $rs['fetched_at'] ?? null;
+                $resultBySource[$source]['lastSourceUpdatedAt'] = $rs['source_updated_at'] ?? null;
+            }
+
+            if (!isset($rs['line_number']) || $rs['line_number'] === null) {
+                continue;
+            }
+
+            $resultBySource[$source]['lines'][] = [
                 'lineNumber' => $rs['line_number'] ?? '',
                 'lineName' => $rs['line_name'] ?? '',
                 'status' => $rs['status_text'] ?? '',
                 'statusDetail' => $rs['status_detail'] ?? '',
                 'statusColor' => $rs['status_color'] ?? '',
-                'sourceUpdatedAt' => $rs['source_updated_at'] ?? null
+                'sourceUpdatedAt' => $rs['line_source_updated_at'] ?? null
             ];
         }
 
-        return [
-            'source' => $source,
-            'available' => true,
-            'count' => count($lines),
-            'lastFetchedAt' => $snapshot['fetched_at'] ?? null,
-            'lastSourceUpdatedAt' => $snapshot['source_updated_at'] ?? null,
-            'lines' => $lines
-        ];
+        foreach ($resultBySource as $sourceKey => $payload) {
+            $resultBySource[$sourceKey]['count'] = count($payload['lines']);
+        }
+
+        return $resultBySource;
     }
 
     /**
@@ -2362,6 +2411,7 @@ class RailStatusService {
                 raw_hash CHAR(64) NULL,
                 PRIMARY KEY (snapshot_id),
                 KEY idx_status_snapshots_source_fetched (source, fetched_at),
+                KEY idx_status_snapshots_source_id (source, snapshot_id),
                 KEY idx_status_snapshots_source_updated (source, source_updated_at)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
@@ -2380,6 +2430,7 @@ class RailStatusService {
                 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (line_id),
                 KEY idx_status_lines_snapshot (snapshot_id),
+                KEY idx_status_lines_snapshot_order (snapshot_id, line_number, line_name),
                 KEY idx_status_lines_source_line (source, line_number),
                 CONSTRAINT fk_status_lines_snapshot
                     FOREIGN KEY (snapshot_id) REFERENCES sp_transit_status_snapshots(snapshot_id)
@@ -2490,5 +2541,44 @@ class RailStatusService {
                     ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
+
+        $this->ensureIndexExists(
+            'sp_transit_status_snapshots',
+            'idx_status_snapshots_source_id',
+            'ALTER TABLE sp_transit_status_snapshots ADD INDEX idx_status_snapshots_source_id (source, snapshot_id)'
+        );
+        $this->ensureIndexExists(
+            'sp_transit_status_lines',
+            'idx_status_lines_snapshot_order',
+            'ALTER TABLE sp_transit_status_lines ADD INDEX idx_status_lines_snapshot_order (snapshot_id, line_number, line_name)'
+        );
+    }
+
+    private function ensureIndexExists($tableName, $indexName, $createSql) {
+        $table = trim((string)$tableName);
+        $index = trim((string)$indexName);
+        $sql = trim((string)$createSql);
+
+        if ($table === '' || $index === '' || $sql === '') {
+            return;
+        }
+
+        $this->con->ExecutaPrepared(
+            "SELECT COUNT(*) AS total
+             FROM information_schema.statistics
+             WHERE table_schema = DATABASE()
+               AND table_name = ?
+               AND index_name = ?",
+            'ss',
+            [$table, $index]
+        );
+
+        $row = $this->con->Linha();
+        $exists = (int)($row['total'] ?? 0) > 0;
+        if ($exists) {
+            return;
+        }
+
+        $this->con->Executa($sql);
     }
 }
