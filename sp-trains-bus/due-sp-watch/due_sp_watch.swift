@@ -1,39 +1,90 @@
 import WidgetKit
 import SwiftUI
+import AppIntents
+
+struct RailStatusEntryProvider: AppIntentTimelineProvider {
+    typealias Intent = WatchRailStatusWidgetIntent
+    typealias Entry = TransitEntry
+
+    private let store = WatchSnapshotStore()
+    private let apiService = SharedTransitAPIService()
+
+    func placeholder(in context: Context) -> TransitEntry {
+        TransitEntry(date: Date(), snapshot: .empty, preferredStopID: nil, selectedRailLineKey: nil)
+    }
+
+    func snapshot(for configuration: WatchRailStatusWidgetIntent, in context: Context) async -> TransitEntry {
+        await loadEntry(selectedRailLineKey: configuration.selectedLineKey)
+    }
+
+    func timeline(for configuration: WatchRailStatusWidgetIntent, in context: Context) async -> Timeline<TransitEntry> {
+        let entry = await loadEntry(selectedRailLineKey: configuration.selectedLineKey)
+        let nextRefresh = Calendar.current.date(byAdding: .minute, value: 15, to: Date()) ?? Date().addingTimeInterval(900)
+        return Timeline(entries: [entry], policy: .after(nextRefresh))
+    }
+
+    func recommendations() -> [AppIntentRecommendation<WatchRailStatusWidgetIntent>] {
+        var favoritesIntent = WatchRailStatusWidgetIntent()
+        favoritesIntent.selectedLine = nil
+        return [
+            AppIntentRecommendation(
+                intent: favoritesIntent,
+                description: "Favorites first"
+            )
+        ]
+    }
+
+    private func loadEntry(selectedRailLineKey: String?) async -> TransitEntry {
+        let preferredStopID = store.loadPreferredStopID()
+        let favoriteLineIDs = store.loadFavoriteLineIDs()
+        let sharedSnapshot = await apiService.fetchSnapshot(
+            preferredStopID: preferredStopID,
+            favoriteLineIDs: favoriteLineIDs
+        )
+        return TransitEntry(
+            date: Date(),
+            snapshot: WatchTransitSnapshot(sharedSnapshot: sharedSnapshot),
+            preferredStopID: preferredStopID,
+            selectedRailLineKey: selectedRailLineKey
+        )
+    }
+}
 
 struct TransitEntryProvider: TimelineProvider {
     private let store = WatchSnapshotStore()
     private let apiService = SharedTransitAPIService()
 
     func placeholder(in context: Context) -> TransitEntry {
-        TransitEntry(date: Date(), snapshot: .empty, preferredStopID: nil)
+        TransitEntry(date: Date(), snapshot: .empty, preferredStopID: nil, selectedRailLineKey: nil)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (TransitEntry) -> Void) {
         Task {
-            let preferredStopID = store.loadPreferredStopID()
-            let sharedSnapshot = await apiService.fetchSnapshot(preferredStopID: preferredStopID)
-            let entry = TransitEntry(
-                date: Date(),
-                snapshot: WatchTransitSnapshot(sharedSnapshot: sharedSnapshot),
-                preferredStopID: preferredStopID
-            )
-            completion(entry)
+            completion(await loadEntry())
         }
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<TransitEntry>) -> Void) {
         Task {
-            let preferredStopID = store.loadPreferredStopID()
-            let sharedSnapshot = await apiService.fetchSnapshot(preferredStopID: preferredStopID)
-            let entry = TransitEntry(
-                date: Date(),
-                snapshot: WatchTransitSnapshot(sharedSnapshot: sharedSnapshot),
-                preferredStopID: preferredStopID
-            )
+            let entry = await loadEntry()
             let nextRefresh = Calendar.current.date(byAdding: .minute, value: 5, to: Date()) ?? Date().addingTimeInterval(300)
             completion(Timeline(entries: [entry], policy: .after(nextRefresh)))
         }
+    }
+
+    private func loadEntry() async -> TransitEntry {
+        let preferredStopID = store.loadPreferredStopID()
+        let favoriteLineIDs = store.loadFavoriteLineIDs()
+        let sharedSnapshot = await apiService.fetchSnapshot(
+            preferredStopID: preferredStopID,
+            favoriteLineIDs: favoriteLineIDs
+        )
+        return TransitEntry(
+            date: Date(),
+            snapshot: WatchTransitSnapshot(sharedSnapshot: sharedSnapshot),
+            preferredStopID: preferredStopID,
+            selectedRailLineKey: nil
+        )
     }
 }
 
@@ -41,18 +92,19 @@ struct TransitEntry: TimelineEntry {
     let date: Date
     let snapshot: WatchTransitSnapshot
     let preferredStopID: Int?
+    let selectedRailLineKey: String?
 }
 
 struct due_sp_watch: Widget {
     let kind: String = "due_sp_rail_status"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: TransitEntryProvider()) { entry in
+        AppIntentConfiguration(kind: kind, intent: WatchRailStatusWidgetIntent.self, provider: RailStatusEntryProvider()) { entry in
             RailStatusWidgetView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Rail Status")
-        .description("Favorite line first with current rail status.")
+        .description("Favorites first. Tap edit to pin one line.")
         .supportedFamilies([.accessoryInline, .accessoryCircular, .accessoryRectangular])
     }
 }
@@ -90,7 +142,67 @@ private struct RailStatusWidgetView: View {
     @Environment(\.widgetFamily) private var family
 
     private var primaryLine: WatchRailLineSnapshot? {
-        entry.snapshot.railLines.first(where: { $0.isFavorite }) ?? entry.snapshot.railLines.first
+        if let selectedKey = entry.selectedRailLineKey,
+           let selected = entry.snapshot.railLines.first(where: { lineSelectionKey(for: $0) == selectedKey }) {
+            return selected
+        }
+
+        if let favoriteProblem = rankedLines.first(where: { $0.isFavorite && $0.severityRawValue > 0 }) {
+            return favoriteProblem
+        }
+        if let favorite = rankedLines.first(where: { $0.isFavorite }) {
+            return favorite
+        }
+        if let problem = rankedLines.first(where: { $0.severityRawValue > 0 }) {
+            return problem
+        }
+        return rankedLines.first
+    }
+
+    private var rankedLines: [WatchRailLineSnapshot] {
+        entry.snapshot.railLines.sorted(by: sortLines)
+    }
+
+    private var isProblem: Bool {
+        (primaryLine?.severityRawValue ?? 0) > 0
+    }
+
+    private var problemAccent: Color {
+        guard let line = primaryLine else { return .secondary }
+        return colorFromHex(line.statusColorHex)
+    }
+
+    private func lineSelectionKey(for line: WatchRailLineSnapshot) -> String {
+        "\(line.source.lowercased())-\(line.lineNumber)"
+    }
+
+    private func sortLines(_ lhs: WatchRailLineSnapshot, _ rhs: WatchRailLineSnapshot) -> Bool {
+        if lhs.isFavorite != rhs.isFavorite {
+            return lhs.isFavorite && !rhs.isFavorite
+        }
+
+        if lhs.severityRawValue != rhs.severityRawValue {
+            return lhs.severityRawValue > rhs.severityRawValue
+        }
+
+        if lhs.source != rhs.source {
+            return sourceRank(lhs.source) < sourceRank(rhs.source)
+        }
+
+        let lhsNumber = Int(lhs.lineNumber) ?? Int.max
+        let rhsNumber = Int(rhs.lineNumber) ?? Int.max
+        if lhsNumber == rhsNumber {
+            return lhs.lineName < rhs.lineName
+        }
+        return lhsNumber < rhsNumber
+    }
+
+    private func sourceRank(_ source: String) -> Int {
+        switch source.lowercased() {
+        case "metro": return 0
+        case "cptm": return 1
+        default: return 2
+        }
     }
 
     var body: some View {
@@ -98,17 +210,31 @@ private struct RailStatusWidgetView: View {
             switch family {
             case .accessoryInline:
                 if let line = primaryLine {
-                    Text("L\(line.lineNumber) \(line.status)")
+                    if isProblem {
+                        Text("⚠︎ L\(line.lineNumber) \(line.status)")
+                    } else {
+                        Text("L\(line.lineNumber) \(line.status)")
+                    }
                 } else {
                     Text("No status")
                 }
             case .accessoryCircular:
                 ZStack {
                     Circle()
-                        .strokeBorder(.secondary.opacity(0.3), lineWidth: 1)
+                        .strokeBorder(isProblem ? problemAccent.opacity(0.75) : .secondary.opacity(0.3), lineWidth: 1.25)
                     if let line = primaryLine {
-                        Text("L\(line.lineNumber)")
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                        if isProblem {
+                            VStack(spacing: 1) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .font(.system(size: 9, weight: .bold))
+                                Text("L\(line.lineNumber)")
+                                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                            }
+                            .foregroundStyle(problemAccent)
+                        } else {
+                            Text("L\(line.lineNumber)")
+                                .font(.system(size: 11, weight: .bold, design: .rounded))
+                        }
                     } else {
                         Text("--")
                             .font(.caption2.bold())
@@ -117,13 +243,28 @@ private struct RailStatusWidgetView: View {
             default:
                 VStack(alignment: .leading, spacing: 2) {
                     if let line = primaryLine {
-                        Text("L\(line.lineNumber) \(line.lineName)")
-                            .font(.caption2.weight(.semibold))
-                            .lineLimit(1)
-                        Text(line.status)
-                            .font(.caption2)
-                            .lineLimit(1)
-                            .foregroundStyle(colorFromHex(line.statusColorHex))
+                        HStack(spacing: 4) {
+                            Text("L\(line.lineNumber) \(line.lineName)")
+                                .font(.caption2.weight(.semibold))
+                                .lineLimit(1)
+                            if line.isFavorite {
+                                Image(systemName: "star.fill")
+                                    .font(.system(size: 8, weight: .bold))
+                                    .foregroundStyle(.yellow)
+                            }
+                        }
+
+                        HStack(spacing: 4) {
+                            if isProblem {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .font(.system(size: 8, weight: .semibold))
+                                    .foregroundStyle(problemAccent)
+                            }
+                            Text(line.status)
+                                .font(.caption2)
+                                .lineLimit(1)
+                                .foregroundStyle(colorFromHex(line.statusColorHex))
+                        }
                     } else {
                         Text("No status")
                             .font(.caption2.weight(.semibold))
@@ -286,5 +427,5 @@ private func colorFromHex(_ rawHex: String) -> Color {
 #Preview(as: .accessoryRectangular) {
     due_sp_watch()
 } timeline: {
-    TransitEntry(date: .now, snapshot: .empty, preferredStopID: nil)
+    TransitEntry(date: .now, snapshot: .empty, preferredStopID: nil, selectedRailLineKey: nil)
 }

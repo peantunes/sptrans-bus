@@ -239,3 +239,43 @@
 "stop_detail.history_locked.message" = "Para ver chegadas por horário personalizado e carregar partidas anteriores e seguintes, apoie o app com uma contribuição média ou grande.";
 "stop_detail.history_locked.how_to" = "Após a compra, o recurso é desbloqueado imediatamente.";
 "stop_detail.history_locked.support_now" = "Apoiar agora";
+
+"intent.entity.stop.type" = "Parada";
+"intent.entity.stop.id_format" = "ID %@";
+"intent.entity.stop.code_format" = "Código %@";
+"intent.entity.stop.fallback_name_format" = "Parada %@";
+"intent.entity.rail_line.type" = "Linha ferroviária";
+
+"intent.arrivals.title" = "Ver próximas chegadas";
+"intent.arrivals.description" = "Busca as próximas chegadas de ônibus para uma parada selecionada.";
+"intent.arrivals.parameter.stop" = "Parada";
+"intent.arrivals.parameter.limit" = "Limite";
+"intent.arrivals.parameter.limit_dialog" = "Quantas chegadas devem ser listadas?";
+"intent.arrivals.summary" = "Ver próximas chegadas";
+"intent.arrivals.empty" = "Nenhuma chegada encontrada agora para %@.";
+"intent.arrivals.preview_item_format" = "%@ %@";
+"intent.arrivals.result_format" = "%d chegadas em %@: %@";
+
+"intent.rail.title" = "Ver status ferroviário";
+"intent.rail.description" = "Verifica o status da rede Metro/CPTM e destaca interrupções.";
+"intent.rail.parameter.line" = "Linha";
+"intent.rail.summary" = "Ver status ferroviário";
+"intent.rail.line_display_format" = "%@ L%@ %@";
+"intent.rail.line_not_found" = "Não foi possível encontrar status para %@.";
+"intent.rail.impact.high" = "Impactando viagens";
+"intent.rail.impact.low" = "Baixo impacto";
+"intent.rail.line_status_without_detail" = "%@: %@ (%@).";
+"intent.rail.line_status_with_detail" = "%@: %@ (%@). %@";
+"intent.rail.network_unavailable" = "Status ferroviário indisponível no momento.";
+"intent.rail.network_normal" = "Metro e CPTM estão operando normalmente.";
+"intent.rail.network_issues_format" = "%d linhas com problemas ativos. Mais crítica: %@ L%@ %@ - %@.";
+"intent.rail.network_active_alerts" = "Rede ferroviária com alertas ativos.";
+
+"intent.open_stop.title" = "Abrir parada";
+"intent.open_stop.description" = "Abre o app diretamente em uma parada selecionada.";
+"intent.open_stop.parameter.stop" = "Parada";
+"intent.open_stop.summary" = "Abrir parada no Due SP";
+
+"intent.shortcut.arrivals.title" = "Próximas chegadas";
+"intent.shortcut.rail.title" = "Status ferroviário";
+"intent.shortcut.open_stop.title" = "Abrir parada";

@@ -65,6 +65,7 @@ class SystemStatusViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     private static let favoritesKey = "favorite_rail_line_ids"
+    private static let appGroupID = "group.com.lolados.sp.due-sp"
 
     private let apiClient: APIClient?
     private let getMetroStatusUseCase: GetMetroStatusUseCase?
@@ -84,7 +85,7 @@ class SystemStatusViewModel: ObservableObject {
         self.userDefaults = userDefaults
         self.analyticsService = analyticsService
         self.watchSnapshotSync = watchSnapshotSync
-        self.favoriteLineIDs = Set(userDefaults.stringArray(forKey: Self.favoritesKey) ?? [])
+        self.favoriteLineIDs = Set(Self.resolveFavoriteIDs(from: userDefaults))
     }
 
     init(
@@ -98,7 +99,7 @@ class SystemStatusViewModel: ObservableObject {
         self.userDefaults = userDefaults
         self.analyticsService = analyticsService
         self.watchSnapshotSync = watchSnapshotSync
-        self.favoriteLineIDs = Set(userDefaults.stringArray(forKey: Self.favoritesKey) ?? [])
+        self.favoriteLineIDs = Set(Self.resolveFavoriteIDs(from: userDefaults))
     }
 
     func loadMetroStatus(forceRefresh: Bool = false) {
@@ -446,7 +447,22 @@ class SystemStatusViewModel: ObservableObject {
     }
 
     private func persistFavoriteLineIDs() {
-        userDefaults.set(Array(favoriteLineIDs).sorted(), forKey: Self.favoritesKey)
+        let sortedIDs = Array(favoriteLineIDs).sorted()
+        userDefaults.set(sortedIDs, forKey: Self.favoritesKey)
+        UserDefaults(suiteName: Self.appGroupID)?.set(sortedIDs, forKey: Self.favoritesKey)
+    }
+
+    private static func resolveFavoriteIDs(from userDefaults: UserDefaults) -> [String] {
+        if let local = userDefaults.stringArray(forKey: favoritesKey), !local.isEmpty {
+            return local
+        }
+
+        if let shared = UserDefaults(suiteName: appGroupID)?.stringArray(forKey: favoritesKey), !shared.isEmpty {
+            userDefaults.set(shared, forKey: favoritesKey)
+            return shared
+        }
+
+        return []
     }
 
     private func sortByLineOrder(_ lhs: RailLineStatusItem, _ rhs: RailLineStatusItem) -> Bool {

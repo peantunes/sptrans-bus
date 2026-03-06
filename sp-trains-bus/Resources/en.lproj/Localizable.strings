@@ -239,3 +239,43 @@
 "stop_detail.history_locked.message" = "To view arrivals by custom time and load previous or next departures, support the app with a Medium or Big tip.";
 "stop_detail.history_locked.how_to" = "After purchase, this feature unlocks instantly.";
 "stop_detail.history_locked.support_now" = "Support now";
+
+"intent.entity.stop.type" = "Stop";
+"intent.entity.stop.id_format" = "ID %@";
+"intent.entity.stop.code_format" = "Code %@";
+"intent.entity.stop.fallback_name_format" = "Stop %@";
+"intent.entity.rail_line.type" = "Rail Line";
+
+"intent.arrivals.title" = "Get Next Arrivals";
+"intent.arrivals.description" = "Fetches the next bus arrivals for a selected stop.";
+"intent.arrivals.parameter.stop" = "Stop";
+"intent.arrivals.parameter.limit" = "Limit";
+"intent.arrivals.parameter.limit_dialog" = "How many arrivals should be listed?";
+"intent.arrivals.summary" = "Get next arrivals";
+"intent.arrivals.empty" = "No arrivals found right now for %@.";
+"intent.arrivals.preview_item_format" = "%@ %@";
+"intent.arrivals.result_format" = "%d arrivals at %@: %@";
+
+"intent.rail.title" = "Check Rail Status";
+"intent.rail.description" = "Checks Metro/CPTM network status and highlights disruptions.";
+"intent.rail.parameter.line" = "Line";
+"intent.rail.summary" = "Check rail status";
+"intent.rail.line_display_format" = "%@ L%@ %@";
+"intent.rail.line_not_found" = "Could not find status for %@.";
+"intent.rail.impact.high" = "Impacting trips";
+"intent.rail.impact.low" = "Low impact";
+"intent.rail.line_status_without_detail" = "%@: %@ (%@).";
+"intent.rail.line_status_with_detail" = "%@: %@ (%@). %@";
+"intent.rail.network_unavailable" = "Rail status is currently unavailable.";
+"intent.rail.network_normal" = "Metro and CPTM are operating normally.";
+"intent.rail.network_issues_format" = "%d lines with active issues. Most severe: %@ L%@ %@ - %@.";
+"intent.rail.network_active_alerts" = "Rail network has active alerts.";
+
+"intent.open_stop.title" = "Open Stop";
+"intent.open_stop.description" = "Opens the app directly on a selected stop.";
+"intent.open_stop.parameter.stop" = "Stop";
+"intent.open_stop.summary" = "Open stop in Due SP";
+
+"intent.shortcut.arrivals.title" = "Next Arrivals";
+"intent.shortcut.rail.title" = "Rail Status";
+"intent.shortcut.open_stop.title" = "Open Stop";

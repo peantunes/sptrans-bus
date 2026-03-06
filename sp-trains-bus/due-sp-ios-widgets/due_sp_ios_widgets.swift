@@ -26,8 +26,12 @@ struct RailStatusEntryProvider: AppIntentTimelineProvider {
 
     private func loadEntry(selectedRailLineKeys: [String]) async -> IOSWidgetEntry {
         let preferredStopID = store.loadPreferredStopID()
+        let favoriteLineIDs = store.loadFavoriteLineIDs()
         let snapshot = WidgetTransitSnapshot(
-            sharedSnapshot: await apiService.fetchSnapshot(preferredStopID: preferredStopID)
+            sharedSnapshot: await apiService.fetchSnapshot(
+                preferredStopID: preferredStopID,
+                favoriteLineIDs: favoriteLineIDs
+            )
         )
         return IOSWidgetEntry(
             date: Date(),
@@ -62,8 +66,12 @@ struct NextArrivalEntryProvider: TimelineProvider {
 
     private func loadEntry() async -> IOSWidgetEntry {
         let preferredStopID = store.loadPreferredStopID()
+        let favoriteLineIDs = store.loadFavoriteLineIDs()
         let snapshot = WidgetTransitSnapshot(
-            sharedSnapshot: await apiService.fetchSnapshot(preferredStopID: preferredStopID)
+            sharedSnapshot: await apiService.fetchSnapshot(
+                preferredStopID: preferredStopID,
+                favoriteLineIDs: favoriteLineIDs
+            )
         )
         return IOSWidgetEntry(
             date: Date(),
@@ -98,10 +106,12 @@ struct NearbyStopsEntryProvider: TimelineProvider {
 
     private func loadEntry() async -> IOSWidgetEntry {
         let preferredStopID = store.loadPreferredStopID()
+        let favoriteLineIDs = store.loadFavoriteLineIDs()
         let coordinate = await WidgetLocationResolver.currentCoordinate()
         let snapshot = WidgetTransitSnapshot(
             sharedSnapshot: await apiService.fetchSnapshot(
                 preferredStopID: preferredStopID,
+                favoriteLineIDs: favoriteLineIDs,
                 nearbyLatitude: coordinate?.latitude,
                 nearbyLongitude: coordinate?.longitude
             )
@@ -178,7 +188,7 @@ private struct IOSRailStatusWidgetView: View {
 
     private var displayedLines: [WidgetRailLineSnapshot] {
         guard !entry.selectedRailLineKeys.isEmpty else {
-            return entry.snapshot.railLines
+            return sortedRailLines
         }
 
         var selected: [WidgetRailLineSnapshot] = []
@@ -194,7 +204,11 @@ private struct IOSRailStatusWidgetView: View {
             consumedIDs.insert(match.id)
         }
 
-        return selected.isEmpty ? entry.snapshot.railLines : selected
+        return selected.isEmpty ? sortedRailLines : selected
+    }
+
+    private var sortedRailLines: [WidgetRailLineSnapshot] {
+        entry.snapshot.railLines.sorted(by: sortLines)
     }
 
     private var updatedAtLabel: String {
@@ -214,6 +228,35 @@ private struct IOSRailStatusWidgetView: View {
 
     private func lineSelectionKey(for line: WidgetRailLineSnapshot) -> String {
         "\(line.source.lowercased())-\(line.lineNumber)"
+    }
+
+    private func sortLines(_ lhs: WidgetRailLineSnapshot, _ rhs: WidgetRailLineSnapshot) -> Bool {
+        if lhs.isFavorite != rhs.isFavorite {
+            return lhs.isFavorite && !rhs.isFavorite
+        }
+
+        if lhs.severityRawValue != rhs.severityRawValue {
+            return lhs.severityRawValue > rhs.severityRawValue
+        }
+
+        if lhs.source != rhs.source {
+            return sourceRank(lhs.source) < sourceRank(rhs.source)
+        }
+
+        let lhsNumber = Int(lhs.lineNumber) ?? Int.max
+        let rhsNumber = Int(rhs.lineNumber) ?? Int.max
+        if lhsNumber == rhsNumber {
+            return lhs.lineName < rhs.lineName
+        }
+        return lhsNumber < rhsNumber
+    }
+
+    private func sourceRank(_ source: String) -> Int {
+        switch source.lowercased() {
+        case "metro": return 0
+        case "cptm": return 1
+        default: return 2
+        }
     }
 
     var body: some View {
