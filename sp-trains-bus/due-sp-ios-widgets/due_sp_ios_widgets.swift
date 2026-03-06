@@ -1,44 +1,117 @@
 import WidgetKit
 import SwiftUI
+import AppIntents
+import CoreLocation
 
-struct IOSWidgetEntryProvider: TimelineProvider {
+struct RailStatusEntryProvider: AppIntentTimelineProvider {
+    typealias Intent = RailStatusWidgetIntent
+    typealias Entry = IOSWidgetEntry
+
     private let store = WidgetSnapshotStore()
     private let apiService = SharedTransitAPIService()
 
     func placeholder(in context: Context) -> IOSWidgetEntry {
-        IOSWidgetEntry(date: Date(), snapshot: .empty, preferredStopID: nil)
+        IOSWidgetEntry(date: Date(), snapshot: .empty, preferredStopID: nil, selectedRailLineKeys: [])
+    }
+
+    func snapshot(for configuration: RailStatusWidgetIntent, in context: Context) async -> IOSWidgetEntry {
+        await loadEntry(selectedRailLineKeys: configuration.selectedLineKeys)
+    }
+
+    func timeline(for configuration: RailStatusWidgetIntent, in context: Context) async -> Timeline<IOSWidgetEntry> {
+        let entry = await loadEntry(selectedRailLineKeys: configuration.selectedLineKeys)
+        let nextRefresh = Calendar.current.date(byAdding: .minute, value: 30, to: Date()) ?? Date().addingTimeInterval(1800)
+        return Timeline(entries: [entry], policy: .after(nextRefresh))
+    }
+
+    private func loadEntry(selectedRailLineKeys: [String]) async -> IOSWidgetEntry {
+        let preferredStopID = store.loadPreferredStopID()
+        let snapshot = WidgetTransitSnapshot(
+            sharedSnapshot: await apiService.fetchSnapshot(preferredStopID: preferredStopID)
+        )
+        return IOSWidgetEntry(
+            date: Date(),
+            snapshot: snapshot,
+            preferredStopID: preferredStopID,
+            selectedRailLineKeys: selectedRailLineKeys
+        )
+    }
+}
+
+struct NextArrivalEntryProvider: TimelineProvider {
+    private let store = WidgetSnapshotStore()
+    private let apiService = SharedTransitAPIService()
+
+    func placeholder(in context: Context) -> IOSWidgetEntry {
+        IOSWidgetEntry(date: Date(), snapshot: .empty, preferredStopID: nil, selectedRailLineKeys: [])
     }
 
     func getSnapshot(in context: Context, completion: @escaping (IOSWidgetEntry) -> Void) {
         Task {
-            let preferredStopID = store.loadPreferredStopID()
-            let snapshot = WidgetTransitSnapshot(
-                sharedSnapshot: await apiService.fetchSnapshot(preferredStopID: preferredStopID)
-            )
-            completion(
-                IOSWidgetEntry(
-                    date: Date(),
-                    snapshot: snapshot,
-                    preferredStopID: preferredStopID
-                )
-            )
+            completion(await loadEntry())
         }
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<IOSWidgetEntry>) -> Void) {
         Task {
-            let preferredStopID = store.loadPreferredStopID()
-            let snapshot = WidgetTransitSnapshot(
-                sharedSnapshot: await apiService.fetchSnapshot(preferredStopID: preferredStopID)
-            )
-            let entry = IOSWidgetEntry(
-                date: Date(),
-                snapshot: snapshot,
-                preferredStopID: preferredStopID
-            )
-            let nextRefresh = Calendar.current.date(byAdding: .minute, value: 5, to: Date()) ?? Date().addingTimeInterval(300)
+            let entry = await loadEntry()
+            let nextRefresh = Calendar.current.date(byAdding: .minute, value: 10, to: Date()) ?? Date().addingTimeInterval(600)
             completion(Timeline(entries: [entry], policy: .after(nextRefresh)))
         }
+    }
+
+    private func loadEntry() async -> IOSWidgetEntry {
+        let preferredStopID = store.loadPreferredStopID()
+        let snapshot = WidgetTransitSnapshot(
+            sharedSnapshot: await apiService.fetchSnapshot(preferredStopID: preferredStopID)
+        )
+        return IOSWidgetEntry(
+            date: Date(),
+            snapshot: snapshot,
+            preferredStopID: preferredStopID,
+            selectedRailLineKeys: []
+        )
+    }
+}
+
+struct NearbyStopsEntryProvider: TimelineProvider {
+    private let store = WidgetSnapshotStore()
+    private let apiService = SharedTransitAPIService()
+
+    func placeholder(in context: Context) -> IOSWidgetEntry {
+        IOSWidgetEntry(date: Date(), snapshot: .empty, preferredStopID: nil, selectedRailLineKeys: [])
+    }
+
+    func getSnapshot(in context: Context, completion: @escaping (IOSWidgetEntry) -> Void) {
+        Task {
+            completion(await loadEntry())
+        }
+    }
+
+    func getTimeline(in context: Context, completion: @escaping (Timeline<IOSWidgetEntry>) -> Void) {
+        Task {
+            let entry = await loadEntry()
+            let nextRefresh = Calendar.current.date(byAdding: .minute, value: 10, to: Date()) ?? Date().addingTimeInterval(600)
+            completion(Timeline(entries: [entry], policy: .after(nextRefresh)))
+        }
+    }
+
+    private func loadEntry() async -> IOSWidgetEntry {
+        let preferredStopID = store.loadPreferredStopID()
+        let coordinate = await WidgetLocationResolver.currentCoordinate()
+        let snapshot = WidgetTransitSnapshot(
+            sharedSnapshot: await apiService.fetchSnapshot(
+                preferredStopID: preferredStopID,
+                nearbyLatitude: coordinate?.latitude,
+                nearbyLongitude: coordinate?.longitude
+            )
+        )
+        return IOSWidgetEntry(
+            date: Date(),
+            snapshot: snapshot,
+            preferredStopID: preferredStopID,
+            selectedRailLineKeys: []
+        )
     }
 }
 
@@ -46,15 +119,16 @@ struct IOSWidgetEntry: TimelineEntry {
     let date: Date
     let snapshot: WidgetTransitSnapshot
     let preferredStopID: Int?
+    let selectedRailLineKeys: [String]
 }
 
 struct due_sp_ios_status: Widget {
     let kind: String = "due_sp_ios_status"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: IOSWidgetEntryProvider()) { entry in
+        AppIntentConfiguration(kind: kind, intent: RailStatusWidgetIntent.self, provider: RailStatusEntryProvider()) { entry in
             IOSRailStatusWidgetView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
+                .widgetLiquidGlassBackground()
         }
         .configurationDisplayName("Due SP Status")
         .description("Current rail line status.")
@@ -66,7 +140,7 @@ struct due_sp_ios_next_arrival: Widget {
     let kind: String = "due_sp_ios_next_arrival"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: IOSWidgetEntryProvider()) { entry in
+        StaticConfiguration(kind: kind, provider: NextArrivalEntryProvider()) { entry in
             IOSNextArrivalWidgetView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
@@ -80,7 +154,7 @@ struct due_sp_ios_nearby_stops: Widget {
     let kind: String = "due_sp_ios_nearby_stops"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: IOSWidgetEntryProvider()) { entry in
+        StaticConfiguration(kind: kind, provider: NearbyStopsEntryProvider()) { entry in
             IOSNearbyStopsWidgetView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
@@ -95,11 +169,51 @@ private struct IOSRailStatusWidgetView: View {
     @Environment(\.widgetFamily) private var family
 
     private var line: WidgetRailLineSnapshot? {
-        entry.snapshot.railLines.first
+        displayedLines.first
     }
 
     private var topLines: [WidgetRailLineSnapshot] {
-        Array(entry.snapshot.railLines.prefix(3))
+        Array(displayedLines.prefix(5))
+    }
+
+    private var displayedLines: [WidgetRailLineSnapshot] {
+        guard !entry.selectedRailLineKeys.isEmpty else {
+            return entry.snapshot.railLines
+        }
+
+        var selected: [WidgetRailLineSnapshot] = []
+        var consumedIDs = Set<String>()
+
+        for key in entry.selectedRailLineKeys {
+            guard let match = entry.snapshot.railLines.first(where: {
+                lineSelectionKey(for: $0) == key && !consumedIDs.contains($0.id)
+            }) else {
+                continue
+            }
+            selected.append(match)
+            consumedIDs.insert(match.id)
+        }
+
+        return selected.isEmpty ? entry.snapshot.railLines : selected
+    }
+
+    private var updatedAtLabel: String {
+        guard entry.snapshot.generatedAt > Date.distantPast else {
+            return "Update unavailable"
+        }
+        return "Updated \(Self.widgetTimeFormatter.string(from: entry.snapshot.generatedAt))"
+    }
+
+    private static let widgetTimeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale.current
+        formatter.timeStyle = .short
+        formatter.dateStyle = .none
+        return formatter
+    }()
+
+    private func lineSelectionKey(for line: WidgetRailLineSnapshot) -> String {
+        "\(line.source.lowercased())-\(line.lineNumber)"
     }
 
     var body: some View {
@@ -157,6 +271,10 @@ private struct IOSRailStatusWidgetView: View {
                             .font(.subheadline.weight(.semibold))
                             .lineLimit(2)
                             .foregroundStyle(colorFromHex(line.statusColorHex))
+
+                        Text(updatedAtLabel)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                     } else {
                         Spacer(minLength: 0)
                         Text("No status")
@@ -167,9 +285,16 @@ private struct IOSRailStatusWidgetView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             case .systemMedium:
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Rail Status")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    HStack(spacing: 8) {
+                        Text("Rail Status")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Spacer(minLength: 4)
+                        Text(updatedAtLabel)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
 
                     if topLines.isEmpty {
                         Spacer(minLength: 0)
@@ -407,4 +532,73 @@ private func colorFromHex(_ rawHex: String) -> Color {
     }
 
     return Color(red: r, green: g, blue: b)
+}
+
+@MainActor
+private enum WidgetLocationResolver {
+    static func currentCoordinate(timeout: TimeInterval = 2.5) async -> CLLocationCoordinate2D? {
+        guard CLLocationManager.locationServicesEnabled() else { return nil }
+
+        let authorization = CLLocationManager.authorizationStatus()
+        guard authorization == .authorizedWhenInUse || authorization == .authorizedAlways else {
+            return nil
+        }
+
+        let requester = WidgetSingleLocationRequester()
+        return await requester.request(timeout: timeout)
+    }
+}
+
+@MainActor
+private final class WidgetSingleLocationRequester: NSObject, CLLocationManagerDelegate {
+    private let manager = CLLocationManager()
+    private var continuation: CheckedContinuation<CLLocationCoordinate2D?, Never>?
+    private var timeoutTask: Task<Void, Never>?
+
+    func request(timeout: TimeInterval) async -> CLLocationCoordinate2D? {
+        await withCheckedContinuation { continuation in
+            self.continuation = continuation
+            manager.delegate = self
+            manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+            manager.requestLocation()
+
+            timeoutTask = Task { [weak self] in
+                let nanoseconds = UInt64(timeout * 1_000_000_000)
+                try? await Task.sleep(nanoseconds: nanoseconds)
+                await MainActor.run {
+                    self?.finish(with: nil)
+                }
+            }
+        }
+    }
+
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        let latestCoordinate = locations.last?.coordinate
+        finish(with: latestCoordinate)
+    }
+
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        finish(with: nil)
+    }
+
+    private func finish(with coordinate: CLLocationCoordinate2D?) {
+        guard let continuation else { return }
+        self.continuation = nil
+        timeoutTask?.cancel()
+        timeoutTask = nil
+        manager.stopUpdatingLocation()
+        manager.delegate = nil
+        continuation.resume(returning: coordinate)
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func widgetLiquidGlassBackground() -> some View {
+        if #available(iOS 26.0, *) {
+            containerBackground(.clear, for: .widget)
+        } else {
+            containerBackground(.fill.tertiary, for: .widget)
+        }
+    }
 }

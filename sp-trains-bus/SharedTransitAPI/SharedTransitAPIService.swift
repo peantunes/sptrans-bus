@@ -15,18 +15,23 @@ struct SharedTransitAPIService {
         self.session = session
     }
 
-    func fetchSnapshot(preferredStopID: Int?, favoriteLineIDs: Set<String> = []) async -> SharedTransitSnapshot {
-        async let railLinesTask = fetchRailLines(favoriteLineIDs: favoriteLineIDs)
-        async let nearbyStopsTask = fetchNearbyStops()
+    func fetchSnapshot(
+        preferredStopID: Int?,
+        favoriteLineIDs: Set<String> = [],
+        nearbyLatitude: Double? = nil,
+        nearbyLongitude: Double? = nil
+    ) async -> SharedTransitSnapshot {
+        async let railStatusTask = fetchRailStatus(favoriteLineIDs: favoriteLineIDs)
+        async let nearbyStopsTask = fetchNearbyStops(latitude: nearbyLatitude, longitude: nearbyLongitude)
 
-        let railLines = await railLinesTask
+        let railStatus = await railStatusTask
         let nearbyStops = prioritizeNearbyStops(await nearbyStopsTask, preferredStopID: preferredStopID)
         let arrivalStops = Array(nearbyStops.prefix(6))
         let arrivalsByStopID = await fetchArrivals(for: arrivalStops)
 
         return SharedTransitSnapshot(
-            generatedAt: Date(),
-            railLines: railLines,
+            generatedAt: railStatus.generatedAt ?? Date(),
+            railLines: railStatus.lines,
             nearbyStops: nearbyStops,
             arrivalsByStopID: arrivalsByStopID
         )
@@ -44,24 +49,31 @@ struct SharedTransitAPIService {
         return ordered
     }
 
-    private func fetchRailLines(favoriteLineIDs: Set<String>) async -> [SharedRailLine] {
+    private func fetchRailStatus(favoriteLineIDs: Set<String>) async -> (lines: [SharedRailLine], generatedAt: Date?) {
         do {
             let response: SharedRailStatusResponseDTO = try await request(endpoint: .metroStatus)
 
             let metroLines = mapRailLines(response.metro.lines, source: "metro", favoriteLineIDs: favoriteLineIDs)
             let cptmLines = mapRailLines(response.cptm.lines, source: "cptm", favoriteLineIDs: favoriteLineIDs)
-            return metroLines + cptmLines
+            let generatedAt = parseAPIDate(response.generatedAt)
+                ?? parseAPIDate(response.metro.lastSourceUpdatedAt)
+                ?? parseAPIDate(response.cptm.lastSourceUpdatedAt)
+                ?? parseAPIDate(response.metro.lastFetchedAt)
+                ?? parseAPIDate(response.cptm.lastFetchedAt)
+            return (metroLines + cptmLines, generatedAt)
         } catch {
-            return []
+            return ([], nil)
         }
     }
 
-    private func fetchNearbyStops() async -> [SharedStop] {
+    private func fetchNearbyStops(latitude: Double?, longitude: Double?) async -> [SharedStop] {
         do {
+            let lat = latitude ?? Config.defaultLatitude
+            let lon = longitude ?? Config.defaultLongitude
             let response: SharedNearbyStopsResponseDTO = try await request(
                 endpoint: .nearby(
-                    lat: Config.defaultLatitude,
-                    lon: Config.defaultLongitude,
+                    lat: lat,
+                    lon: lon,
                     limit: Config.nearbyLimit
                 )
             )
@@ -163,6 +175,7 @@ struct SharedTransitAPIService {
 
                 let fallbackIdentifier = "idx\(index)"
                 let identifier = "\(source)-\(lineNumber.isEmpty ? fallbackIdentifier : lineNumber)-\(lineName.isEmpty ? fallbackIdentifier : lineName)"
+                let key = "\(source.lowercased())-\(lineNumber)"
 
                 return SharedRailLine(
                     id: identifier,
@@ -174,7 +187,7 @@ struct SharedTransitAPIService {
                     statusColorHex: normalizedStatusColor,
                     lineColorHex: lineColorHex(source: source, lineNumber: lineNumber),
                     severityRawValue: severity.rawValue,
-                    isFavorite: favoriteLineIDs.contains(identifier)
+                    isFavorite: favoriteLineIDs.contains(identifier) || favoriteLineIDs.contains(key)
                 )
             }
             .sorted { lhs, rhs in
@@ -289,7 +302,30 @@ struct SharedTransitAPIService {
             return "FFB800"
         case .alert:
             return "FF3B30"
+            }
+    }
+
+    private func parseAPIDate(_ rawValue: String?) -> Date? {
+        guard let rawValue else { return nil }
+        let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone.current
+
+        let formats = [
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy-MM-dd'T'HH:mm:ssXXXXX",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX"
+        ]
+        for format in formats {
+            formatter.dateFormat = format
+            if let parsed = formatter.date(from: trimmed) {
+                return parsed
+            }
         }
+        return nil
     }
 }
 
@@ -334,11 +370,14 @@ private enum SharedTransitAPIError: Error {
 }
 
 private struct SharedRailStatusResponseDTO: Decodable {
+    let generatedAt: String?
     let metro: SharedRailSourceStatusDTO
     let cptm: SharedRailSourceStatusDTO
 }
 
 private struct SharedRailSourceStatusDTO: Decodable {
+    let lastFetchedAt: String?
+    let lastSourceUpdatedAt: String?
     let lines: [SharedRailLineStatusDTO]
 }
 
