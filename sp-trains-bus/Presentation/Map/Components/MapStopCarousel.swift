@@ -66,48 +66,86 @@ private struct MapStopCard: View {
 
     var body: some View {
         GlassCard {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Image(systemName: "mappin.and.ellipse")
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(AppColors.primary)
-                        .padding(6)
-                        .glassIfAvailble()
-//                        .background(AppColors.primary.opacity(0.12))
-                        .clipShape(Circle())
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .top, spacing: 10) {
+                    ZStack {
+                        Circle()
+                            .fill(AppColors.primary.opacity(0.2))
+                            .frame(width: 34, height: 34)
+
+                        Image(systemName: stopSymbolName)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
 
                     Spacer()
 
                     Text(distanceText)
+                        .font(AppFonts.caption().bold())
+                        .foregroundColor(.white.opacity(0.95))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule()
+                                .fill(Color.black.opacity(0.22))
+                        )
+                }
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(item.stop.stopName)
+                        .font(AppFonts.title3().bold())
+                        .foregroundColor(.white)
+                        .lineLimit(2)
+                        .shadow(color: .black.opacity(0.22), radius: 8, x: 0, y: 2)
+
+                    HStack(spacing: 8) {
+                        if !item.stop.stopCode.isEmpty {
+                            infoTag(title: "#\(item.stop.stopCode)")
+                        }
+
+                        if item.stop.wheelchairBoarding == 1 {
+                            infoTag(title: localized("map.carousel.accessible"), systemImage: "figure.roll")
+                        }
+                    }
+
+                    Text(localized("map.carousel.tap_arrivals"))
                         .font(AppFonts.caption())
-                        .foregroundColor(AppColors.text.opacity(0.6))
+                        .foregroundColor(.white.opacity(0.78))
                 }
-
-                Text(item.stop.stopName)
-                    .font(AppFonts.subheadline().bold())
-                    .foregroundColor(AppColors.text)
-                    .lineLimit(2)
-
-                HStack(spacing: 8) {
-                    if !item.stop.stopCode.isEmpty {
-                        Text("#\(item.stop.stopCode)")
-                            .font(AppFonts.caption())
-                            .foregroundColor(AppColors.text.opacity(0.6))
-                    }
-
-                    if item.stop.wheelchairBoarding == 1 {
-                        Label(localized("map.carousel.accessible"), systemImage: "figure.roll")
-                            .font(AppFonts.caption2())
-                            .foregroundColor(AppColors.text.opacity(0.6))
-                    }
-                }
-
-                Text(localized("map.carousel.tap_arrivals"))
-                    .font(AppFonts.caption2())
-                    .foregroundColor(AppColors.text.opacity(0.5))
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.black.opacity(0.28),
+                                    Color.black.opacity(0.18)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
             }
-            .frame(width: 200, alignment: .leading)
+            .frame(width: 220, alignment: .leading)
         }
+    }
+
+    private var stopSymbolName: String {
+        let routes = (item.stop.routes ?? "")
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+            .lowercased()
+
+        if routes.contains("metro") || routes.contains("cptm") || routes.contains("train") {
+            return "tram.fill"
+        }
+
+        return "bus.fill"
     }
 
     private var distanceText: String {
@@ -120,6 +158,26 @@ private struct MapStopCard: View {
 
     private func localized(_ key: String) -> String {
         NSLocalizedString(key, comment: "")
+    }
+
+    @ViewBuilder
+    private func infoTag(title: String, systemImage: String? = nil) -> some View {
+        HStack(spacing: 5) {
+            if let systemImage {
+                Image(systemName: systemImage)
+                    .font(.system(size: 10, weight: .semibold))
+            }
+
+            Text(title)
+                .font(AppFonts.caption2().bold())
+        }
+        .foregroundColor(.white.opacity(0.86))
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background(
+            Capsule()
+                .fill(Color.black.opacity(0.2))
+        )
     }
 }
 
@@ -139,15 +197,4 @@ private struct MapStopCard: View {
         ],
         onSelect: { _ in }
     )
-}
-
-extension View {
-    @ViewBuilder
-    func glassIfAvailble() -> some View {
-        if #available(iOS 26, *) {
-            self.buttonStyle(.glass)
-        } else {
-            self.buttonStyle(.plain)
-        }
-    }
 }
