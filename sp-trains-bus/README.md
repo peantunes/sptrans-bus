@@ -2,6 +2,21 @@
 
 iOS app for Sao Paulo transit, including bus arrivals, rail status, maps, widgets, and watch support.
 
+## Premium Access
+
+Premium features are gated by StoreKit subscriptions:
+
+1. `app.lolados.data.weekly`
+2. `app.lolados.data.yearly`
+
+Both unlock the same premium features:
+
+1. Rail disruption notifications
+2. Rail status analytics
+3. Custom date/time plus previous/next arrivals in stop detail
+
+Tip products remain available as optional support and do not unlock any feature.
+
 ## App Intents (Siri + Shortcuts)
 
 The app currently exposes these intents:

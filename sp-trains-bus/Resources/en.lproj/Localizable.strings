@@ -6,6 +6,8 @@
 "settings.about.version_format" = "Version %@";
 "settings.appearance.accent_color" = "Accent Color";
 "settings.appearance.accent_color_accessibility_format" = "%@ accent color";
+"settings.support.premium_plan" = "Due SP Premium";
+"settings.support.premium_active" = "Active";
 "settings.support.review_app" = "Review the App";
 "settings.support.tip_developer" = "Tip the Developer";
 "settings.support.website" = "Website";
@@ -14,7 +16,7 @@
 "settings.legal.terms" = "Terms of Use";
 
 "settings.tip.title" = "Tip the Developer";
-"settings.tip.description" = "Choose a one-time tip to support development and unlock advanced features.";
+"settings.tip.description" = "Choose a one-time tip to support development. Tips do not unlock premium features.";
 "settings.tip.options.title" = "Tip Options";
 "settings.tip.loading_products" = "Loading products...";
 "settings.tip.unavailable" = "Unavailable";
@@ -32,9 +34,44 @@
 "settings.tip.option.small.title" = "Small Tip";
 "settings.tip.option.small.subtitle" = "Help keep updates coming.";
 "settings.tip.option.medium.title" = "Medium Tip";
-"settings.tip.option.medium.subtitle" = "Unlock advanced arrivals timeline: time selector and previous/next departures.";
+"settings.tip.option.medium.subtitle" = "A simple way to support continued updates.";
 "settings.tip.option.large.title" = "Big Tip";
-"settings.tip.option.large.subtitle" = "Unlock everything: analytics, disruption alerts, and advanced arrivals timeline.";
+"settings.tip.option.large.subtitle" = "Extra support for development, with no feature unlocks.";
+
+"premium.title" = "Due SP Premium";
+"premium.description" = "Unlock all premium transit tools with a recurring plan. Weekly and yearly plans both enable the same premium features.";
+"premium.hero.badge" = "ALL ACCESS";
+"premium.hero.title" = "Travel with the full control panel";
+"premium.hero.same_features" = "Same features";
+"premium.hero.weekly_yearly" = "Weekly or yearly";
+"premium.hero.cancel_anytime" = "Cancel anytime";
+"premium.features.title" = "Included features";
+"premium.features.analytics" = "Rail status analytics";
+"premium.features.alerts" = "Rail disruption notifications";
+"premium.features.arrivals" = "Custom date/time and previous/next arrivals in stop detail";
+"premium.options.title" = "Choose a plan";
+"premium.plan.note" = "Pick one";
+"premium.plan.all_features" = "All premium features";
+"premium.option.weekly.title" = "Weekly";
+"premium.option.weekly.subtitle" = "Full premium access billed weekly.";
+"premium.option.yearly.title" = "Yearly";
+"premium.option.yearly.subtitle" = "Full premium access billed yearly.";
+"premium.option.yearly.badge" = "Best value";
+"premium.loading_products" = "Loading plans...";
+"premium.unavailable" = "Unavailable";
+"premium.view_plans" = "See Premium plans";
+"premium.purchase.alert.title" = "Premium";
+"premium.purchase.unverified" = "Subscription could not be verified.";
+"premium.purchase.pending" = "Subscription is pending approval.";
+"premium.cta.subscribe_format" = "Start %@ • %@";
+"premium.cta.footnote" = "Both plans unlock the same premium features instantly.";
+"premium.restore.title" = "Already subscribed?";
+"premium.restore.subtitle" = "Restore your purchase if you already have an active Due SP Premium subscription on this Apple ID.";
+"premium.error.option_unavailable" = "This subscription plan is not available right now.";
+"premium.error.purchase_failed" = "Subscription purchase failed. Please try again.";
+"premium.restore.button" = "Restore subscriptions";
+"premium.restore.failed" = "Could not restore subscriptions.";
+"premium.restore.no_active_subscription" = "No active Premium subscription was found.";
 
 "common.done" = "Done";
 "common.ok" = "OK";
@@ -78,12 +115,9 @@
 "status.alerts.notifications_blocked.message" = "To receive disruption alerts, allow notifications for this app in iPhone Settings.";
 "status.alerts.notifications_blocked.open_settings" = "Open Settings";
 "status.alerts.locked.title" = "Alerts locked";
-"status.alerts.locked.message" = "Rail disruption alerts are available for users who support development with a big tip.";
-"status.alerts.locked.how_to" = "To unlock: Settings > Tip the Developer > choose Big Tip.";
-"status.alerts.locked.cta_title" = "Unlock alerts now";
-"status.alerts.locked.buy_button_format" = "%@ • %@";
-"status.alerts.locked.purchase_success" = "Thanks for your support! Alerts unlocked.";
-"status.alerts.locked.debug_note" = "DEBUG mode: automatically unlocked for development.";
+"status.alerts.locked.message" = "Rail disruption alerts are included with Due SP Premium.";
+"status.alerts.locked.how_to" = "Subscribe to Due SP Premium weekly or yearly to unlock alerts.";
+"status.alerts.locked.cta_title" = "Unlock alerts with Premium";
 "status.alerts.locked.preview_title" = "Lines available after unlock";
 "status.analytics.button.title" = "Open status analytics";
 "status.analytics.title" = "Line Analytics";
@@ -109,12 +143,9 @@
 "status.analytics.impact.low" = "Moderate";
 "status.analytics.impact.high" = "High";
 "status.analytics.locked.title" = "Analytics locked";
-"status.analytics.locked.message" = "This detailed panel is available to users who support development with a big tip.";
-"status.analytics.locked.how_to" = "To unlock: Settings > Tip the Developer > choose Big Tip.";
-"status.analytics.locked.cta_title" = "Unlock right here";
-"status.analytics.locked.buy_button_format" = "%@ • %@";
-"status.analytics.locked.purchase_success" = "Thanks for your support! Analytics unlocked.";
-"status.analytics.locked.debug_note" = "DEBUG mode: automatically unlocked for development.";
+"status.analytics.locked.message" = "This detailed panel is included with Due SP Premium.";
+"status.analytics.locked.how_to" = "Subscribe to Due SP Premium weekly or yearly to unlock analytics.";
+"status.analytics.locked.cta_title" = "Unlock analytics with Premium";
 
 "local_data.import_error.title" = "Import Error";
 "local_data.header.title" = "Local Transit Data";
@@ -236,9 +267,9 @@
 "stop_detail.current_stop" = "Current stop";
 "stop_detail.focused" = "Focused";
 "stop_detail.history_locked.title" = "Unlock full arrivals timeline";
-"stop_detail.history_locked.message" = "To view arrivals by custom time and load previous or next departures, support the app with a Medium or Big tip.";
+"stop_detail.history_locked.message" = "To view arrivals by custom time and load previous or next departures, subscribe to Due SP Premium.";
 "stop_detail.history_locked.how_to" = "After purchase, this feature unlocks instantly.";
-"stop_detail.history_locked.support_now" = "Support now";
+"stop_detail.history_locked.unlock_now" = "Unlock now";
 
 "intent.entity.stop.type" = "Stop";
 "intent.entity.stop.id_format" = "ID %@";

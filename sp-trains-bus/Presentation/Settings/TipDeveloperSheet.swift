@@ -14,17 +14,17 @@ struct TipDeveloperSheet: View {
 
     private let options: [TipOption] = [
         TipOption(
-            id: StatusAnalyticsTipProduct.small,
+            id: TipProductIDs.small,
             titleKey: "settings.tip.option.small.title",
             subtitleKey: "settings.tip.option.small.subtitle"
         ),
         TipOption(
-            id: StatusAnalyticsTipProduct.medium,
+            id: TipProductIDs.medium,
             titleKey: "settings.tip.option.medium.title",
             subtitleKey: "settings.tip.option.medium.subtitle"
         ),
         TipOption(
-            id: StatusAnalyticsTipProduct.large,
+            id: TipProductIDs.large,
             titleKey: "settings.tip.option.large.title",
             subtitleKey: "settings.tip.option.large.subtitle"
         )
@@ -185,13 +185,11 @@ struct TipDeveloperSheet: View {
                 switch verification {
                 case .verified(let transaction):
                     await transaction.finish()
-                    StatusAnalyticsAccessGate.recordSuccessfulPurchase(productID: option.id)
                     alertMessage = localized("settings.tip.purchase.thank_you")
                     analyticsService.trackEvent(
                         name: "tip_purchase_succeeded",
                         properties: [
-                            "product_id": option.id,
-                            "analytics_unlocked": StatusAnalyticsAccessGate.hasAccess() ? "true" : "false"
+                            "product_id": option.id
                         ]
                     )
                 case .unverified:
@@ -238,7 +236,6 @@ struct TipDeveloperSheet: View {
 
         do {
             try await AppStore.sync()
-            await syncPurchasedTierFromEntitlements()
             alertMessage = localized("settings.tip.restore.success")
             analyticsService.trackEvent(name: "tip_restore_succeeded")
         } catch {
@@ -247,13 +244,6 @@ struct TipDeveloperSheet: View {
                 name: "tip_restore_failed",
                 properties: ["error": error.localizedDescription]
             )
-        }
-    }
-
-    private func syncPurchasedTierFromEntitlements() async {
-        for await result in Transaction.currentEntitlements {
-            guard case .verified(let transaction) = result else { continue }
-            StatusAnalyticsAccessGate.recordSuccessfulPurchase(productID: transaction.productID)
         }
     }
 
@@ -274,6 +264,12 @@ private struct TipOption: Identifiable {
     let id: String
     let titleKey: String
     let subtitleKey: String
+}
+
+private enum TipProductIDs {
+    static let small = "app.lolados.sptrans.tip.small"
+    static let medium = "app.lolados.sptrans.tip.medium"
+    static let large = "app.lolados.sptrans.tip.large"
 }
 
 #Preview {

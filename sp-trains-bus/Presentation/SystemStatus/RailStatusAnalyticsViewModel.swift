@@ -149,7 +149,7 @@ final class RailStatusAnalyticsViewModel: ObservableObject {
         self.apiClient = apiClient
         self.analyticsService = analyticsService
         self.userDefaults = userDefaults
-        self.isAccessGranted = StatusAnalyticsAccessGate.hasAccess(userDefaults: userDefaults)
+        self.isAccessGranted = PremiumAccessGate.hasAnalyticsAccess(userDefaults: userDefaults)
     }
 
     var selectedLine: RailStatusAnalyticsLine? {
@@ -181,7 +181,7 @@ final class RailStatusAnalyticsViewModel: ObservableObject {
     }
 
     func loadReport() {
-        isAccessGranted = StatusAnalyticsAccessGate.hasAccess(userDefaults: userDefaults)
+        isAccessGranted = PremiumAccessGate.hasAnalyticsAccess(userDefaults: userDefaults)
         guard isAccessGranted else {
             lines = []
             totals = .empty

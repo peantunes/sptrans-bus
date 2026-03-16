@@ -48,7 +48,7 @@ final class RailDisruptionAlertsViewModel: ObservableObject {
         self.localeIdentifier = Locale.current.identifier
         self.timezoneIdentifier = TimeZone.current.identifier
         self.lines = Self.buildLines(from: lines)
-        self.isAccessGranted = StatusAnalyticsAccessGate.hasAccess(userDefaults: userDefaults)
+        self.isAccessGranted = PremiumAccessGate.hasDisruptionAlertsAccess(userDefaults: userDefaults)
     }
 
     var metroLines: [RailDisruptionAlertLine] {
@@ -80,7 +80,7 @@ final class RailDisruptionAlertsViewModel: ObservableObject {
     }
 
     func refreshAccessStatus() {
-        isAccessGranted = StatusAnalyticsAccessGate.hasAccess(userDefaults: userDefaults)
+        isAccessGranted = PremiumAccessGate.hasDisruptionAlertsAccess(userDefaults: userDefaults)
     }
 
     func isSelected(_ line: RailDisruptionAlertLine) -> Bool {

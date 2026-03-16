@@ -1,14 +1,10 @@
 import SwiftUI
 import UIKit
-import StoreKit
 
 struct RailDisruptionAlertsView: View {
     @StateObject private var viewModel: RailDisruptionAlertsViewModel
     @Environment(\.openURL) private var openURL
-    @State private var promotedProductsByID: [String: Product] = [:]
-    @State private var isLoadingPromotedProducts = false
-    @State private var activePromotedPurchaseID: String?
-    @State private var purchaseAlertMessage: String?
+    @State private var isShowingPremiumSheet = false
 
     init(viewModel: RailDisruptionAlertsViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
@@ -129,25 +125,19 @@ struct RailDisruptionAlertsView: View {
         }
         .navigationTitle(localized("status.alerts.navigation_title"))
         .navigationBarTitleDisplayMode(.inline)
-        .task(id: viewModel.isAccessGranted) {
-            guard !viewModel.isAccessGranted else { return }
-            await loadPromotedProductsIfNeeded()
-        }
-        .alert(
-            localized("settings.tip.purchase.alert.title"),
-            isPresented: Binding(
-                get: { purchaseAlertMessage != nil },
-                set: { _ in purchaseAlertMessage = nil }
-            )
-        ) {
-            Button(localized("common.ok"), role: .cancel) {}
-        } message: {
-            Text(purchaseAlertMessage ?? "")
+        .task {
+            await PremiumSubscriptionStore.shared.refreshEntitlements()
+            viewModel.refreshAccessStatus()
+            viewModel.loadExistingSubscriptions()
         }
         .onAppear {
-            viewModel.refreshAccessStatus()
             viewModel.trackScreenOpened()
-            viewModel.loadExistingSubscriptions()
+        }
+        .sheet(isPresented: $isShowingPremiumSheet) {
+            PremiumSubscriptionSheet(source: "rail_disruption_alerts") {
+                viewModel.refreshAccessStatus()
+                viewModel.loadExistingSubscriptions()
+            }
         }
     }
 
@@ -173,13 +163,25 @@ struct RailDisruptionAlertsView: View {
                         .foregroundColor(AppColors.text)
                         .padding(.top, 2)
 
-                    promotedPurchaseButtons
-
-                    #if DEBUG
-                    Text(localized("status.alerts.locked.debug_note"))
-                        .font(AppFonts.caption())
-                        .foregroundColor(AppColors.statusNormal)
-                    #endif
+                    Button {
+                        isShowingPremiumSheet = true
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "crown.fill")
+                                .font(.caption)
+                            Text(localized("premium.view_plans"))
+                                .font(AppFonts.subheadline())
+                                .fontWeight(.semibold)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .foregroundColor(.white)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(AppColors.accent)
+                        )
+                    }
+                    .buttonStyle(.plain)
                 }
             }
 
@@ -199,52 +201,6 @@ struct RailDisruptionAlertsView: View {
                 .redacted(reason: .placeholder)
             }
         }
-    }
-
-    private var promotedPurchaseButtons: some View {
-        promotedPurchaseButton(
-            productID: StatusAnalyticsTipProduct.large,
-            titleKey: "settings.tip.option.large.title",
-            tint: AppColors.accent
-        )
-    }
-
-    @ViewBuilder
-    private func promotedPurchaseButton(productID: String, titleKey: String, tint: Color) -> some View {
-        let isPurchasing = activePromotedPurchaseID == productID
-        let price = promotedProductsByID[productID]?.displayPrice ?? localized("settings.tip.unavailable")
-        let isEnabled = promotedProductsByID[productID] != nil && activePromotedPurchaseID == nil
-
-        Button {
-            Task {
-                await purchasePromotedTip(productID: productID)
-            }
-        } label: {
-            HStack {
-                if isPurchasing {
-                    ProgressView()
-                        .progressViewStyle(.circular)
-                        .tint(.white)
-                } else {
-                    Image(systemName: "bell.badge.fill")
-                        .font(.caption)
-                }
-
-                Text(String(format: localized("status.alerts.locked.buy_button_format"), localized(titleKey), price))
-                    .font(AppFonts.subheadline())
-                    .fontWeight(.semibold)
-                    .lineLimit(1)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
-            .foregroundColor(.white)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(isEnabled ? tint : AppColors.lightGray.opacity(0.55))
-            )
-        }
-        .buttonStyle(.plain)
-        .disabled(!isEnabled || isLoadingPromotedProducts)
     }
 
     private func previewLineRow(title: String) -> some View {
@@ -299,54 +255,5 @@ struct RailDisruptionAlertsView: View {
 
     private func localized(_ key: String) -> String {
         NSLocalizedString(key, comment: "")
-    }
-
-    private func loadPromotedProductsIfNeeded() async {
-        guard promotedProductsByID.isEmpty else { return }
-        isLoadingPromotedProducts = true
-        defer { isLoadingPromotedProducts = false }
-
-        do {
-            let ids = Set([StatusAnalyticsTipProduct.large])
-            let products = try await Product.products(for: ids)
-            promotedProductsByID = Dictionary(uniqueKeysWithValues: products.map { ($0.id, $0) })
-        } catch {
-            purchaseAlertMessage = localized("settings.tip.error.load_products")
-        }
-    }
-
-    private func purchasePromotedTip(productID: String) async {
-        guard let product = promotedProductsByID[productID] else {
-            purchaseAlertMessage = localized("settings.tip.error.option_unavailable")
-            return
-        }
-
-        activePromotedPurchaseID = productID
-        defer { activePromotedPurchaseID = nil }
-
-        do {
-            let result = try await product.purchase()
-            switch result {
-            case .success(let verification):
-                switch verification {
-                case .verified(let transaction):
-                    await transaction.finish()
-                    StatusAnalyticsAccessGate.recordSuccessfulPurchase(productID: productID)
-                    purchaseAlertMessage = localized("status.alerts.locked.purchase_success")
-                    viewModel.refreshAccessStatus()
-                    viewModel.loadExistingSubscriptions()
-                case .unverified:
-                    purchaseAlertMessage = localized("settings.tip.purchase.unverified")
-                }
-            case .pending:
-                purchaseAlertMessage = localized("settings.tip.purchase.pending")
-            case .userCancelled:
-                break
-            @unknown default:
-                purchaseAlertMessage = localized("settings.tip.error.purchase_failed")
-            }
-        } catch {
-            purchaseAlertMessage = localized("settings.tip.error.purchase_failed")
-        }
     }
 }

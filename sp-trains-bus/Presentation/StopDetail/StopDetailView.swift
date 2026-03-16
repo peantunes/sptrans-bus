@@ -6,7 +6,7 @@ struct StopDetailView: View {
     @State private var isShowingJourneyDetail: Bool = false
     @State private var isShowingReferencePicker: Bool = false
     @State private var isShowingHistoryUnlockInfo: Bool = false
-    @State private var isShowingTipSheet: Bool = false
+    @State private var isShowingPremiumSheet: Bool = false
     @State private var selectedReferenceDate: Date = Date()
 
     init(viewModel: StopDetailViewModel) {
@@ -201,24 +201,27 @@ struct StopDetailView: View {
             }
             .sheet(isPresented: $isShowingHistoryUnlockInfo) {
                 ArrivalsHistoryUnlockInfoSheet(
-                    onSupportNow: {
+                    onUnlockNow: {
                         isShowingHistoryUnlockInfo = false
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                            isShowingTipSheet = true
+                            isShowingPremiumSheet = true
                         }
                     }
                 )
                 .presentationDetents([.height(280)])
                 .presentationDragIndicator(.visible)
             }
-            .sheet(isPresented: $isShowingTipSheet) {
-                TipDeveloperSheet()
+            .sheet(isPresented: $isShowingPremiumSheet) {
+                PremiumSubscriptionSheet(source: "stop_detail_arrivals_history")
+            }
+            .task {
+                await PremiumSubscriptionStore.shared.refreshEntitlements()
             }
         }
     }
 
     private var hasArrivalsHistoryAccess: Bool {
-        StatusAnalyticsAccessGate.hasArrivalsHistoryAccess()
+        PremiumAccessGate.hasArrivalsHistoryAccess()
     }
 
     private func localized(_ key: String) -> String {
@@ -228,7 +231,7 @@ struct StopDetailView: View {
 
 private struct ArrivalsHistoryUnlockInfoSheet: View {
     @Environment(\.dismiss) private var dismiss
-    let onSupportNow: () -> Void
+    let onUnlockNow: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -250,8 +253,8 @@ private struct ArrivalsHistoryUnlockInfoSheet: View {
                 }
                 .buttonStyle(.bordered)
 
-                Button(localized("stop_detail.history_locked.support_now")) {
-                    onSupportNow()
+                Button(localized("stop_detail.history_locked.unlock_now")) {
+                    onUnlockNow()
                 }
                 .buttonStyle(.borderedProminent)
             }

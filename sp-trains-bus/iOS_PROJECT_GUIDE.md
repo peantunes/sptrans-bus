@@ -13,6 +13,26 @@
 
 ---
 
+## Premium Access (Current)
+
+Premium features now use StoreKit auto-renewable subscriptions instead of tip-based unlocking.
+
+Products:
+- `app.lolados.data.weekly`
+- `app.lolados.data.yearly`
+
+Unlocked premium feature set:
+- rail disruption notifications
+- rail status analytics
+- custom date/time and previous/next arrivals in `StopDetailView`
+
+Implementation notes:
+- Shared entitlement source: `Infrastructure/Services/PremiumSubscriptionStore.swift`
+- Synchronous UI gate for premium-only features: `PremiumAccessGate`
+- Tip products remain in settings as optional support only and do not unlock features
+
+---
+
 ## Apple Watch + Widgets Integration (Current)
 
 The same Xcode project now includes:
@@ -1002,6 +1022,6 @@ All networking, storage, and location services built from scratch using native i
 
 ---
 
-**Last Updated**: 2026-02-27
+**Last Updated**: 2026-03-16
 **Architecture**: Clean Architecture + MVVM
 **Status**: Production Ready (with TODOs)

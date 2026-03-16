@@ -5,7 +5,8 @@ import UIKit
 struct GeneralSettingsView: View {
     @Environment(\.requestReview) private var requestReview
     @AppStorage(AppTheme.selectedPrimaryColorHexKey) private var selectedPrimaryColorHex = AppTheme.defaultPrimaryColorHex
-    @State private var isShowingTipSheet = false
+    @ObservedObject private var subscriptionStore = PremiumSubscriptionStore.shared
+    @State private var activeSheet: SettingsSheet?
     let analyticsService: AnalyticsServiceProtocol
 
     private let appWebsiteURL = URL(string: "https://sptrans.lolados.app")
@@ -82,6 +83,26 @@ struct GeneralSettingsView: View {
 
             Section(localized("settings.section.support")) {
                 Button {
+                    analyticsService.trackEvent(name: "settings_premium_opened")
+                    activeSheet = .premium
+                } label: {
+                    HStack(spacing: 12) {
+                        settingsRow(title: localized("settings.support.premium_plan"), systemImage: "crown")
+
+                        if subscriptionStore.hasPremiumAccess {
+                            Text(localized("settings.support.premium_active"))
+                                .font(AppFonts.caption().bold())
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(AppColors.statusNormal.opacity(0.14))
+                                .foregroundColor(AppColors.statusNormal)
+                                .clipShape(Capsule())
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+
+                Button {
                     analyticsService.trackEvent(name: "settings_review_tapped")
                     requestReview()
                 } label: {
@@ -91,7 +112,7 @@ struct GeneralSettingsView: View {
 
                 Button {
                     analyticsService.trackEvent(name: "settings_tip_modal_opened")
-                    isShowingTipSheet = true
+                    activeSheet = .tip
                 } label: {
                     settingsRow(title: localized("settings.support.tip_developer"), systemImage: "heart.circle")
                 }
@@ -155,12 +176,23 @@ struct GeneralSettingsView: View {
         .listStyle(.insetGrouped)
         .navigationTitle(localized("settings.title"))
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $isShowingTipSheet) {
-            TipDeveloperSheet(analyticsService: analyticsService)
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .premium:
+                PremiumSubscriptionSheet(
+                    analyticsService: analyticsService,
+                    source: "settings"
+                )
+            case .tip:
+                TipDeveloperSheet(analyticsService: analyticsService)
+            }
         }
         .onAppear {
             analyticsService.trackScreen(name: "GeneralSettingsView", className: "GeneralSettingsView")
             analyticsService.trackEvent(name: "settings_screen_opened")
+        }
+        .task {
+            await subscriptionStore.refreshEntitlements()
         }
         .onChange(of: selectedPrimaryColorHex) { oldValue, newValue in
             guard oldValue != newValue else { return }
@@ -225,6 +257,20 @@ struct GeneralSettingsView: View {
         }
         .contentShape(Rectangle())
         .padding(.vertical, 2)
+    }
+}
+
+private enum SettingsSheet: Identifiable {
+    case premium
+    case tip
+
+    var id: String {
+        switch self {
+        case .premium:
+            return "premium"
+        case .tip:
+            return "tip"
+        }
     }
 }
 

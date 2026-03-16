@@ -6,6 +6,8 @@
 "settings.about.version_format" = "Versão %@";
 "settings.appearance.accent_color" = "Cor de destaque";
 "settings.appearance.accent_color_accessibility_format" = "cor de destaque %@";
+"settings.support.premium_plan" = "Due SP Premium";
+"settings.support.premium_active" = "Ativo";
 "settings.support.review_app" = "Avaliar o app";
 "settings.support.tip_developer" = "Apoiar o desenvolvedor";
 "settings.support.website" = "Website";
@@ -14,7 +16,7 @@
 "settings.legal.terms" = "Termos de Uso";
 
 "settings.tip.title" = "Apoiar o desenvolvedor";
-"settings.tip.description" = "Escolha uma contribuição única para apoiar o desenvolvimento e desbloquear recursos avançados.";
+"settings.tip.description" = "Escolha uma contribuição única para apoiar o desenvolvimento. As contribuições não desbloqueiam recursos premium.";
 "settings.tip.options.title" = "Opções de contribuição";
 "settings.tip.loading_products" = "Carregando produtos...";
 "settings.tip.unavailable" = "Indisponível";
@@ -32,9 +34,44 @@
 "settings.tip.option.small.title" = "Contribuição pequena";
 "settings.tip.option.small.subtitle" = "Ajude a manter as atualizações.";
 "settings.tip.option.medium.title" = "Contribuição média";
-"settings.tip.option.medium.subtitle" = "Desbloqueia a linha do tempo avançada de chegadas: seletor de horário e partidas anteriores/seguintes.";
+"settings.tip.option.medium.subtitle" = "Uma forma simples de apoiar as próximas atualizações.";
 "settings.tip.option.large.title" = "Contribuição grande";
-"settings.tip.option.large.subtitle" = "Desbloqueia tudo: analytics, alertas de interrupção e linha do tempo avançada de chegadas.";
+"settings.tip.option.large.subtitle" = "Apoio extra ao desenvolvimento, sem desbloqueio de recursos.";
+
+"premium.title" = "Due SP Premium";
+"premium.description" = "Desbloqueie todas as ferramentas premium do app com um plano recorrente. Os planos semanal e anual liberam exatamente os mesmos recursos.";
+"premium.hero.badge" = "ACESSO TOTAL";
+"premium.hero.title" = "Viaje com o painel completo";
+"premium.hero.same_features" = "Mesmos recursos";
+"premium.hero.weekly_yearly" = "Semanal ou anual";
+"premium.hero.cancel_anytime" = "Cancele quando quiser";
+"premium.features.title" = "Inclui";
+"premium.features.analytics" = "Analytics de status ferroviário";
+"premium.features.alerts" = "Notificações de interrupção ferroviária";
+"premium.features.arrivals" = "Data/hora personalizada e chegadas anteriores/seguintes no detalhe do ponto";
+"premium.options.title" = "Escolha um plano";
+"premium.plan.note" = "Escolha um";
+"premium.plan.all_features" = "Todos os recursos premium";
+"premium.option.weekly.title" = "Semanal";
+"premium.option.weekly.subtitle" = "Acesso premium completo com cobrança semanal.";
+"premium.option.yearly.title" = "Anual";
+"premium.option.yearly.subtitle" = "Acesso premium completo com cobrança anual.";
+"premium.option.yearly.badge" = "Melhor valor";
+"premium.loading_products" = "Carregando planos...";
+"premium.unavailable" = "Indisponível";
+"premium.view_plans" = "Ver planos Premium";
+"premium.purchase.alert.title" = "Premium";
+"premium.purchase.unverified" = "Não foi possível verificar a assinatura.";
+"premium.purchase.pending" = "A assinatura está pendente de aprovação.";
+"premium.cta.subscribe_format" = "Assinar %@ • %@";
+"premium.cta.footnote" = "Os dois planos liberam os mesmos recursos premium imediatamente.";
+"premium.restore.title" = "Já é assinante?";
+"premium.restore.subtitle" = "Restaure a compra se você já tiver uma assinatura ativa do Due SP Premium neste Apple ID.";
+"premium.error.option_unavailable" = "Este plano não está disponível no momento.";
+"premium.error.purchase_failed" = "A compra da assinatura falhou. Tente novamente.";
+"premium.restore.button" = "Restaurar assinaturas";
+"premium.restore.failed" = "Não foi possível restaurar as assinaturas.";
+"premium.restore.no_active_subscription" = "Nenhuma assinatura Premium ativa foi encontrada.";
 
 "common.done" = "Concluir";
 "common.ok" = "OK";
@@ -78,12 +115,9 @@
 "status.alerts.notifications_blocked.message" = "Para receber alertas de interrupção, permita notificações deste app nos Ajustes do iPhone.";
 "status.alerts.notifications_blocked.open_settings" = "Abrir Ajustes";
 "status.alerts.locked.title" = "Alertas bloqueados";
-"status.alerts.locked.message" = "Os alertas de interrupção ferroviária estão disponíveis para quem apoia o desenvolvimento com contribuição grande.";
-"status.alerts.locked.how_to" = "Para liberar: Configurações > Apoiar o desenvolvedor > escolha contribuição grande.";
-"status.alerts.locked.cta_title" = "Desbloqueie os alertas agora";
-"status.alerts.locked.buy_button_format" = "%@ • %@";
-"status.alerts.locked.purchase_success" = "Obrigado pelo apoio! Alertas desbloqueados.";
-"status.alerts.locked.debug_note" = "Modo DEBUG: desbloqueado automaticamente para desenvolvimento.";
+"status.alerts.locked.message" = "Os alertas de interrupção ferroviária fazem parte do Due SP Premium.";
+"status.alerts.locked.how_to" = "Assine o Due SP Premium no plano semanal ou anual para liberar os alertas.";
+"status.alerts.locked.cta_title" = "Desbloqueie os alertas com Premium";
 "status.alerts.locked.preview_title" = "Linhas disponíveis após desbloquear";
 "status.analytics.button.title" = "Abrir analytics de status";
 "status.analytics.title" = "Analytics de Linhas";
@@ -109,12 +143,9 @@
 "status.analytics.impact.low" = "Impacto moderado";
 "status.analytics.impact.high" = "Impacto alto";
 "status.analytics.locked.title" = "Analytics bloqueado";
-"status.analytics.locked.message" = "Este painel detalhado está disponível para quem apoia o desenvolvimento com contribuição grande.";
-"status.analytics.locked.how_to" = "Para liberar: Configurações > Apoiar o desenvolvedor > escolha contribuição grande.";
-"status.analytics.locked.cta_title" = "Desbloqueie agora direto por aqui";
-"status.analytics.locked.buy_button_format" = "%@ • %@";
-"status.analytics.locked.purchase_success" = "Obrigado pelo apoio! Analytics desbloqueado.";
-"status.analytics.locked.debug_note" = "Modo DEBUG: desbloqueado automaticamente para desenvolvimento.";
+"status.analytics.locked.message" = "Este painel detalhado faz parte do Due SP Premium.";
+"status.analytics.locked.how_to" = "Assine o Due SP Premium no plano semanal ou anual para liberar o analytics.";
+"status.analytics.locked.cta_title" = "Desbloqueie o analytics com Premium";
 
 "local_data.import_error.title" = "Erro de importação";
 "local_data.header.title" = "Dados Locais de Transporte";
@@ -236,9 +267,9 @@
 "stop_detail.current_stop" = "Parada atual";
 "stop_detail.focused" = "Focada";
 "stop_detail.history_locked.title" = "Desbloqueie a linha do tempo completa";
-"stop_detail.history_locked.message" = "Para ver chegadas por horário personalizado e carregar partidas anteriores e seguintes, apoie o app com uma contribuição média ou grande.";
+"stop_detail.history_locked.message" = "Para ver chegadas por horário personalizado e carregar partidas anteriores e seguintes, assine o Due SP Premium.";
 "stop_detail.history_locked.how_to" = "Após a compra, o recurso é desbloqueado imediatamente.";
-"stop_detail.history_locked.support_now" = "Apoiar agora";
+"stop_detail.history_locked.unlock_now" = "Desbloquear agora";
 
 "intent.entity.stop.type" = "Parada";
 "intent.entity.stop.id_format" = "ID %@";

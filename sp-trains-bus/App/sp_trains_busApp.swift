@@ -24,6 +24,7 @@ struct sp_trains_busApp: App {
                 .modelContainer(dependencies.modelContainer)
                 .task {
                     startAnalyticsIfNeeded()
+                    await PremiumSubscriptionStore.shared.refreshEntitlements()
                 }
                 .onOpenURL { url in
                     navigationCoordinator.handle(url: url)
