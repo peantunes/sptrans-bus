@@ -60,6 +60,19 @@ open /Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/sp-trains-
 More iOS architecture details:
 - `/Users/pedroantunes/Code/Projects/Published/due-sp/sp-trains-bus/iOS_PROJECT_GUIDE.md`
 
+### Premium Access
+
+Premium-only features in the iOS app now use StoreKit auto-renewable subscriptions:
+- `app.lolados.data.weekly`
+- `app.lolados.data.yearly`
+
+Both plans unlock the same premium feature set:
+- rail disruption notifications
+- rail status analytics
+- custom date/time plus previous/next arrivals in stop detail
+
+One-time tip products still exist as optional support only and do not unlock features.
+
 ## Apple Watch Companion
 
 Watch targets (in the same Xcode project):

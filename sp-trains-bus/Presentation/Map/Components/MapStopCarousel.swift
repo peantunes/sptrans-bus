@@ -6,23 +6,6 @@ struct MapStopCarousel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-//            HStack {
-//                Text(localized("map.carousel.nearby_center"))
-//                    .font(AppFonts.subheadline())
-//                    .foregroundColor(AppColors.text)
-//
-//                Spacer()
-//
-//                Text("\(items.count)")
-//                    .font(AppFonts.caption())
-//                    .foregroundColor(AppColors.text.opacity(0.6))
-//                    .padding(.horizontal, 8)
-//                    .padding(.vertical, 4)
-//                    .background(AppColors.text.opacity(0.1))
-//                    .clipShape(Capsule())
-//            }
-//            .padding(.horizontal)
-
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     ForEach(items) { item in
@@ -37,17 +20,6 @@ struct MapStopCarousel: View {
             }
         }
         .padding(.vertical, 8)
-//        .background(
-//            LinearGradient(
-//                gradient: Gradient(colors: [
-//                    AppColors.background.opacity(0.95),
-//                    AppColors.background.opacity(0.85)
-//                ]),
-//                startPoint: .top,
-//                endPoint: .bottom
-//            )
-//            .ignoresSafeArea()
-//        )
     }
 
     private func localized(_ key: String) -> String {
@@ -75,14 +47,14 @@ private struct MapStopCard: View {
 
                         Image(systemName: stopSymbolName)
                             .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(.white)
+                            .foregroundColor(.primary)
                     }
 
                     Spacer()
 
                     Text(distanceText)
                         .font(AppFonts.caption().bold())
-                        .foregroundColor(.white.opacity(0.95))
+                        .foregroundColor(.primary.opacity(0.95))
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
                         .background(
@@ -94,7 +66,7 @@ private struct MapStopCard: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Text(item.stop.stopName)
                         .font(AppFonts.title3().bold())
-                        .foregroundColor(.white)
+                        .foregroundColor(.primary)
                         .lineLimit(2)
                         .shadow(color: .black.opacity(0.22), radius: 8, x: 0, y: 2)
 
@@ -107,10 +79,10 @@ private struct MapStopCard: View {
                             infoTag(title: localized("map.carousel.accessible"), systemImage: "figure.roll")
                         }
                     }
-
+//                    Text(item.stop.transportType.name)
                     Text(localized("map.carousel.tap_arrivals"))
                         .font(AppFonts.caption())
-                        .foregroundColor(.white.opacity(0.78))
+                        .foregroundColor(.primary.opacity(0.78))
                 }
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -119,8 +91,8 @@ private struct MapStopCard: View {
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    Color.black.opacity(0.28),
-                                    Color.black.opacity(0.18)
+                                    AppColors.primary.opacity(0.28),
+                                    AppColors.primary.opacity(0.18)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -129,7 +101,7 @@ private struct MapStopCard: View {
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                        .stroke(AppColors.primary.opacity(0.6), lineWidth: 1)
                 )
             }
             .frame(width: 220, alignment: .leading)

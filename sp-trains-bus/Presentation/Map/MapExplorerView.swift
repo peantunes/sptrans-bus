@@ -92,11 +92,6 @@ struct MapExplorerView: View {
                     }
 
                     Spacer()
-//
-//                    // Placeholder for balance (invisible)
-//                    Color.clear
-//                        .frame(width: 44, height: 44)
-//                        .padding(.trailing, 16)
                 }
                 .padding(.bottom, showCarousel ? 0 : 24)
             }
