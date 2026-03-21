@@ -11,7 +11,7 @@ struct MapWeatherButton: View {
                 HStack(spacing: 8) {
                     Image(systemName: resolvedSymbolName)
                         .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(AppColors.accent)
+                        .foregroundColor(AppColors.text)
                     
                     Text("\(Int(snapshot.current.temperatureCelsius.rounded()))°")
                         .font(AppFonts.subheadline())
@@ -19,6 +19,7 @@ struct MapWeatherButton: View {
                         .foregroundColor(AppColors.text)
                 }
             }
+            .containerShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(localized("map.weather.open_details_accessibility"))

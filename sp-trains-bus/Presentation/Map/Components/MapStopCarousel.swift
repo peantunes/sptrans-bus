@@ -54,7 +54,7 @@ private struct MapStopCard: View {
 
                     Text(distanceText)
                         .font(AppFonts.caption().bold())
-                        .foregroundColor(.primary.opacity(0.95))
+                        .foregroundColor(AppColors.text.opacity(0.95))
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
                         .background(
@@ -66,7 +66,7 @@ private struct MapStopCard: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Text(item.stop.stopName)
                         .font(AppFonts.title3().bold())
-                        .foregroundColor(.primary)
+                        .foregroundColor(AppColors.text)
                         .lineLimit(2)
                         .shadow(color: .black.opacity(0.22), radius: 8, x: 0, y: 2)
 
@@ -82,7 +82,7 @@ private struct MapStopCard: View {
 //                    Text(item.stop.transportType.name)
                     Text(localized("map.carousel.tap_arrivals"))
                         .font(AppFonts.caption())
-                        .foregroundColor(.primary.opacity(0.78))
+                        .foregroundColor(.secondary.opacity(0.78))
                 }
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)

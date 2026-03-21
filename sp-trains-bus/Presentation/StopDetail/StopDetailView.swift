@@ -125,7 +125,7 @@ struct StopDetailView: View {
                                 isShowingHistoryUnlockInfo = true
                             }
                         }) {
-                            Image(systemName: hasArrivalsHistoryAccess ? "clock" : "clock.badge.lock")
+                            Image(systemName: hasArrivalsHistoryAccess ? "clock" : "lock.badge.clock")
                                 .font(.title3)
                                 .foregroundColor(
                                     hasArrivalsHistoryAccess
