@@ -19,9 +19,9 @@ struct MapWeatherButton: View {
                         .foregroundColor(AppColors.text)
                 }
             }
-            .containerShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .contentShape(Rectangle())
         .accessibilityLabel(localized("map.weather.open_details_accessibility"))
     }
 
