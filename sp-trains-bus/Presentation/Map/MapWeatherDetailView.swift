@@ -5,6 +5,7 @@ import UIKit
 struct MapWeatherDetailView: View {
     let snapshot: WeatherSnapshot
     @State private var selectedDayIndex = 0
+    @State private var showingAttributionWebView = false
 
     @Environment(\.dismiss) private var dismiss
 
@@ -12,6 +13,7 @@ struct MapWeatherDetailView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
+                    appleWeatherLabel
                     currentSummaryCard
                     hourlyTemperatureChart
                     hourlyPrecipitationChart
@@ -30,6 +32,35 @@ struct MapWeatherDetailView: View {
                         dismiss()
                     }
                 }
+            }
+        }
+        .sheet(isPresented: $showingAttributionWebView) {
+            NavigationStack {
+                SettingsWebView(
+                    title: " Weather",
+                    url: URL(string: "https://developer.apple.com/weatherkit/data-source-attribution/")!,
+                    analyticsService: NoOpAnalyticsService(),
+                    analyticsSource: "map_weather_attribution"
+                )
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button(localized("common.done")) {
+                            showingAttributionWebView = false
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    private var appleWeatherLabel: some View {
+        HStack {
+            Spacer()
+            Text("map.weather.trademark.label")
+            Button {
+                showingAttributionWebView = true
+            } label: {
+                Text(" Weather")
             }
         }
     }

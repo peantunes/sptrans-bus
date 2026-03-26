@@ -220,6 +220,7 @@
 "map.carousel.distance_m_format" = "%d m";
 "map.carousel.distance_km_format" = "%.1f km";
 "map.weather.title" = "Clima";
+"map.weather.trademark.label" = "Disponibilizado por";
 "map.weather.open_details_accessibility" = "Abrir detalhes do clima";
 "map.weather.metrics.feels_like" = "Sensação";
 "map.weather.metrics.humidity" = "Umidade";
