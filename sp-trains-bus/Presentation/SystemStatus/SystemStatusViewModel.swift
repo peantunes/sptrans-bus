@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import UserNotifications
 
 enum RailStatusSeverity: Int {
     case normal = 0
@@ -72,19 +73,22 @@ class SystemStatusViewModel: ObservableObject {
     private let userDefaults: UserDefaults
     private let analyticsService: AnalyticsServiceProtocol
     private let watchSnapshotSync: WatchSnapshotSyncing
+    private let pushNotificationManager: PushNotificationManager
 
     init(
         apiClient: APIClient,
         fallbackUseCase: GetMetroStatusUseCase = GetMetroStatusUseCase(),
         userDefaults: UserDefaults = .standard,
         analyticsService: AnalyticsServiceProtocol = NoOpAnalyticsService(),
-        watchSnapshotSync: WatchSnapshotSyncing = NoOpWatchSnapshotSync()
+        watchSnapshotSync: WatchSnapshotSyncing = NoOpWatchSnapshotSync(),
+        pushNotificationManager: PushNotificationManager = .shared
     ) {
         self.apiClient = apiClient
         self.getMetroStatusUseCase = fallbackUseCase
         self.userDefaults = userDefaults
         self.analyticsService = analyticsService
         self.watchSnapshotSync = watchSnapshotSync
+        self.pushNotificationManager = pushNotificationManager
         self.favoriteLineIDs = Set(Self.resolveFavoriteIDs(from: userDefaults))
     }
 
@@ -92,13 +96,15 @@ class SystemStatusViewModel: ObservableObject {
         getMetroStatusUseCase: GetMetroStatusUseCase,
         userDefaults: UserDefaults = .standard,
         analyticsService: AnalyticsServiceProtocol = NoOpAnalyticsService(),
-        watchSnapshotSync: WatchSnapshotSyncing = NoOpWatchSnapshotSync()
+        watchSnapshotSync: WatchSnapshotSyncing = NoOpWatchSnapshotSync(),
+        pushNotificationManager: PushNotificationManager = .shared
     ) {
         self.apiClient = nil
         self.getMetroStatusUseCase = getMetroStatusUseCase
         self.userDefaults = userDefaults
         self.analyticsService = analyticsService
         self.watchSnapshotSync = watchSnapshotSync
+        self.pushNotificationManager = pushNotificationManager
         self.favoriteLineIDs = Set(Self.resolveFavoriteIDs(from: userDefaults))
     }
 
@@ -182,6 +188,45 @@ class SystemStatusViewModel: ObservableObject {
             lines: availableLines,
             analyticsService: analyticsService,
             userDefaults: userDefaults
+        )
+    }
+
+    var hasDisruptionAlertSetupSupport: Bool {
+        apiClient != nil && !(metroLineStatuses + cptmLineStatuses).isEmpty
+    }
+
+    func needsDisruptionAlertSetupPrompt() async -> Bool {
+        guard let apiClient else { return false }
+
+        async let localAuthorizationStatus = pushNotificationManager.currentAuthorizationStatus()
+        async let stateResponse: RailAlertSubscriptionStateEnvelopeDTO = apiClient.request(
+            endpoint: TransitAPIEndpoint.railAlertSubscriptionsState(
+                installationId: pushNotificationManager.installationId
+            )
+        )
+
+        do {
+            let (authorizationStatus, response) = try await (localAuthorizationStatus, stateResponse)
+            let hasSubscriptions = !response.state.subscriptions.isEmpty
+            let remoteAuthorizationStatus = response.state.authorizationStatus?.lowercased()
+            let notificationsAllowed = Self.notificationsAllowed(authorizationStatus)
+                && remoteAuthorizationStatus != "denied"
+                && response.state.notificationsEnabled
+
+            return !hasSubscriptions || !notificationsAllowed
+        } catch {
+            return false
+        }
+    }
+
+    func requestDisruptionAlertNotificationAuthorization() async {
+        let status = await pushNotificationManager.requestAuthorizationIfNeeded()
+        if Self.notificationsAllowed(status) {
+            pushNotificationManager.registerForRemoteNotifications()
+        }
+        analyticsService.trackEvent(
+            name: "rail_disruption_alerts_prompt_cta_tapped",
+            properties: ["authorization_status": Self.authorizationStatusString(status)]
         )
     }
 
@@ -547,5 +592,33 @@ class SystemStatusViewModel: ObservableObject {
             )
         }
         watchSnapshotSync.syncRailStatus(lines: snapshots)
+    }
+
+    private static func notificationsAllowed(_ status: UNAuthorizationStatus) -> Bool {
+        switch status {
+        case .authorized, .provisional, .ephemeral:
+            return true
+        case .notDetermined, .denied:
+            return false
+        @unknown default:
+            return false
+        }
+    }
+
+    private static func authorizationStatusString(_ status: UNAuthorizationStatus) -> String {
+        switch status {
+        case .notDetermined:
+            return "notDetermined"
+        case .denied:
+            return "denied"
+        case .authorized:
+            return "authorized"
+        case .provisional:
+            return "provisional"
+        case .ephemeral:
+            return "ephemeral"
+        @unknown default:
+            return "unknown"
+        }
     }
 }

@@ -48,7 +48,7 @@ final class RailDisruptionAlertsViewModel: ObservableObject {
         self.localeIdentifier = Locale.current.identifier
         self.timezoneIdentifier = TimeZone.current.identifier
         self.lines = Self.buildLines(from: lines)
-        self.isAccessGranted = PremiumAccessGate.hasDisruptionAlertsAccess(userDefaults: userDefaults)
+        self.isAccessGranted = true
     }
 
     var metroLines: [RailDisruptionAlertLine] {
@@ -80,7 +80,7 @@ final class RailDisruptionAlertsViewModel: ObservableObject {
     }
 
     func refreshAccessStatus() {
-        isAccessGranted = PremiumAccessGate.hasDisruptionAlertsAccess(userDefaults: userDefaults)
+        isAccessGranted = true
     }
 
     func isSelected(_ line: RailDisruptionAlertLine) -> Bool {
@@ -106,16 +106,6 @@ final class RailDisruptionAlertsViewModel: ObservableObject {
 
     func loadExistingSubscriptions() {
         refreshAccessStatus()
-        guard isAccessGranted else {
-            isLoading = false
-            isSaving = false
-            shouldShowSettingsHint = false
-            errorMessage = nil
-            successMessage = nil
-            analyticsService.trackEvent(name: "rail_disruption_alerts_load_blocked_locked")
-            return
-        }
-
         isLoading = true
         errorMessage = nil
         successMessage = nil
@@ -135,10 +125,11 @@ final class RailDisruptionAlertsViewModel: ObservableObject {
                 let availableIDs = Set(lines.map(\.id))
                 let selectedFromServer = Set(response.state.subscriptions.map(\.lineId)).intersection(availableIDs)
                 let authStatus = parseAuthorizationStatus(response.state.authorizationStatus)
+                let localAuthStatus = await pushNotificationManager.currentAuthorizationStatus()
 
                 await MainActor.run {
                     self.selectedLineIDs = selectedFromServer
-                    self.shouldShowSettingsHint = authStatus == .denied
+                    self.shouldShowSettingsHint = authStatus == .denied || localAuthStatus == .denied
                     self.isLoading = false
                 }
             } catch {
@@ -150,16 +141,8 @@ final class RailDisruptionAlertsViewModel: ObservableObject {
         }
     }
 
-    func saveSubscriptions() {
+    func saveSubscriptions(onSuccess: (() -> Void)? = nil) {
         refreshAccessStatus()
-        guard isAccessGranted else {
-            isSaving = false
-            shouldShowSettingsHint = false
-            errorMessage = NSLocalizedString("status.alerts.locked.message", comment: "")
-            analyticsService.trackEvent(name: "rail_disruption_alerts_save_blocked_locked")
-            return
-        }
-
         isSaving = true
         errorMessage = nil
         successMessage = nil
@@ -228,6 +211,7 @@ final class RailDisruptionAlertsViewModel: ObservableObject {
                         name: "rail_disruption_alerts_saved",
                         properties: ["subscriptions_count": "\(selectedFromServer.count)"]
                     )
+                    onSuccess?()
                 }
             } catch {
                 await MainActor.run {

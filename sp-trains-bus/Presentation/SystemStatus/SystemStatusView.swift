@@ -4,6 +4,9 @@ struct SystemStatusView: View {
     @StateObject private var viewModel: SystemStatusViewModel
     @ObservedObject var navigationCoordinator: AppNavigationCoordinator
     @State private var highlightedLineID: String?
+    @State private var isShowingAlertSetupPrompt = false
+    @State private var isNavigatingToDisruptionAlerts = false
+    @State private var hasEvaluatedAlertSetupPrompt = false
 
     init(viewModel: SystemStatusViewModel, navigationCoordinator: AppNavigationCoordinator) {
         _viewModel = StateObject(wrappedValue: viewModel)
@@ -60,6 +63,7 @@ struct SystemStatusView: View {
             }
             .onChange(of: viewModel.metroLineStatuses.count + viewModel.cptmLineStatuses.count) { _, _ in
                 revealPendingLine(using: proxy)
+                evaluateAlertSetupPromptIfNeeded()
             }
         }
         .navigationTitle(localized("status.title"))
@@ -83,10 +87,26 @@ struct SystemStatusView: View {
                 .accessibilityLabel(localized("status.analytics.button.title"))
             }
         }
+        .navigationDestination(isPresented: $isNavigatingToDisruptionAlerts) {
+            RailDisruptionAlertsView(viewModel: viewModel.makeDisruptionAlertsViewModel())
+        }
+        .sheet(isPresented: $isShowingAlertSetupPrompt) {
+            RailAlertSetupPromptSheet(
+                onChooseLines: {
+                    await openDisruptionAlertsFromPrompt()
+                },
+                onDismiss: {
+                    isShowingAlertSetupPrompt = false
+                }
+            )
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
+        }
         .onAppear {
             viewModel.trackScreenOpened()
             viewModel.loadMetroStatus()
             revealPendingLine(using: nil)
+            evaluateAlertSetupPromptIfNeeded()
         }
     }
 
@@ -145,6 +165,110 @@ struct SystemStatusView: View {
                 highlightedLineID = nil
             }
         }
+    }
+
+    private func evaluateAlertSetupPromptIfNeeded() {
+        guard !hasEvaluatedAlertSetupPrompt else { return }
+        guard viewModel.hasDisruptionAlertSetupSupport else { return }
+
+        hasEvaluatedAlertSetupPrompt = true
+        Task {
+            let shouldShowPrompt = await viewModel.needsDisruptionAlertSetupPrompt()
+            await MainActor.run {
+                if shouldShowPrompt {
+                    isShowingAlertSetupPrompt = true
+                }
+            }
+        }
+    }
+
+    private func openDisruptionAlertsFromPrompt() async {
+        await viewModel.requestDisruptionAlertNotificationAuthorization()
+        await MainActor.run {
+            isShowingAlertSetupPrompt = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                isNavigatingToDisruptionAlerts = true
+            }
+        }
+    }
+}
+
+private struct RailAlertSetupPromptSheet: View {
+    @State private var isWorking = false
+    let onChooseLines: () async -> Void
+    let onDismiss: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .top, spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(AppColors.primary.opacity(0.14))
+                        .frame(width: 56, height: 56)
+
+                    Image(systemName: "bell.badge.fill")
+                        .font(.system(size: 25, weight: .semibold))
+                        .foregroundColor(AppColors.primary)
+                }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(localized("status.alerts.prompt.title"))
+                        .font(AppFonts.title3().bold())
+                        .foregroundColor(AppColors.text)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Text(localized("status.alerts.prompt.message"))
+                        .font(AppFonts.body())
+                        .foregroundColor(AppColors.text.opacity(0.78))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            Spacer(minLength: 0)
+
+            VStack(spacing: 10) {
+                Button {
+                    isWorking = true
+                    Task {
+                        await onChooseLines()
+                        await MainActor.run {
+                            isWorking = false
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 10) {
+                        if isWorking {
+                            ProgressView()
+                                .tint(.white)
+                        } else {
+                            Image(systemName: "checklist")
+                        }
+
+                        Text(localized("status.alerts.prompt.primary"))
+                            .font(AppFonts.headline())
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(AppColors.primary)
+                .disabled(isWorking)
+
+                Button(localized("status.alerts.prompt.secondary")) {
+                    onDismiss()
+                }
+                .font(AppFonts.subheadline())
+                .frame(maxWidth: .infinity)
+                .disabled(isWorking)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 24)
+        .padding(.bottom, 16)
+    }
+
+    private func localized(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 }
 

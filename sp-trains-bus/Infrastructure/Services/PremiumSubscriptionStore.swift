@@ -22,7 +22,7 @@ enum PremiumAccessGate {
     }
 
     static func hasDisruptionAlertsAccess(userDefaults: UserDefaults = .standard) -> Bool {
-        hasPremiumAccess(userDefaults: userDefaults)
+        true
     }
 
     static func hasArrivalsHistoryAccess(userDefaults: UserDefaults = .standard) -> Bool {

@@ -152,7 +152,6 @@ struct PremiumSubscriptionSheet: View {
 
             VStack(spacing: 10) {
                 featureCard(emoji: "📈", titleKey: "premium.features.analytics")
-                featureCard(emoji: "🔔", titleKey: "premium.features.alerts")
                 featureCard(emoji: "🕒", titleKey: "premium.features.arrivals")
             }
         }

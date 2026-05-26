@@ -39,7 +39,7 @@
 "settings.tip.option.large.subtitle" = "Apoio extra ao desenvolvimento, sem desbloqueio de recursos.";
 
 "premium.title" = "Due SP Premium";
-"premium.description" = "Desbloqueie todas as ferramentas premium do app com um plano recorrente. Os planos semanal e anual liberam exatamente os mesmos recursos.";
+"premium.description" = "Desbloqueie as ferramentas premium do app com um plano recorrente. Os planos semanal e anual liberam exatamente os mesmos recursos.";
 "premium.hero.badge" = "ACESSO TOTAL";
 "premium.hero.title" = "Viaje com o painel completo";
 "premium.hero.same_features" = "Mesmos recursos";
@@ -114,6 +114,10 @@
 "status.alerts.notifications_blocked.title" = "Notificações bloqueadas";
 "status.alerts.notifications_blocked.message" = "Para receber alertas de interrupção, permita notificações deste app nos Ajustes do iPhone.";
 "status.alerts.notifications_blocked.open_settings" = "Abrir Ajustes";
+"status.alerts.prompt.title" = "Receba alertas das suas linhas";
+"status.alerts.prompt.message" = "Ative notificações no iPhone e escolha as linhas de metrô e trem que você quer acompanhar.";
+"status.alerts.prompt.primary" = "Ativar e escolher linhas";
+"status.alerts.prompt.secondary" = "Agora não";
 "status.alerts.locked.title" = "Alertas bloqueados";
 "status.alerts.locked.message" = "Os alertas de interrupção ferroviária fazem parte do Due SP Premium.";
 "status.alerts.locked.how_to" = "Assine o Due SP Premium no plano semanal ou anual para liberar os alertas.";

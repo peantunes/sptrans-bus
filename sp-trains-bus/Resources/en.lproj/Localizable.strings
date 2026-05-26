@@ -39,7 +39,7 @@
 "settings.tip.option.large.subtitle" = "Extra support for development, with no feature unlocks.";
 
 "premium.title" = "Due SP Premium";
-"premium.description" = "Unlock all premium transit tools with a recurring plan. Weekly and yearly plans both enable the same premium features.";
+"premium.description" = "Unlock premium transit tools with a recurring plan. Weekly and yearly plans both enable the same premium features.";
 "premium.hero.badge" = "ALL ACCESS";
 "premium.hero.title" = "Travel with the full control panel";
 "premium.hero.same_features" = "Same features";
@@ -114,6 +114,10 @@
 "status.alerts.notifications_blocked.title" = "Notifications blocked";
 "status.alerts.notifications_blocked.message" = "To receive disruption alerts, allow notifications for this app in iPhone Settings.";
 "status.alerts.notifications_blocked.open_settings" = "Open Settings";
+"status.alerts.prompt.title" = "Get alerts for your lines";
+"status.alerts.prompt.message" = "Enable notifications on this iPhone and choose the metro and train lines you want to follow.";
+"status.alerts.prompt.primary" = "Enable and choose lines";
+"status.alerts.prompt.secondary" = "Not now";
 "status.alerts.locked.title" = "Alerts locked";
 "status.alerts.locked.message" = "Rail disruption alerts are included with Due SP Premium.";
 "status.alerts.locked.how_to" = "Subscribe to Due SP Premium weekly or yearly to unlock alerts.";
