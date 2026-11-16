@@ -4,6 +4,9 @@ import app.lolados.duesp.data.api.ArrivalDto
 import app.lolados.duesp.data.api.RailLineStatusDto
 import app.lolados.duesp.data.api.TransitApi
 import app.lolados.duesp.domain.Arrival
+import app.lolados.duesp.domain.Place
+import app.lolados.duesp.domain.TripPlan
+import java.time.LocalDateTime
 import app.lolados.duesp.domain.RailLineStatus
 import app.lolados.duesp.domain.RailNetworkStatus
 import app.lolados.duesp.domain.RailSource
@@ -16,6 +19,7 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 class TransitRepository(private val api: TransitApi) {
+    private val planMapper = TripPlanMapper()
 
     suspend fun nearbyStops(lat: Double, lon: Double, limit: Int = 30): List<Stop> =
         api.nearby(lat, lon, limit).stops.map {
@@ -46,6 +50,27 @@ class TransitRepository(private val api: TransitApi) {
         direction: String = "next",
     ): List<Arrival> =
         api.arrivals(stopId, limit, date, time, cursorDate, cursorTime, direction).arrivals.map { it.toDomain() }
+
+    /** [departure] is a São Paulo wall-clock time, always sent (for "now", the moment of the search). */
+    suspend fun planTrip(
+        origin: Place,
+        destination: Place,
+        departure: LocalDateTime,
+        rankingPriority: String,
+        maxTransfers: Int,
+    ): TripPlan {
+        val response = api.plan(
+            originLat = origin.lat ?: error("origin without location"),
+            originLon = origin.lon ?: error("origin without location"),
+            destLat = destination.lat ?: error("destination without location"),
+            destLon = destination.lon ?: error("destination without location"),
+            date = departure.toLocalDate().toString(),
+            time = "%02d:%02d".format(departure.hour, departure.minute),
+            rankingPriority = rankingPriority,
+            maxTransfers = maxTransfers,
+        )
+        return planMapper.map(response.result, origin, destination)
+    }
 
     suspend fun railStatus(refresh: Boolean = false): RailNetworkStatus {
         val response = api.railStatus(refresh)

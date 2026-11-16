@@ -84,4 +84,86 @@
     <string name="settings_terms">Termos de uso</string>
 
     <string name="error_generic">Não foi possível carregar os dados.</string>
+
+    <!-- Planejador de viagens -->
+    <string name="tab_plan">Planejar</string>
+    <string name="plan_title">Planejar viagem</string>
+    <string name="plan_from">De</string>
+    <string name="plan_to">Para</string>
+    <string name="plan_place_hint">Endereço ou lugar</string>
+    <string name="plan_swap">Inverter origem e destino</string>
+    <string name="plan_current_location">Localização atual</string>
+    <string name="plan_use_current_location">Usar localização atual</string>
+    <string name="plan_location_unavailable">Não foi possível obter sua localização. Escolha uma origem ou permita o acesso à localização.</string>
+    <string name="plan_finding_places">Buscando lugares…</string>
+    <string name="plan_departure">Partida</string>
+    <string name="plan_arrival">Chegada</string>
+    <string name="plan_now">Agora</string>
+    <string name="plan_choose_time">Escolher horário</string>
+    <string name="plan_leave_at">Sair em %1$s</string>
+    <string name="plan_sao_paulo_time">Horários no fuso de São Paulo.</string>
+    <string name="plan_preferences">Preferências</string>
+    <string name="plan_sort_by">Ordenar por</string>
+    <string name="plan_sort_arrive_first">Chegar antes</string>
+    <string name="plan_sort_fewest_transfers">Menos baldeações</string>
+    <string name="plan_sort_least_walking">Menos caminhada</string>
+    <string name="plan_max_transfers">Máximo de baldeações</string>
+    <string name="plan_max_transfers_note">Se nada for encontrado, podem aparecer opções com mais baldeações.</string>
+    <string name="plan_search">Buscar viagens</string>
+    <string name="plan_searching">Buscando viagens…</string>
+    <string name="plan_next">Próximo</string>
+    <string name="plan_cancel">Cancelar</string>
+    <string name="plan_done">OK</string>
+    <string name="plan_results_title">Opções de viagem</string>
+    <string name="plan_results_note">Estimativas pela tabela de horários. Alertas das linhas aparecem na aba Status.</string>
+    <string name="plan_no_results">Nenhuma viagem encontrada</string>
+    <string name="plan_no_results_hint">Tente outro horário ou lugares próximos.</string>
+    <string name="plan_line">Linha</string>
+    <string name="plan_walk_minutes">Caminhada %1$d min</string>
+    <string name="plan_walk_only">A pé</string>
+    <string name="plan_no_transfers">Sem baldeação</string>
+    <string name="plan_includes_walking">Inclui %1$d min de caminhada</string>
+    <string name="plan_scheduled_note">Estimativa pela tabela · horário de São Paulo</string>
+    <string name="plan_towards">sentido %1$s</string>
+    <string name="plan_every_minutes">a cada %1$d min</string>
+    <string name="plan_board_here">Embarque aqui</string>
+    <string name="plan_get_off_here">Desça aqui</string>
+    <string name="plan_hide_stops">Ocultar paradas</string>
+    <string name="plan_your_destination">o destino</string>
+    <string name="plan_walk_to">Caminhe %1$s até %2$s</string>
+    <string name="plan_journey_title">Viagem</string>
+    <string name="plan_journey_gone">Esta viagem não está mais disponível. Faça a busca de novo.</string>
+    <string name="plan_route_overview">Visão geral do trajeto</string>
+    <string name="plan_walking_paths_note">Os trechos a pé no mapa são aproximados.</string>
+    <string name="plan_saved_routes">Rotas salvas</string>
+    <string name="plan_saved_count">%1$d de %2$d</string>
+    <string name="plan_saved_empty">Nenhuma rota salva ainda. Escolha origem e destino e salve aqui para buscar com um toque.</string>
+    <string name="plan_saved_use_now">Buscar agora</string>
+    <string name="plan_saved_delete">Remover rota</string>
+    <string name="plan_saved_save_current">Salvar rota atual</string>
+    <string name="plan_saved_already">Rota atual já salva</string>
+    <string name="plan_saved_choose_first">Escolha origem e destino para salvar</string>
+    <string name="plan_saved_free_note">No plano gratuito você pode salvar até %1$d rotas.</string>
+    <string name="plan_premium_save_limit">No plano gratuito dá para salvar até %1$d rotas. Com o Premium, salve quantas quiser.</string>
+    <string name="plan_premium_search_limit">Você usou as %1$d buscas gratuitas de hoje. Com o Premium, as buscas são ilimitadas.</string>
+    <string name="plan_premium_choose_time">Escolher data e horário de partida é um recurso Premium. No plano gratuito, as buscas usam o horário atual.</string>
+    <string name="plan_see_premium">Ver Premium</string>
+    <string name="plan_not_now">Agora não</string>
+    <string name="plan_clear">Limpar</string>
+    <string name="plan_clear_field">Limpar campo</string>
+    <string name="premium_feature_planner">Planejador sem limites: buscas e rotas salvas ilimitadas, com data e horário de partida</string>
+    <string name="plan_free_searches_left">Buscas gratuitas hoje: %1$d de %2$d restantes</string>
+
+    <plurals name="plan_stops">
+        <item quantity="one">%1$d parada</item>
+        <item quantity="other">%1$d paradas</item>
+    </plurals>
+    <plurals name="plan_transfers">
+        <item quantity="one">%1$d baldeação</item>
+        <item quantity="other">%1$d baldeações</item>
+    </plurals>
+    <plurals name="plan_stops_on_the_way">
+        <item quantity="one">%1$d parada no caminho</item>
+        <item quantity="other">%1$d paradas no caminho</item>
+    </plurals>
 </resources>

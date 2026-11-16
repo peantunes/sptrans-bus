@@ -111,7 +111,7 @@ fun PremiumScreen(onBack: () -> Unit) {
             Text(stringResource(R.string.premium_badge), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             Text(stringResource(R.string.premium_description), style = MaterialTheme.typography.bodyLarge)
             Text(stringResource(R.string.premium_features_title), style = MaterialTheme.typography.titleMedium)
-            listOf(R.string.premium_feature_analytics, R.string.premium_feature_arrivals).forEach {
+            listOf(R.string.premium_feature_analytics, R.string.premium_feature_arrivals, R.string.premium_feature_planner).forEach {
                 ListItem(
                     leadingContent = { Icon(Icons.Filled.CheckCircle, null, tint = MaterialTheme.colorScheme.primary) },
                     headlineContent = { Text(stringResource(it)) },

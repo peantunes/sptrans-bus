@@ -41,6 +41,16 @@ inline fun <reified VM : ViewModel> containerViewModel(key: String? = null, cros
     return viewModel(key = key) { create(container) }
 }
 
+/** Same, scoped to [owner] (e.g. a parent back stack entry shared by several screens). */
+@Composable
+inline fun <reified VM : ViewModel> containerViewModel(
+    owner: androidx.lifecycle.ViewModelStoreOwner,
+    crossinline create: (AppContainer) -> VM,
+): VM {
+    val container = appContainer()
+    return viewModel(viewModelStoreOwner = owner) { create(container) }
+}
+
 fun parseHexColor(hex: String?, fallback: Color): Color {
     val clean = hex.orEmpty().trim().removePrefix("#")
     if (clean.length != 6) return fallback

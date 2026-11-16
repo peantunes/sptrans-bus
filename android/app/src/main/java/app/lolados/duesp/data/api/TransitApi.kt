@@ -50,6 +50,30 @@ class TransitApi(
         "cursor_time" to cursorTime,
     )
 
+    /** Journey planner. [time] is HH:MM and [date] YYYY-MM-DD in São Paulo time; both null = now. */
+    suspend fun plan(
+        originLat: Double,
+        originLon: Double,
+        destLat: Double,
+        destLon: Double,
+        date: String?,
+        time: String?,
+        rankingPriority: String,
+        maxTransfers: Int,
+        maxAlternatives: Int = 5,
+    ): PlanResponse = get(
+        "plan.php",
+        "origin_lat" to originLat.toString(),
+        "origin_lon" to originLon.toString(),
+        "dest_lat" to destLat.toString(),
+        "dest_lon" to destLon.toString(),
+        "date" to date,
+        "time" to time,
+        "ranking_priority" to rankingPriority,
+        "max_transfers" to maxTransfers.toString(),
+        "max_alternatives" to maxAlternatives.toString(),
+    )
+
     suspend fun railStatus(refresh: Boolean = false): RailStatusResponse =
         get("metro_cptm.php", "refresh" to if (refresh) "1" else null)
 

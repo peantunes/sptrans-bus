@@ -5,6 +5,8 @@ import app.lolados.duesp.alerts.RailAlertNotifications
 import app.lolados.duesp.alerts.RailAlertsRepository
 import app.lolados.duesp.data.FavoritesRepository
 import app.lolados.duesp.data.LocationProvider
+import app.lolados.duesp.data.PlaceSearch
+import app.lolados.duesp.data.PlannerStore
 import app.lolados.duesp.data.PremiumAccess
 import app.lolados.duesp.data.TransitRepository
 import app.lolados.duesp.data.api.TransitApi
@@ -18,6 +20,8 @@ class AppContainer(app: Application) {
     val favorites = FavoritesRepository(app)
     val premium = PremiumAccess(app)
     val location = LocationProvider(app)
+    val places = PlaceSearch(app, transitRepository)
+    val planner = PlannerStore(app)
 }
 
 class DueSPApplication : Application() {

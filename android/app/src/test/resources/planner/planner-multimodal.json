@@ -1,0 +1,372 @@
+{
+  "result": {
+    "origin": {
+      "id": 0,
+      "name": "Stop 0",
+      "lat": -23.55,
+      "lon": -46.63
+    },
+    "destination": {
+      "id": 10,
+      "name": "Stop 10",
+      "lat": -23.54,
+      "lon": -46.63
+    },
+    "departure": {
+      "date": "2026-11-16",
+      "time": "23:50:00",
+      "timestamp": 1794883800
+    },
+    "alternatives": [
+      {
+        "type": "transfer",
+        "summary": {
+          "departureTime": "23:51:00",
+          "arrivalTime": "24:39:00",
+          "legCount": 3,
+          "stopCount": 6,
+          "lineSummary": "1 > 2 > 3",
+          "transferCount": 2,
+          "startTime": "23:50:00",
+          "endTime": "24:40:00",
+          "durationMinutes": 50,
+          "walkMeters": 720,
+          "walkMinutes": 10
+        },
+        "legs": [
+          {
+            "mode": "bus",
+            "route": {
+              "routeId": "1",
+              "shortName": "1",
+              "longName": "Line 1",
+              "color": "007AFF",
+              "textColor": "FFFFFF",
+              "type": 3
+            },
+            "tripId": "trip-0",
+            "headsign": "Terminal 0",
+            "originStopId": 1,
+            "destinationStopId": 3,
+            "originStop": {
+              "id": 1,
+              "name": "Stop 1",
+              "lat": -23.549,
+              "lon": -46.63
+            },
+            "destinationStop": {
+              "id": 3,
+              "name": "Stop 3",
+              "lat": -23.547,
+              "lon": -46.63
+            },
+            "departureTime": "23:51:00",
+            "arrivalTime": "24:02:00",
+            "durationMinutes": 11,
+            "headwayMinutes": 5,
+            "intermediateStops": [
+              {
+                "id": 2,
+                "name": "Stop 2",
+                "lat": -23.548000000000002,
+                "lon": -46.63,
+                "time": "24:00:00"
+              }
+            ]
+          },
+          {
+            "mode": "metro",
+            "route": {
+              "routeId": "2",
+              "shortName": "2",
+              "longName": "Line 2",
+              "color": "007AFF",
+              "textColor": "FFFFFF",
+              "type": 1
+            },
+            "tripId": "trip-1",
+            "headsign": "Terminal 1",
+            "originStopId": 4,
+            "destinationStopId": 6,
+            "originStop": {
+              "id": 4,
+              "name": "Stop 4",
+              "lat": -23.546,
+              "lon": -46.63
+            },
+            "destinationStop": {
+              "id": 6,
+              "name": "Stop 6",
+              "lat": -23.544,
+              "lon": -46.63
+            },
+            "departureTime": "24:08:00",
+            "arrivalTime": "24:20:00",
+            "durationMinutes": 12,
+            "headwayMinutes": 5,
+            "intermediateStops": [
+              {
+                "id": 5,
+                "name": "Stop 5",
+                "lat": -23.545,
+                "lon": -46.63,
+                "time": "24:00:00"
+              }
+            ]
+          },
+          {
+            "mode": "rail",
+            "route": {
+              "routeId": "3",
+              "shortName": "3",
+              "longName": "Line 3",
+              "color": "007AFF",
+              "textColor": "FFFFFF",
+              "type": 2
+            },
+            "tripId": "trip-2",
+            "headsign": "Terminal 2",
+            "originStopId": 7,
+            "destinationStopId": 9,
+            "originStop": {
+              "id": 7,
+              "name": "Stop 7",
+              "lat": -23.543,
+              "lon": -46.63
+            },
+            "destinationStop": {
+              "id": 9,
+              "name": "Stop 9",
+              "lat": -23.541,
+              "lon": -46.63
+            },
+            "departureTime": "24:26:00",
+            "arrivalTime": "24:39:00",
+            "durationMinutes": 13,
+            "headwayMinutes": 5,
+            "intermediateStops": [
+              {
+                "id": 8,
+                "name": "Stop 8",
+                "lat": -23.542,
+                "lon": -46.63,
+                "time": "24:00:00"
+              }
+            ]
+          }
+        ],
+        "segments": [
+          {
+            "type": "walk",
+            "mode": "walk",
+            "from": {
+              "id": 0,
+              "name": "Stop 0",
+              "lat": -23.55,
+              "lon": -46.63
+            },
+            "to": {
+              "id": 1,
+              "name": "Stop 1",
+              "lat": -23.549,
+              "lon": -46.63
+            },
+            "distanceMeters": 50,
+            "durationMinutes": 1,
+            "departureTime": "23:50:00",
+            "arrivalTime": "23:51:00"
+          },
+          {
+            "type": "transit",
+            "mode": "bus",
+            "route": {
+              "routeId": "1",
+              "shortName": "1",
+              "longName": "Line 1",
+              "color": "007AFF",
+              "textColor": "FFFFFF",
+              "type": 3
+            },
+            "tripId": "trip-0",
+            "headsign": "Terminal 0",
+            "originStopId": 1,
+            "destinationStopId": 3,
+            "originStop": {
+              "id": 1,
+              "name": "Stop 1",
+              "lat": -23.549,
+              "lon": -46.63
+            },
+            "destinationStop": {
+              "id": 3,
+              "name": "Stop 3",
+              "lat": -23.547,
+              "lon": -46.63
+            },
+            "departureTime": "23:51:00",
+            "arrivalTime": "24:02:00",
+            "durationMinutes": 11,
+            "headwayMinutes": 5,
+            "intermediateStops": [
+              {
+                "id": 2,
+                "name": "Stop 2",
+                "lat": -23.548000000000002,
+                "lon": -46.63,
+                "time": "24:00:00"
+              }
+            ]
+          },
+          {
+            "type": "walk",
+            "mode": "walk",
+            "from": {
+              "id": 3,
+              "name": "Stop 3",
+              "lat": -23.547,
+              "lon": -46.63
+            },
+            "to": {
+              "id": 4,
+              "name": "Stop 4",
+              "lat": -23.546,
+              "lon": -46.63
+            },
+            "distanceMeters": 200,
+            "durationMinutes": 3,
+            "departureTime": "24:02:00",
+            "arrivalTime": "24:05:00"
+          },
+          {
+            "type": "transit",
+            "mode": "metro",
+            "route": {
+              "routeId": "2",
+              "shortName": "2",
+              "longName": "Line 2",
+              "color": "007AFF",
+              "textColor": "FFFFFF",
+              "type": 1
+            },
+            "tripId": "trip-1",
+            "headsign": "Terminal 1",
+            "originStopId": 4,
+            "destinationStopId": 6,
+            "originStop": {
+              "id": 4,
+              "name": "Stop 4",
+              "lat": -23.546,
+              "lon": -46.63
+            },
+            "destinationStop": {
+              "id": 6,
+              "name": "Stop 6",
+              "lat": -23.544,
+              "lon": -46.63
+            },
+            "departureTime": "24:08:00",
+            "arrivalTime": "24:20:00",
+            "durationMinutes": 12,
+            "headwayMinutes": 5,
+            "intermediateStops": [
+              {
+                "id": 5,
+                "name": "Stop 5",
+                "lat": -23.545,
+                "lon": -46.63,
+                "time": "24:00:00"
+              }
+            ]
+          },
+          {
+            "type": "walk",
+            "mode": "walk",
+            "from": {
+              "id": 6,
+              "name": "Stop 6",
+              "lat": -23.544,
+              "lon": -46.63
+            },
+            "to": {
+              "id": 7,
+              "name": "Stop 7",
+              "lat": -23.543,
+              "lon": -46.63
+            },
+            "distanceMeters": 400,
+            "durationMinutes": 5,
+            "departureTime": "24:20:00",
+            "arrivalTime": "24:25:00"
+          },
+          {
+            "type": "transit",
+            "mode": "rail",
+            "route": {
+              "routeId": "3",
+              "shortName": "3",
+              "longName": "Line 3",
+              "color": "007AFF",
+              "textColor": "FFFFFF",
+              "type": 2
+            },
+            "tripId": "trip-2",
+            "headsign": "Terminal 2",
+            "originStopId": 7,
+            "destinationStopId": 9,
+            "originStop": {
+              "id": 7,
+              "name": "Stop 7",
+              "lat": -23.543,
+              "lon": -46.63
+            },
+            "destinationStop": {
+              "id": 9,
+              "name": "Stop 9",
+              "lat": -23.541,
+              "lon": -46.63
+            },
+            "departureTime": "24:26:00",
+            "arrivalTime": "24:39:00",
+            "durationMinutes": 13,
+            "headwayMinutes": 5,
+            "intermediateStops": [
+              {
+                "id": 8,
+                "name": "Stop 8",
+                "lat": -23.542,
+                "lon": -46.63,
+                "time": "24:00:00"
+              }
+            ]
+          },
+          {
+            "type": "walk",
+            "mode": "walk",
+            "from": {
+              "id": 9,
+              "name": "Stop 9",
+              "lat": -23.541,
+              "lon": -46.63
+            },
+            "to": {
+              "id": 10,
+              "name": "Stop 10",
+              "lat": -23.54,
+              "lon": -46.63
+            },
+            "distanceMeters": 70,
+            "durationMinutes": 1,
+            "departureTime": "24:39:00",
+            "arrivalTime": "24:40:00"
+          }
+        ]
+      }
+    ],
+    "walk": {
+      "distanceMeters": 1500,
+      "durationMinutes": 22,
+      "arrivalTime": "24:12:00"
+    },
+    "rankingPriority": "least_walking"
+  }
+}

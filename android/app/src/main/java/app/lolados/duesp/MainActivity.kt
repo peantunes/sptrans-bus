@@ -14,7 +14,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Directions
 import androidx.compose.material.icons.filled.Map
+import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.lolados.duesp.ui.containerViewModel
+import app.lolados.duesp.ui.plan.JourneyDetailScreen
+import app.lolados.duesp.ui.plan.PlanScreen
+import app.lolados.duesp.ui.plan.PlanViewModel
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Train
 import androidx.compose.material3.Icon
@@ -45,6 +52,7 @@ import kotlinx.serialization.json.Json
 
 private enum class Tab(val route: String, val label: Int, val icon: ImageVector) {
     MAP("map", R.string.tab_map, Icons.Filled.Map),
+    PLAN("plan", R.string.tab_plan, Icons.Filled.Directions),
     STATUS("status", R.string.tab_status, Icons.Filled.Train),
     SETTINGS("settings", R.string.tab_settings, Icons.Filled.Settings),
 }
@@ -69,6 +77,21 @@ class MainActivity : ComponentActivity() {
         getBooleanExtra(RailAlertNotifications.EXTRA_OPEN_STATUS, false) ||
             getStringExtra("type")?.startsWith("rail_status") == true
 }
+
+/** One planner view model per "plan" back stack entry, shared with the journey detail. */
+@androidx.compose.runtime.Composable
+private fun planViewModel(owner: androidx.lifecycle.ViewModelStoreOwner): PlanViewModel =
+    containerViewModel(owner) { c ->
+        PlanViewModel(
+            planTrip = { origin, destination, departure, priority, maxTransfers ->
+                c.transitRepository.planTrip(origin, destination, departure, priority, maxTransfers)
+            },
+            suggest = c.places::suggestions,
+            currentLocation = c.location::currentLocation,
+            storage = c.planner,
+            isPremium = c.premium.hasPremium,
+        )
+    }
 
 @androidx.compose.runtime.Composable
 private fun DueSPApp(openStatusRequest: Int) {
@@ -113,6 +136,25 @@ private fun DueSPApp(openStatusRequest: Int) {
         Box(Modifier.fillMaxSize().padding(padding)) {
             NavHost(nav, startDestination = Tab.MAP.route) {
                 composable(Tab.MAP.route) { MapScreen(onOpenStop = openStop, onOpenSearch = { nav.navigate("search") }) }
+                composable(Tab.PLAN.route) { entry ->
+                    PlanScreen(
+                        vm = planViewModel(entry),
+                        onOpenJourney = { id -> nav.navigate("plan/journey/$id") },
+                        onOpenPremium = openPremium,
+                    )
+                }
+                composable("plan/journey/{id}", arguments = listOf(navArgument("id") { type = NavType.IntType })) { entry ->
+                    val parent = remember(entry) { nav.getBackStackEntry(Tab.PLAN.route) }
+                    val vm = planViewModel(parent)
+                    val state by vm.state.collectAsStateWithLifecycle()
+                    val journey = vm.journey(entry.arguments?.getInt("id") ?: -1)
+                    JourneyDetailScreen(
+                        journey = journey,
+                        originLabel = state.context?.origin?.name.orEmpty(),
+                        destinationLabel = state.context?.destination?.name.orEmpty(),
+                        onBack = nav::popBackStack,
+                    )
+                }
                 composable(Tab.STATUS.route) { StatusScreen(onOpenPremium = openPremium, onOpenAlerts = { nav.navigate("alerts") }) }
                 composable("alerts") { RailAlertsScreen(onBack = nav::popBackStack) }
                 composable(Tab.SETTINGS.route) { SettingsScreen(onOpenPremium = openPremium) }
