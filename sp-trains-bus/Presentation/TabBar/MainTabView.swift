@@ -98,6 +98,9 @@ struct MainTabView: View {
             }
             storedTabSelection = tab.rawValue
         }
+        .sheet(item: $navigationCoordinator.pendingSharedJourney) { shared in
+            SharedJourneyScreen(token: shared.id, dependencies: dependencies)
+        }
     }
 
     private func localized(_ key: String) -> String {

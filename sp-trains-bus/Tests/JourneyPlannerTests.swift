@@ -347,6 +347,34 @@ final class JourneyPlannerTests: XCTestCase {
         XCTAssertNil(storage.form?.destination)
     }
 
+    // MARK: - Shared journeys
+
+    func testShareLinksAreRecognisedStrictly() {
+        XCTAssertEqual(JourneyShareLink.token(from: URL(string: "https://sptrans.lolados.app/j/Hv8EVpDjMTV2")!), "Hv8EVpDjMTV2")
+        XCTAssertNil(JourneyShareLink.token(from: URL(string: "https://sptrans.lolados.app/j/short")!))
+        XCTAssertNil(JourneyShareLink.token(from: URL(string: "https://evil.example/j/Hv8EVpDjMTV2")!))
+        XCTAssertNil(JourneyShareLink.token(from: URL(string: "https://sptrans.lolados.app/api/share.php?t=Hv8EVpDjMTV2")!))
+        XCTAssertNil(JourneyShareLink.token(from: URL(string: "duesp://stop?stop_id=1")!))
+    }
+
+    func testShareRequestSendsReferencesOnly() throws {
+        let alternative = try decode().alternatives[0]
+        // 23:50 on 16 Nov in São Paulo is already 17 Nov in UTC: the service day must stay the 16th.
+        let departure = ISO8601DateFormatter().date(from: "2026-11-17T02:50:00Z")!
+        let request = try XCTUnwrap(JourneyShareService.request(for: alternative, departureDate: departure))
+        XCTAssertEqual(request.date, "2026-11-16")
+        XCTAssertEqual(request.legs.count, alternative.vehicleLegs.count)
+        XCTAssertEqual(request.legs.first?.tripId, alternative.vehicleLegs.first?.tripId)
+        XCTAssertEqual(request.legs.first?.departure, alternative.vehicleLegs.first?.departureTime)
+        let body = String(data: try JSONEncoder().encode(request), encoding: .utf8)!
+        XCTAssertFalse(body.contains("lat"), "origin/destination must never be sent")
+    }
+
+    func testWalkOnlyJourneysCannotBeShared() throws {
+        let walk = try XCTUnwrap(try decode().walkingAlternative)
+        XCTAssertNil(JourneyShareService.request(for: walk, departureDate: Date()))
+    }
+
     func testYellowLineGetsDarkBadgeTextAndDarkerTextOnWhite() throws {
         // The API sends white text for Metrô L4 (FFD700).
         XCTAssertEqual(LineColor.badgeText(background: "FFD700", preferred: "FFFFFF"), LineColor.darkText)

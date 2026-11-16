@@ -29,6 +29,10 @@ struct sp_trains_busApp: App {
                 .onOpenURL { url in
                     navigationCoordinator.handle(url: url)
                 }
+                // Universal links (shared journeys, https://sptrans.lolados.app/j/<token>).
+                .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
+                    if let url = activity.webpageURL { navigationCoordinator.handle(url: url) }
+                }
                 .onChange(of: scenePhase) { _, newPhase in
                     switch newPhase {
                     case .active:

@@ -17,6 +17,7 @@ PACKAGE
 for planner_source in \
     Domain/Entities/{Location,Stop,Trip,TripStop,Route,Arrival,ArrivalsPageDirection,TripPlan,JourneyConditions,SavedRoute}.swift \
     Infrastructure/Services/PlannerStore.swift \
+    Infrastructure/Services/JourneyShareService.swift \
     Domain/Protocols/{TransitRepositoryProtocol,LocationServiceProtocol}.swift \
     Application/UseCases/{PlanTripUseCase,GetTripRouteUseCase,GetRouteShapeUseCase}.swift \
     Infrastructure/Network/{APIClient,APIEndpoint,APIError}.swift \

@@ -44,6 +44,8 @@ enum TransitAPIEndpoint {
     case railStatusReport(periodDays: Int)
     case railAlertSubscriptionsState(installationId: String)
     case railAlertSubscriptionsUpdate(payload: RailAlertSubscriptionUpdateRequestDTO)
+    case shareJourney(payload: ShareJourneyRequestDTO)
+    case sharedJourney(token: String)
     case plan(origin: Location, destination: Location, maxAlternatives: Int, rankingPriority: String, options: TripPlanningOptions = TripPlanningOptions())
 }
 
@@ -74,12 +76,14 @@ extension TransitAPIEndpoint: APIEndpoint {
             return "/rail_alert_subscriptions.php"
         case .plan:
             return "/plan.php"
+        case .shareJourney, .sharedJourney:
+            return "/share.php"
         }
     }
 
     var method: String {
         switch self {
-        case .railAlertSubscriptionsUpdate:
+        case .railAlertSubscriptionsUpdate, .shareJourney:
             return "POST"
         default:
             return "GET"
@@ -146,8 +150,10 @@ extension TransitAPIEndpoint: APIEndpoint {
             return [
                 URLQueryItem(name: "installation_id", value: installationId)
             ]
-        case .railAlertSubscriptionsUpdate:
+        case .railAlertSubscriptionsUpdate, .shareJourney:
             return []
+        case .sharedJourney(let token):
+            return [URLQueryItem(name: "t", value: token)]
         case .plan(let origin, let destination, let maxAlternatives, let rankingPriority, let options):
             var items = [
                 URLQueryItem(name: "origin_lat", value: "\(origin.latitude)"),
@@ -175,6 +181,8 @@ extension TransitAPIEndpoint: APIEndpoint {
     var body: Data? {
         switch self {
         case .railAlertSubscriptionsUpdate(let payload):
+            return try? JSONEncoder().encode(payload)
+        case .shareJourney(let payload):
             return try? JSONEncoder().encode(payload)
         default:
             return nil

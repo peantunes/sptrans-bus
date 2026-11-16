@@ -9,6 +9,12 @@ struct TripPlanDetailView: View {
     let originLabel: String
     let destinationLabel: String
     private let analyticsService: AnalyticsServiceProtocol
+    private let journeyShare: JourneyShareService
+    /// Set when this journey came from a shared link: sharing it again reuses that link.
+    private let sharedURL: URL?
+    @State private var shareItem: ShareItem?
+    @State private var isCreatingLink = false
+    @State private var shareError: String?
 
     init(
         alternative: TripPlanAlternative,
@@ -17,7 +23,8 @@ struct TripPlanDetailView: View {
         originLabel: String,
         destinationLabel: String,
         dependencies: AppDependencies,
-        departureDate: Date? = nil
+        departureDate: Date? = nil,
+        sharedURL: URL? = nil
     ) {
         _viewModel = StateObject(
             wrappedValue: TripPlanDetailViewModel(
@@ -37,6 +44,30 @@ struct TripPlanDetailView: View {
         self.originLabel = originLabel
         self.destinationLabel = destinationLabel
         self.analyticsService = dependencies.analyticsService
+        self.journeyShare = dependencies.journeyShare
+        self.sharedURL = sharedURL
+    }
+
+    private var canShare: Bool {
+        sharedURL != nil || JourneyShareService.request(for: alternative, departureDate: departureDate) != nil
+    }
+
+    private func share() {
+        if let sharedURL {
+            shareItem = ShareItem(url: sharedURL)
+            return
+        }
+        isCreatingLink = true
+        Task {
+            defer { isCreatingLink = false }
+            do {
+                let url = try await journeyShare.create(alternative: alternative, departureDate: departureDate)
+                shareItem = ShareItem(url: url)
+                analyticsService.trackEvent(name: "trip_plan_shared", properties: ["legs": "\(alternative.legCount)"])
+            } catch {
+                shareError = error.localizedDescription
+            }
+        }
     }
 
     var body: some View {
@@ -123,6 +154,27 @@ struct TripPlanDetailView: View {
         .background(Color(uiColor: .systemGroupedBackground))
         .navigationTitle("Journey")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if canShare {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: share) {
+                        if isCreatingLink { ProgressView() } else { Image(systemName: "square.and.arrow.up") }
+                    }
+                    .disabled(isCreatingLink)
+                    .accessibilityLabel("Share journey")
+                    .accessibilityIdentifier("journey.share")
+                }
+            }
+        }
+        .sheet(item: $shareItem) { item in
+            ActivityView(items: [item.url])
+                .presentationDetents([.medium, .large])
+        }
+        .alert("Couldn't share", isPresented: Binding(get: { shareError != nil }, set: { if !$0 { shareError = nil } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(shareError ?? "")
+        }
         .task {
             analyticsService.trackScreen(name: "TripPlanDetailView", className: "TripPlanDetailView")
             analyticsService.trackEvent(
@@ -392,4 +444,20 @@ private struct OverlayStyle {
     let color: UIColor
     let isWalking: Bool
     let width: CGFloat
+}
+
+struct ShareItem: Identifiable {
+    let url: URL
+    var id: String { url.absoluteString }
+}
+
+/// The system share sheet.
+struct ActivityView: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }

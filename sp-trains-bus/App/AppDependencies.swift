@@ -5,6 +5,7 @@ class AppDependencies {
     let modelContainer: ModelContainer
     let journeyConditions: JourneyConditionsStore
     let apiClient: APIClient
+    let journeyShare: JourneyShareService
     let transitRepository: TransitRepositoryProtocol
     let locationService: LocationServiceProtocol
     let storageService: StorageServiceProtocol
@@ -35,6 +36,7 @@ class AppDependencies {
 
         // Infrastructure Layer
         apiClient = APIClient()
+        journeyShare = JourneyShareService(apiClient: apiClient)
         journeyConditions = JourneyConditionsStore(apiClient: apiClient)
         let remoteRepository = TransitAPIRepository(apiClient: apiClient)
         let localRepository = LocalTransitRepository(modelContainer: modelContainer)
