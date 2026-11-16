@@ -49,7 +49,7 @@ struct MainTabView: View {
 //                )
 //            }
 
-            Tab(localized("tab.map"), systemImage: "map.fill", value: .map, role: .search) {
+            Tab(localized("tab.map"), systemImage: "map.fill", value: .map) {
                 NavigationStack {
                     MapExplorerView(
                         viewModel: dependencies.mapExplorerViewModel,
@@ -60,7 +60,7 @@ struct MainTabView: View {
             }
 
             if FeatureToggles.isSearchEnabled {
-                Tab(localized("tab.search"), systemImage: "magnifyingglass", value: .search, role: .search) {
+                Tab(localized("Plan a trip"), systemImage: "point.topleft.down.to.point.bottomright.curvepath", value: .search) {
                     NavigationStack {
                         SearchView(viewModel: dependencies.searchViewModel, dependencies: dependencies)
                     }

@@ -7,12 +7,13 @@ class PlanTripUseCase {
         self.transitRepository = transitRepository
     }
 
-    func execute(origin: Location, destination: Location, maxAlternatives: Int = 5, rankingPriority: String = "arrives_first") async throws -> TripPlan {
+    func execute(origin: Location, destination: Location, maxAlternatives: Int = 5, rankingPriority: String = "arrives_first", options: TripPlanningOptions = TripPlanningOptions()) async throws -> TripPlan {
         return try await transitRepository.planTrip(
             origin: origin,
             destination: destination,
             maxAlternatives: maxAlternatives,
-            rankingPriority: rankingPriority
+            rankingPriority: rankingPriority,
+            options: options
         )
     }
 }

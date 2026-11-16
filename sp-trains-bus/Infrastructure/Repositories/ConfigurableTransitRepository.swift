@@ -106,20 +106,22 @@ final class ConfigurableTransitRepository: TransitRepositoryProtocol {
         })
     }
 
-    func planTrip(origin: Location, destination: Location, maxAlternatives: Int, rankingPriority: String) async throws -> TripPlan {
+    func planTrip(origin: Location, destination: Location, maxAlternatives: Int, rankingPriority: String, options: TripPlanningOptions) async throws -> TripPlan {
         try await execute(local: {
             try await localRepository.planTrip(
                 origin: origin,
                 destination: destination,
                 maxAlternatives: maxAlternatives,
-                rankingPriority: rankingPriority
+                rankingPriority: rankingPriority,
+                options: options
             )
         }, remote: {
             try await remoteRepository.planTrip(
                 origin: origin,
                 destination: destination,
                 maxAlternatives: maxAlternatives,
-                rankingPriority: rankingPriority
+                rankingPriority: rankingPriority,
+                options: options
             )
         })
     }

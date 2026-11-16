@@ -2,6 +2,8 @@ import SwiftUI
 
 struct TripPlanLegSection: View {
     let leg: TripPlanLegState
+    var alerts: [JourneyRailLineStatus] = []
+    var statusRefreshFailed = false
     let isExpanded: Bool
     let onToggle: () -> Void
     let onRetry: () -> Void
@@ -23,13 +25,22 @@ struct TripPlanLegSection: View {
         return leg.route?.routeId ?? "Line"
     }
 
+    private var stopTimes: [String?] {
+        guard !leg.stops.isEmpty, let details = leg.details else { return [] }
+        let middle = details.intermediateStopTimes
+        if middle.count + 2 == leg.stops.count {
+            return [details.departureTime] + middle + [details.arrivalTime]
+        }
+        return [details.departureTime] + Array(repeating: nil, count: max(0, leg.stops.count - 2)) + [details.arrivalTime]
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Button(action: onToggle) {
-                GlassCard {
+                JourneyCard {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack(spacing: 12) {
-                            Text(routeBadgeText)
+                            Label(routeBadgeText, systemImage: leg.details?.systemImage ?? "bus.fill")
                                 .font(.caption.weight(.bold))
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
@@ -55,6 +66,25 @@ struct TripPlanLegSection: View {
                                 .foregroundColor(AppColors.text.opacity(0.6))
                         }
 
+                        if let details = leg.details {
+                            VStack(alignment: .leading, spacing: 4) {
+                                if let headsign = details.headsign, !headsign.isEmpty {
+                                    Text("Towards \(headsign)")
+                                }
+                                if let departure = details.departureTime, let arrival = details.arrivalTime {
+                                    Text("\(TripPlanTime.display(departure)) → \(TripPlanTime.display(arrival))")
+                                }
+                                if let duration = details.durationMinutes {
+                                    Text("\(duration) min")
+                                }
+                                if let headway = details.headwayMinutes {
+                                    Text("Every \(headway) min (estimated)")
+                                }
+                            }
+                            .font(AppFonts.caption())
+                            .foregroundColor(AppColors.text.opacity(0.7))
+                        }
+
                         VStack(alignment: .leading, spacing: 8) {
                             Label("Board at \(leg.originStop?.stopName ?? "boarding stop")", systemImage: "arrow.up.forward")
                                 .font(AppFonts.caption())
@@ -69,9 +99,10 @@ struct TripPlanLegSection: View {
             }
             .buttonStyle(.plain)
 
+            JourneyRailAlertsView(alerts: alerts, compact: true, refreshFailed: statusRefreshFailed)
             if isExpanded {
-                if leg.isLoading {
-                    GlassCard {
+                if leg.isLoading && leg.stops.isEmpty {
+                    JourneyCard {
                         HStack(spacing: 12) {
                             ProgressView()
                             VStack(alignment: .leading, spacing: 4) {
@@ -87,7 +118,7 @@ struct TripPlanLegSection: View {
                         }
                     }
                 } else if let errorMessage = leg.errorMessage {
-                    GlassCard {
+                    JourneyCard {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Could not load this leg")
                                 .font(AppFonts.subheadline())
@@ -106,7 +137,7 @@ struct TripPlanLegSection: View {
                         }
                     }
                 } else {
-                    TripPlanStopsTimeline(stops: leg.stops, routeColor: routeColor)
+                    TripPlanStopsTimeline(stops: leg.stops, routeColor: routeColor, times: stopTimes)
                 }
             }
         }
@@ -116,6 +147,11 @@ struct TripPlanLegSection: View {
 struct TripPlanStopsTimeline: View {
     let stops: [Stop]
     let routeColor: Color
+    var times: [String?] = []
+    @ScaledMetric private var timeWidth: CGFloat = 76
+    private var timeColumnWidth: CGFloat { times.contains(where: { $0 != nil }) ? timeWidth : 0 }
+
+    private func time(at index: Int) -> String? { times.indices.contains(index) ? times[index] : nil }
 
     @State private var isExpanded: Bool = false
     private let collapsedCount = 8
@@ -126,7 +162,7 @@ struct TripPlanStopsTimeline: View {
     }
 
     var body: some View {
-        GlassCard {
+        JourneyCard {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
                     Text("Stops")
@@ -157,13 +193,15 @@ struct TripPlanStopsTimeline: View {
                             Rectangle()
                                 .fill(routeColor.opacity(0.2))
                                 .frame(width: 2)
-                                .padding(.leading, 6)
+                                .padding(.leading, timeColumnWidth > 0 ? timeColumnWidth + 18 : 6)
                                 .padding(.vertical, 8)
 
                             VStack(alignment: .leading, spacing: 16) {
                                 ForEach(displayedStops.indices, id: \.self) { index in
                                     TripPlanStopRow(
                                         stop: displayedStops[index],
+                                        time: time(at: index),
+                                        timeColumnWidth: timeColumnWidth,
                                         isStart: index == 0,
                                         isEnd: index == displayedStops.count - 1,
                                         routeColor: routeColor
@@ -175,6 +213,8 @@ struct TripPlanStopsTimeline: View {
                         VStack(alignment: .leading, spacing: 10) {
                             TripPlanStopRow(
                                 stop: stops.first!,
+                                time: time(at: 0),
+                                timeColumnWidth: timeColumnWidth,
                                 isStart: true,
                                 isEnd: false,
                                 routeColor: routeColor
@@ -210,6 +250,8 @@ struct TripPlanStopsTimeline: View {
 
                             TripPlanStopRow(
                                 stop: stops.last!,
+                                time: time(at: stops.count - 1),
+                                timeColumnWidth: timeColumnWidth,
                                 isStart: false,
                                 isEnd: true,
                                 routeColor: routeColor
@@ -242,6 +284,8 @@ struct TripPlanStopsTimeline: View {
 
 struct TripPlanStopRow: View {
     let stop: Stop
+    var time: String? = nil
+    var timeColumnWidth: CGFloat = 0
     let isStart: Bool
     let isEnd: Bool
     let routeColor: Color
@@ -250,9 +294,14 @@ struct TripPlanStopRow: View {
         let sequenceText = stop.stopSequence > 0 ? "Stop \(stop.stopSequence)" : "Stop"
 
         HStack(alignment: .top, spacing: 12) {
+            if timeColumnWidth > 0 {
+                Text(TripPlanTime.display(time))
+                    .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                    .frame(width: timeColumnWidth, alignment: .trailing)
+            }
             Circle()
                 .fill(isStart || isEnd ? routeColor : routeColor.opacity(0.4))
-                .frame(width: isStart || isEnd ? 12 : 10, height: isStart || isEnd ? 12 : 10)
+                .frame(width: 12, height: 12)
                 .padding(.top, 4)
 
             VStack(alignment: .leading, spacing: 4) {
@@ -261,7 +310,8 @@ struct TripPlanStopRow: View {
                     .foregroundColor(AppColors.text)
                     .lineLimit(2)
 
-                Text(sequenceText)
+                Text(isStart ? NSLocalizedString("Board here", comment: "") :
+                    isEnd ? NSLocalizedString("Alight here", comment: "") : sequenceText)
                     .font(AppFonts.caption2())
                     .foregroundColor(AppColors.text.opacity(0.5))
             }

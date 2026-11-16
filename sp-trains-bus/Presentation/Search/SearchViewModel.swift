@@ -2,14 +2,32 @@ import Foundation
 import Combine
 import MapKit
 
+struct JourneySearchContext {
+    let origin: Location
+    let destination: Location
+    let originLabel: String
+    let destinationLabel: String
+    let departure: Date
+}
+
+@MainActor
 class SearchViewModel: NSObject, ObservableObject {
-    @Published var originQuery: String = ""
-    @Published var destinationQuery: String = ""
+    @Published var originQuery = "" { didSet { queryChanged(isOrigin: true) } }
+    @Published var destinationQuery = "" { didSet { queryChanged(isOrigin: false) } }
     @Published var originSuggestions: [MKLocalSearchCompletion] = []
     @Published var destinationSuggestions: [MKLocalSearchCompletion] = []
-    @Published var alternatives: [TripPlanAlternative] = []
-    @Published var isPlanning: Bool = false
+    @Published private(set) var originLocation: Location?
+    @Published private(set) var destinationLocation: Location?
+    @Published private(set) var alternatives: [TripPlanAlternative] = []
+    @Published private(set) var resultContext: JourneySearchContext?
+    @Published private(set) var isPlanning = false
+    @Published private(set) var isResolving = false
     @Published var errorMessage: String?
+    @Published var rankingPriority = "arrives_first"
+    @Published var maxTransfers = 3
+    @Published var useDepartureTime = false
+    @Published var departureDate = Date()
+    @Published private(set) var hasPlanned = false
 
     private let planTripUseCase: PlanTripUseCase
     private let locationService: LocationServiceProtocol
@@ -17,191 +35,186 @@ class SearchViewModel: NSObject, ObservableObject {
     private let originCompleter = MKLocalSearchCompleter()
     private let destinationCompleter = MKLocalSearchCompleter()
     private var cancellables = Set<AnyCancellable>()
+    private var settingSelection = false
+    private var revision = UUID()
+    private var resolutionID = UUID()
 
-    private(set) var originLocation: Location?
-    private(set) var destinationLocation: Location?
+    var canPlan: Bool { originLocation != nil && destinationLocation != nil && !isPlanning && !isResolving }
 
-    var rankingPriority: String = "arrives_first"
-
-    init(
-        planTripUseCase: PlanTripUseCase,
-        locationService: LocationServiceProtocol,
-        analyticsService: AnalyticsServiceProtocol = NoOpAnalyticsService()
-    ) {
+    init(planTripUseCase: PlanTripUseCase, locationService: LocationServiceProtocol,
+         analyticsService: AnalyticsServiceProtocol? = nil) {
         self.planTripUseCase = planTripUseCase
         self.locationService = locationService
-        self.analyticsService = analyticsService
-
+        self.analyticsService = analyticsService ?? NoOpAnalyticsService()
         super.init()
-
-        locationService.requestLocationPermission()
-
         originCompleter.delegate = self
         destinationCompleter.delegate = self
-        originCompleter.resultTypes = [.address, .pointOfInterest]
-        destinationCompleter.resultTypes = [.address, .pointOfInterest]
-        originCompleter.region = .saoPauloMetro
-        destinationCompleter.region = .saoPauloMetro
-
+        for completer in [originCompleter, destinationCompleter] {
+            completer.resultTypes = [.address, .pointOfInterest]
+            completer.region = .saoPauloMetro
+        }
         setupSearchObservers()
-        setOriginToCurrentLocation()
-    }
-
-    func setOriginToCurrentLocation() {
         if let location = locationService.getCurrentLocation() {
-            originLocation = location
-            originQuery = "Current location"
-            analyticsService.trackEvent(
-                name: "search_origin_current_location_set",
-                properties: [
-                    "latitude": "\(location.latitude)",
-                    "longitude": "\(location.longitude)"
-                ]
-            )
+            selectPlace(location, name: NSLocalizedString("Current location", comment: ""), isOrigin: true)
         }
     }
 
-    @MainActor
+    func setOriginToCurrentLocation() {
+        locationService.requestLocationPermission()
+        guard let location = locationService.getCurrentLocation() else {
+            errorMessage = NSLocalizedString("Location unavailable. Choose an origin or allow location access.", comment: "")
+            return
+        }
+        selectPlace(location, name: NSLocalizedString("Current location", comment: ""), isOrigin: true)
+    }
+
+    func selectPlace(_ location: Location, name: String, isOrigin: Bool) {
+        settingSelection = true
+        if isOrigin {
+            originQuery = name
+            originLocation = location
+        } else {
+            destinationQuery = name
+            destinationLocation = location
+        }
+        settingSelection = false
+        clearSuggestions()
+        invalidateResults()
+    }
+
+    func swapLocations() {
+        resolutionID = UUID()
+        isResolving = false
+        settingSelection = true
+        let query = originQuery
+        let location = originLocation
+        originQuery = destinationQuery
+        originLocation = destinationLocation
+        destinationQuery = query
+        destinationLocation = location
+        settingSelection = false
+        clearSuggestions()
+        invalidateResults()
+    }
+
+    func departNow() {
+        useDepartureTime = false
+        departureDate = Date()
+        invalidateResults()
+    }
+
+    func invalidateResults() {
+        revision = UUID()
+        alternatives = []
+        resultContext = nil
+        hasPlanned = false
+        errorMessage = nil
+    }
+
     func selectOriginSuggestion(_ suggestion: MKLocalSearchCompletion) async {
         await resolveSuggestion(suggestion, isOrigin: true)
     }
 
-    @MainActor
     func selectDestinationSuggestion(_ suggestion: MKLocalSearchCompletion) async {
         await resolveSuggestion(suggestion, isOrigin: false)
     }
 
-    @MainActor
     func planTrip() async {
-        errorMessage = nil
-        alternatives = []
-        analyticsService.trackEvent(
-            name: "search_plan_trip_requested",
-            properties: ["ranking_priority": rankingPriority]
-        )
-
-        guard let originLocation, let destinationLocation else {
-            errorMessage = "Select both origin and destination."
-            analyticsService.trackEvent(name: "search_plan_trip_validation_failed")
+        guard !isPlanning else { return }
+        guard let originLocation, let destinationLocation, !isResolving else {
+            errorMessage = NSLocalizedString("Select both origin and destination.", comment: "")
             return
         }
-
+        invalidateResults()
+        let requestID = revision
+        let context = JourneySearchContext(origin: originLocation, destination: destinationLocation,
+            originLabel: originQuery, destinationLabel: destinationQuery,
+            departure: useDepartureTime ? departureDate : Date())
+        let options = TripPlanningOptions(departure: useDepartureTime ? departureDate : nil, maxTransfers: maxTransfers)
         isPlanning = true
+        clearSuggestions()
+        defer { isPlanning = false }
+        analyticsService.trackEvent(name: "search_plan_trip_requested", properties: ["ranking_priority": rankingPriority])
         do {
-            let plan = try await planTripUseCase.execute(
-                origin: originLocation,
-                destination: destinationLocation,
-                maxAlternatives: 5,
-                rankingPriority: rankingPriority
-            )
-            alternatives = plan.alternatives
-            analyticsService.trackEvent(
-                name: "search_plan_trip_succeeded",
-                properties: ["alternatives_count": "\(plan.alternatives.count)"]
-            )
+            let plan = try await planTripUseCase.execute(origin: context.origin, destination: context.destination,
+                maxAlternatives: 5, rankingPriority: rankingPriority, options: options)
+            guard requestID == revision, !Task.isCancelled else { return }
+            alternatives = plan.alternatives + [plan.walkingAlternative].compactMap { $0 }
+            resultContext = context
+            hasPlanned = true
+            analyticsService.trackEvent(name: "search_plan_trip_succeeded", properties: ["alternatives_count": "\(alternatives.count)"])
+        } catch is CancellationError {
+            // A cancelled search must not replace newer input or show an error.
         } catch {
+            guard requestID == revision else { return }
             errorMessage = error.localizedDescription
-            analyticsService.trackEvent(
-                name: "search_plan_trip_failed",
-                properties: ["error": error.localizedDescription]
-            )
         }
-        isPlanning = false
     }
 
     func clearSuggestions() {
+        originCompleter.cancel()
+        destinationCompleter.cancel()
         originSuggestions = []
         destinationSuggestions = []
     }
 
-    private func setupSearchObservers() {
-        $originQuery
-            .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
-            .removeDuplicates()
-            .sink { [weak self] query in
-                guard let self else { return }
-                if query.isEmpty || query == "Current location" {
-                    self.originSuggestions = []
-                    if query.isEmpty {
-                        self.originLocation = nil
-                    }
-                    return
-                }
-                self.originCompleter.queryFragment = query
-            }
-            .store(in: &cancellables)
-
-        $destinationQuery
-            .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
-            .removeDuplicates()
-            .sink { [weak self] query in
-                guard let self else { return }
-                if query.isEmpty {
-                    self.destinationSuggestions = []
-                    self.destinationLocation = nil
-                    return
-                }
-                self.destinationCompleter.queryFragment = query
-            }
-            .store(in: &cancellables)
+    private func queryChanged(isOrigin: Bool) {
+        guard !settingSelection else { return }
+        resolutionID = UUID()
+        isResolving = false
+        if isOrigin { originLocation = nil; originSuggestions = [] }
+        else { destinationLocation = nil; destinationSuggestions = [] }
+        invalidateResults()
     }
 
-    @MainActor
+    private func setupSearchObservers() {
+        $originQuery.debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
+            .removeDuplicates().sink { [weak self] query in
+                guard let self, self.originLocation == nil, !query.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+                self.originCompleter.queryFragment = query
+            }.store(in: &cancellables)
+        $destinationQuery.debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
+            .removeDuplicates().sink { [weak self] query in
+                guard let self, self.destinationLocation == nil, !query.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+                self.destinationCompleter.queryFragment = query
+            }.store(in: &cancellables)
+    }
+
     private func resolveSuggestion(_ suggestion: MKLocalSearchCompletion, isOrigin: Bool) async {
+        let token = UUID()
+        resolutionID = token
+        isResolving = true
         let request = MKLocalSearch.Request(completion: suggestion)
         request.region = .saoPauloMetro
-
+        defer { if resolutionID == token { isResolving = false } }
         do {
             let response = try await MKLocalSearch(request: request).start()
-            guard let mapItem = response.mapItems.first else { return }
-
-            let location = Location(latitude: mapItem.placemark.coordinate.latitude, longitude: mapItem.placemark.coordinate.longitude)
-            let name = mapItem.name ?? suggestion.title
-
-            if isOrigin {
-                originLocation = location
-                originQuery = name
-                originSuggestions = []
-            } else {
-                destinationLocation = location
-                destinationQuery = name
-                destinationSuggestions = []
-            }
-
-            analyticsService.trackEvent(
-                name: "search_suggestion_selected",
-                properties: [
-                    "field": isOrigin ? "origin" : "destination",
-                    "title": suggestion.title
-                ]
-            )
+            guard token == resolutionID, !Task.isCancelled, let item = response.mapItems.first else { return }
+            selectPlace(Location(latitude: item.placemark.coordinate.latitude, longitude: item.placemark.coordinate.longitude),
+                        name: item.name ?? suggestion.title, isOrigin: isOrigin)
         } catch {
+            guard token == resolutionID else { return }
             errorMessage = error.localizedDescription
-            analyticsService.trackEvent(
-                name: "search_suggestion_resolution_failed",
-                properties: [
-                    "field": isOrigin ? "origin" : "destination",
-                    "error": error.localizedDescription
-                ]
-            )
         }
     }
 }
 
 extension SearchViewModel: MKLocalSearchCompleterDelegate {
-    func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
-        DispatchQueue.main.async {
-            if completer === self.originCompleter {
-                self.originSuggestions = completer.results
-            } else if completer === self.destinationCompleter {
-                self.destinationSuggestions = completer.results
+    nonisolated func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
+        Task { @MainActor in
+            if completer === originCompleter, originLocation == nil, !originQuery.isEmpty {
+                originSuggestions = completer.results
+            } else if completer === destinationCompleter, destinationLocation == nil, !destinationQuery.isEmpty {
+                destinationSuggestions = completer.results
             }
         }
     }
 
-    func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
-        DispatchQueue.main.async {
-            self.errorMessage = error.localizedDescription
+    nonisolated func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
+        Task { @MainActor in
+            guard (completer === originCompleter && originLocation == nil) ||
+                  (completer === destinationCompleter && destinationLocation == nil) else { return }
+            errorMessage = error.localizedDescription
         }
     }
 }

@@ -286,8 +286,10 @@ Published Properties:
 Features:
 - Origin/destination place search (MapKit suggestions)
 - Default origin to current location
-- Trip planning via /plan.php with up to 5 alternatives
-- Each alternative shows departure, arrival, legs, and stop count
+- Trip planning via /plan.php with up to 5 transit alternatives plus a walking option
+- Preferences: six ranking priorities, 0–4 preferred transfers, and departure date/time in São Paulo
+- Results show door-to-door times, duration, walking distance, transfers, and bus/Metro/rail legs
+- Shows an empty state when neither transit nor walking is available
 - Alternatives navigate to TripPlanDetailView with a combined overview map
 
 #### TripPlanDetailView & TripPlanDetailViewModel
@@ -296,15 +298,17 @@ Published Properties:
 - legs: [TripPlanLegState]
 
 Derived Data:
-- preWalk: TripPlanWalkSegment?
-- postWalk: TripPlanWalkSegment?
+- segments: [TripPlanSegment] (walking and vehicle legs in server order)
 
 Features:
 - Loads trip stops + shapes per leg (GetTripRouteUseCase + GetRouteShapeUseCase)
 - Builds a combined overview map (legs + walking segments)
 - Uses route colors for each leg and dashed walking paths
 - Shows boarding and drop-off stops for each leg
-- Adds walking segments before boarding and after drop-off (distance-based)
+- Uses server walking distances/times, including transfers between different stops
+- Displays headsign, boarding/alighting times, and estimated service frequency
+- Preserves planner-provided intermediate stops when detail requests fail
+- Falls back to the legacy response format when new fields are absent
 - Leg cards expand to reveal stop timelines and focus the map
 ```
 ```
@@ -423,7 +427,7 @@ Searches for bus stops by name or query string.
 
 #### PlanTripUseCase
 ```swift
-func execute(origin: Location, destination: Location, maxAlternatives: Int = 5, rankingPriority: String = "arrives_first") async throws -> TripPlan
+func execute(origin: Location, destination: Location, maxAlternatives: Int = 5, rankingPriority: String = "arrives_first", options: TripPlanningOptions = TripPlanningOptions()) async throws -> TripPlan
 
 Dependencies:
 - TransitRepositoryProtocol
@@ -1025,3 +1029,11 @@ All networking, storage, and location services built from scratch using native i
 **Last Updated**: 2026-03-16
 **Architecture**: Clean Architecture + MVVM
 **Status**: Production Ready (with TODOs)
+
+### Journey planner regression checks
+
+Run `./Scripts/test_journey_planner.sh` from the iOS project directory. The Xcode
+project has no unit-test target; this script builds a temporary macOS Swift package
+using the actual planner domain, DTOs, mappers, request layer and detail view model.
+Only the UIKit palette is substituted. Fixtures cover the new multimodal contract
+and the legacy format. Build the iOS scheme separately to validate the SwiftUI UI.

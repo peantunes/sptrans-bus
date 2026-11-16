@@ -3,6 +3,7 @@ import SwiftData
 
 class AppDependencies {
     let modelContainer: ModelContainer
+    let journeyConditions: JourneyConditionsStore
     let apiClient: APIClient
     let transitRepository: TransitRepositoryProtocol
     let locationService: LocationServiceProtocol
@@ -34,6 +35,7 @@ class AppDependencies {
 
         // Infrastructure Layer
         apiClient = APIClient()
+        journeyConditions = JourneyConditionsStore(apiClient: apiClient)
         let remoteRepository = TransitAPIRepository(apiClient: apiClient)
         let localRepository = LocalTransitRepository(modelContainer: modelContainer)
         locationService = CoreLocationService()

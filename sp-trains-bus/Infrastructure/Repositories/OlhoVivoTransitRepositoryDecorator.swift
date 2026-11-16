@@ -95,12 +95,13 @@ final class OlhoVivoTransitRepositoryDecorator: TransitRepositoryProtocol {
         try await baseRepository.getAllRoutes(limit: limit, offset: offset)
     }
 
-    func planTrip(origin: Location, destination: Location, maxAlternatives: Int, rankingPriority: String) async throws -> TripPlan {
+    func planTrip(origin: Location, destination: Location, maxAlternatives: Int, rankingPriority: String, options: TripPlanningOptions) async throws -> TripPlan {
         try await baseRepository.planTrip(
             origin: origin,
             destination: destination,
             maxAlternatives: maxAlternatives,
-            rankingPriority: rankingPriority
+            rankingPriority: rankingPriority,
+            options: options
         )
     }
 

@@ -44,7 +44,7 @@ enum TransitAPIEndpoint {
     case railStatusReport(periodDays: Int)
     case railAlertSubscriptionsState(installationId: String)
     case railAlertSubscriptionsUpdate(payload: RailAlertSubscriptionUpdateRequestDTO)
-    case plan(origin: Location, destination: Location, maxAlternatives: Int, rankingPriority: String)
+    case plan(origin: Location, destination: Location, maxAlternatives: Int, rankingPriority: String, options: TripPlanningOptions = TripPlanningOptions())
 }
 
 extension TransitAPIEndpoint: APIEndpoint {
@@ -148,15 +148,27 @@ extension TransitAPIEndpoint: APIEndpoint {
             ]
         case .railAlertSubscriptionsUpdate:
             return []
-        case .plan(let origin, let destination, let maxAlternatives, let rankingPriority):
-            return [
+        case .plan(let origin, let destination, let maxAlternatives, let rankingPriority, let options):
+            var items = [
                 URLQueryItem(name: "origin_lat", value: "\(origin.latitude)"),
                 URLQueryItem(name: "origin_lon", value: "\(origin.longitude)"),
                 URLQueryItem(name: "dest_lat", value: "\(destination.latitude)"),
                 URLQueryItem(name: "dest_lon", value: "\(destination.longitude)"),
                 URLQueryItem(name: "max_alternatives", value: "\(maxAlternatives)"),
-                URLQueryItem(name: "ranking_priority", value: rankingPriority)
+                URLQueryItem(name: "ranking_priority", value: rankingPriority),
+                URLQueryItem(name: "max_transfers", value: "\(options.maxTransfers)")
             ]
+            if let departure = options.departure {
+                let formatter = DateFormatter()
+                formatter.locale = Locale(identifier: "en_US_POSIX")
+                formatter.calendar = Calendar(identifier: .gregorian)
+                formatter.timeZone = TimeZone(identifier: "America/Sao_Paulo")
+                formatter.dateFormat = "yyyy-MM-dd"
+                items.append(URLQueryItem(name: "date", value: formatter.string(from: departure)))
+                formatter.dateFormat = "HH:mm:ss"
+                items.append(URLQueryItem(name: "time", value: formatter.string(from: departure)))
+            }
+            return items
         }
     }
 

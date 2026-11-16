@@ -9,9 +9,11 @@ final class TripPlanDetailViewModel: ObservableObject {
     @Published var focusCoordinates: [Location] = []
     @Published var combinedSegments: [TripPlanMapSegment] = []
     @Published var selectedLegId: UUID?
+    @Published private(set) var liveArrival: JourneyLiveArrival?
+    @Published private(set) var isLoadingLiveArrival = false
+    private let liveArrivals: ((Int) async throws -> [Arrival])?
 
-    let preWalk: TripPlanWalkSegment?
-    let postWalk: TripPlanWalkSegment?
+    let segments: [TripPlanSegment]
     let originLocation: Location?
     let destinationLocation: Location?
 
@@ -27,8 +29,10 @@ final class TripPlanDetailViewModel: ObservableObject {
         originLabel: String,
         destinationLabel: String,
         getTripRouteUseCase: GetTripRouteUseCase,
-        getRouteShapeUseCase: GetRouteShapeUseCase
+        getRouteShapeUseCase: GetRouteShapeUseCase,
+        liveArrivals: ((Int) async throws -> [Arrival])? = nil
     ) {
+        self.liveArrivals = liveArrivals
         self.getTripRouteUseCase = getTripRouteUseCase
         self.getRouteShapeUseCase = getRouteShapeUseCase
         self.originLabel = originLabel
@@ -36,7 +40,7 @@ final class TripPlanDetailViewModel: ObservableObject {
         self.originLocation = originLocation
         self.destinationLocation = destinationLocation
 
-        let legSources = TripPlanDetailViewModel.deriveLegs(from: alternative)
+        let legSources = alternative.vehicleLegs
         self.legs = legSources.enumerated().map { index, leg in
             TripPlanLegState(
                 index: index + 1,
@@ -45,33 +49,46 @@ final class TripPlanDetailViewModel: ObservableObject {
                 originStopId: leg.originStopId,
                 destinationStopId: leg.destinationStopId,
                 originStop: leg.originStop,
-                destinationStop: leg.destinationStop
+                destinationStop: leg.destinationStop,
+                details: leg,
+                stops: leg.intermediateStops.map { [leg.originStop].compactMap { $0 } + $0 + [leg.destinationStop].compactMap { $0 } } ?? []
             )
         }
 
-        if let originLocation,
-           let firstStop = legSources.first?.originStop {
-            self.preWalk = TripPlanDetailViewModel.buildWalkSegment(
-                from: originLocation,
-                to: firstStop.location,
-                fromLabel: originLabel,
-                toLabel: firstStop.stopName
-            )
+        if !alternative.segments.isEmpty {
+            self.segments = alternative.segments.map { segment in
+                guard case .walk(let walk) = segment else { return segment }
+                return .walk(TripPlanWalkSegment(
+                    fromLabel: walk.fromLocation == originLocation ? originLabel : walk.fromLabel,
+                    toLabel: walk.toLocation == destinationLocation ? destinationLabel : walk.toLabel,
+                    fromLocation: walk.fromLocation, toLocation: walk.toLocation,
+                    distanceMeters: walk.distanceMeters, durationMinutes: walk.durationMinutes,
+                    departureTime: walk.departureTime, arrivalTime: walk.arrivalTime
+                ))
+            }
         } else {
-            self.preWalk = nil
+            var segments: [TripPlanSegment] = []
+            if let originLocation, let firstStop = legSources.first?.originStop,
+               let walk = Self.buildWalkSegment(from: originLocation, to: firstStop.location,
+                    fromLabel: originLabel, toLabel: firstStop.stopName) {
+                segments.append(.walk(walk))
+            }
+            for (index, leg) in legSources.enumerated() {
+                if index > 0, let previous = legSources[index - 1].destinationStop, let next = leg.originStop,
+                   let walk = Self.buildWalkSegment(from: previous.location, to: next.location,
+                        fromLabel: previous.stopName, toLabel: next.stopName) {
+                    segments.append(.walk(walk))
+                }
+                segments.append(.transit(index))
+            }
+            if let destinationLocation, let lastStop = legSources.last?.destinationStop,
+               let walk = Self.buildWalkSegment(from: lastStop.location, to: destinationLocation,
+                    fromLabel: lastStop.stopName, toLabel: destinationLabel) {
+                segments.append(.walk(walk))
+            }
+            self.segments = segments
         }
-
-        if let destinationLocation,
-           let lastStop = legSources.last?.destinationStop {
-            self.postWalk = TripPlanDetailViewModel.buildWalkSegment(
-                from: lastStop.location,
-                to: destinationLocation,
-                fromLabel: lastStop.stopName,
-                toLabel: destinationLabel
-            )
-        } else {
-            self.postWalk = nil
-        }
+        rebuildCombinedMap()
     }
 
     func load() async {
@@ -85,6 +102,22 @@ final class TripPlanDetailViewModel: ObservableObject {
         }
 
         rebuildCombinedMap()
+    }
+
+    func refreshLiveArrival() async {
+        liveArrival = nil
+        guard let liveArrivals, let leg = legs.first?.details, leg.railSource == nil,
+              let stopID = leg.originStopId, let timestamp = leg.departureTimestamp,
+              (0...3600).contains(timestamp - Date().timeIntervalSince1970) else { return }
+        isLoadingLiveArrival = true
+        defer { isLoadingLiveArrival = false }
+        do {
+            let arrivals = try await liveArrivals(stopID)
+            guard !Task.isCancelled else { return }
+            liveArrival = JourneyLiveArrival.match(arrivals, leg: leg)
+        } catch {
+            // Scheduled times remain usable when live coverage is absent.
+        }
     }
 
     func reloadLeg(_ legId: UUID) async {
@@ -102,7 +135,9 @@ final class TripPlanDetailViewModel: ObservableObject {
 
         guard let tripId, !tripId.isEmpty else {
             legs[index].isLoading = false
-            legs[index].errorMessage = "Trip data unavailable for this leg."
+            if legs[index].stops.isEmpty {
+                legs[index].errorMessage = "Trip data unavailable for this leg."
+            }
             return
         }
 
@@ -115,10 +150,14 @@ final class TripPlanDetailViewModel: ObservableObject {
             )
             var shape: [Location] = []
             if !tripStop.trip.shapeId.isEmpty {
-                shape = try await getRouteShapeUseCase.execute(shapeId: tripStop.trip.shapeId)
+                shape = (try? await getRouteShapeUseCase.execute(shapeId: tripStop.trip.shapeId)) ?? []
             }
 
-            legs[index].stops = stops
+            // The planner already provides the exact boarding-to-alighting slice,
+            // including repeated stops on circular routes. Keep it when available.
+            if legs[index].details?.intermediateStops == nil {
+                legs[index].stops = stops
+            }
             legs[index].shape = shape
             legs[index].segmentCoordinates = buildLegSegment(legs[index])
             legs[index].isLoading = false
@@ -128,7 +167,9 @@ final class TripPlanDetailViewModel: ObservableObject {
             }
         } catch {
             legs[index].isLoading = false
-            legs[index].errorMessage = error.localizedDescription
+            if legs[index].stops.isEmpty {
+                legs[index].errorMessage = error.localizedDescription
+            }
         }
     }
 
@@ -149,7 +190,7 @@ final class TripPlanDetailViewModel: ObservableObject {
             return
         }
 
-        focusCoordinates = []
+        focusCoordinates = buildLegSegment(leg)
     }
 
     func setFocusForWalk(_ walk: TripPlanWalkSegment?) {
@@ -172,46 +213,7 @@ final class TripPlanDetailViewModel: ObservableObject {
     }
 
     private func buildCombinedShape() -> [Location] {
-        var points: [Location] = []
-
-        if let originLocation, let firstStop = legs.first?.originStop {
-            points.append(originLocation)
-            points.append(firstStop.location)
-        }
-
-        for (index, leg) in legs.enumerated() {
-            let legPoints: [Location]
-            if !leg.shape.isEmpty {
-                legPoints = leg.shape
-            } else if !leg.stops.isEmpty {
-                legPoints = leg.stops.map { $0.location }
-            } else if let originStop = leg.originStop, let destinationStop = leg.destinationStop {
-                legPoints = [originStop.location, destinationStop.location]
-            } else {
-                legPoints = []
-            }
-
-            if points.last != legPoints.first, let first = legPoints.first {
-                points.append(first)
-            }
-            points.append(contentsOf: legPoints.dropFirst())
-
-            if index < legs.count - 1,
-               let nextOrigin = legs[index + 1].originStop,
-               let currentDestination = leg.destinationStop,
-               currentDestination.location != nextOrigin.location {
-                points.append(nextOrigin.location)
-            }
-        }
-
-        if let destinationLocation, let lastStop = legs.last?.destinationStop {
-            if points.last != lastStop.location {
-                points.append(lastStop.location)
-            }
-            points.append(destinationLocation)
-        }
-
-        return points
+        buildCombinedSegments().flatMap { $0.coordinates }
     }
 
     private func buildCombinedStops() -> [Stop] {
@@ -274,36 +276,22 @@ final class TripPlanDetailViewModel: ObservableObject {
     }
 
     private func buildCombinedSegments() -> [TripPlanMapSegment] {
-        var segments: [TripPlanMapSegment] = []
-
-        if let originLocation, let firstStop = legs.first?.originStop {
-            segments.append(TripPlanMapSegment(
-                coordinates: [originLocation, firstStop.location],
-                colorHex: AppColors.darkGray.hexString,
-                isWalking: true
-            ))
-        }
-
-        for leg in legs {
-            let coordinates = buildLegSegment(leg)
-            if !coordinates.isEmpty {
-                segments.append(TripPlanMapSegment(
-                    coordinates: coordinates,
-                    colorHex: leg.route?.color ?? AppColors.accent.hexString,
-                    isWalking: false
-                ))
+        segments.compactMap { segment in
+            switch segment {
+            case .walk(let walk):
+                return TripPlanMapSegment(
+                    coordinates: [walk.fromLocation, walk.toLocation],
+                    colorHex: AppColors.darkGray.hexString, isWalking: true
+                )
+            case .transit(let index):
+                guard legs.indices.contains(index) else { return nil }
+                let leg = legs[index]
+                return TripPlanMapSegment(
+                    coordinates: buildLegSegment(leg),
+                    colorHex: leg.route?.color ?? AppColors.accent.hexString, isWalking: false
+                )
             }
         }
-
-        if let destinationLocation, let lastStop = legs.last?.destinationStop {
-            segments.append(TripPlanMapSegment(
-                coordinates: [lastStop.location, destinationLocation],
-                colorHex: AppColors.darkGray.hexString,
-                isWalking: true
-            ))
-        }
-
-        return segments
     }
 
     private func buildLegSegment(_ leg: TripPlanLegState) -> [Location] {
@@ -371,41 +359,6 @@ final class TripPlanDetailViewModel: ObservableObject {
         return Array(stops[destinationIndex...originIndex])
     }
 
-    private static func deriveLegs(from alternative: TripPlanAlternative) -> [TripPlanLeg] {
-        if !alternative.legs.isEmpty {
-            return alternative.legs
-        }
-
-        if alternative.type == .transfer {
-            let first = TripPlanLeg(
-                route: alternative.originRoute,
-                tripId: alternative.originTripId,
-                originStopId: alternative.originStopId,
-                destinationStopId: alternative.transferStopId,
-                originStop: alternative.originStop,
-                destinationStop: alternative.transferStop
-            )
-            let second = TripPlanLeg(
-                route: alternative.destinationRoute,
-                tripId: alternative.destinationTripId,
-                originStopId: alternative.transferStopId,
-                destinationStopId: alternative.destinationStopId,
-                originStop: alternative.transferStop,
-                destinationStop: alternative.destinationStop
-            )
-            return [first, second]
-        }
-
-        return [TripPlanLeg(
-            route: alternative.route,
-            tripId: alternative.tripId,
-            originStopId: alternative.originStopId,
-            destinationStopId: alternative.destinationStopId,
-            originStop: alternative.originStop,
-            destinationStop: alternative.destinationStop
-        )]
-    }
-
     private static func buildWalkSegment(from: Location, to: Location, fromLabel: String, toLabel: String) -> TripPlanWalkSegment? {
         if abs(from.latitude) < 0.0001 && abs(from.longitude) < 0.0001 {
             return nil
@@ -440,6 +393,7 @@ struct TripPlanLegState: Identifiable {
     let originStop: Stop?
     let destinationStop: Stop?
 
+    var details: TripPlanLeg? = nil
     var stops: [Stop] = []
     var shape: [Location] = []
     var segmentCoordinates: [Location] = []
@@ -452,25 +406,4 @@ struct TripPlanMapSegment: Identifiable {
     let coordinates: [Location]
     let colorHex: String
     let isWalking: Bool
-}
-
-struct TripPlanWalkSegment: Identifiable {
-    let id = UUID()
-    let fromLabel: String
-    let toLabel: String
-    let fromLocation: Location
-    let toLocation: Location
-    let distanceMeters: Double
-    let durationMinutes: Int
-
-    var distanceText: String {
-        if distanceMeters >= 1000 {
-            return String(format: "%.1f km", distanceMeters / 1000)
-        }
-        return "\(Int(distanceMeters)) m"
-    }
-
-    var durationText: String {
-        durationMinutes == 1 ? "1 min" : "\(durationMinutes) min"
-    }
 }

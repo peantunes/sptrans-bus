@@ -300,7 +300,7 @@ private struct ArrivalsHistoryUnlockInfoSheet: View {
             ]
         }
         func getAllRoutes(limit: Int, offset: Int) async throws -> [Route] { return [] }
-        func planTrip(origin: Location, destination: Location, maxAlternatives: Int, rankingPriority: String) async throws -> TripPlan {
+        func planTrip(origin: Location, destination: Location, maxAlternatives: Int, rankingPriority: String, options: TripPlanningOptions) async throws -> TripPlan {
             return TripPlan(alternatives: [], rankingPriority: rankingPriority)
         }
     }

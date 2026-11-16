@@ -214,7 +214,7 @@ final class LocalTransitRepository: TransitRepositoryProtocol {
         return routes[offset..<upperBound].map { toRoute($0) }
     }
 
-    func planTrip(origin: Location, destination: Location, maxAlternatives: Int, rankingPriority: String) async throws -> TripPlan {
+    func planTrip(origin: Location, destination: Location, maxAlternatives: Int, rankingPriority: String, options: TripPlanningOptions) async throws -> TripPlan {
         throw LocalTransitRepositoryError.unsupportedLocalOperation
     }
 

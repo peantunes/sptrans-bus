@@ -2,7 +2,7 @@ import Foundation
 
 enum FeatureToggles {
     // Release-ready feature set.
-    static let isSearchEnabled = false
+    static let isSearchEnabled = true
     static let isWeatherEnabled = false
     static let isHomeWorkLocationsEnabled = false
     static let isOlhoVivoArrivalsEnabled = true

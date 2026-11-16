@@ -1,0 +1,66 @@
+{
+  "result": {
+    "alternatives": [
+      {
+        "type": "transfer",
+        "summary": {
+          "departureTime": "10:23:42",
+          "arrivalTime": "17:36:40",
+          "legCount": 2,
+          "stopCount": 9,
+          "lineSummary": "669A-10 > 702C-10"
+        },
+        "data": {
+          "originRoute": {
+            "routeId": "669A-10",
+            "shortName": "669A-10",
+            "longName": "Term. Sto. Amaro - Term. Princ. Isabel",
+            "color": "782F40",
+            "textColor": "FFFFFF"
+          },
+          "destinationRoute": {
+            "routeId": "702C-10",
+            "shortName": "702C-10",
+            "longName": "Jd. Bonfiglioli - Metrô Belém",
+            "color": "FF671F",
+            "textColor": "000000"
+          },
+          "originTripId": "669A-10-0",
+          "destinationTripId": "702C-10-0",
+          "originStopId": 70015949,
+          "destinationStopId": 800012611,
+          "transferStopId": 260016857,
+          "originStop": {
+            "id": 70015949,
+            "name": "Av. Paulista, 1754",
+            "desc": "Ref.: R Peixoto Gomide/ Al Ministro Rocha Azevedo",
+            "lat": -23.5603,
+            "lon": -46.6574,
+            "routes": "175P-10, 478P-10, 669A-10, 715M-10, 775P-10, 805L-10, 809V-10, 857P-10, 857R-10, 874C-10, 874T-10, 875A-10, 875H-10, 875P-10, 877T-10, 917H-10, 917M-10, 917M-31, 975A-10, N506-11",
+            "distance": 0.002061157226563637
+          },
+          "destinationStop": {
+            "id": 800012611,
+            "name": "Secretaria Da Fazenda - Poupatempo",
+            "desc": "Av. Rangel Pestana, 300 Ref.: R Frederico Alvarenga/ Av Do Exterior",
+            "lat": -23.5495,
+            "lon": -46.6297,
+            "routes": "2002-10, 2100-10, 2101-10, 2123-10, 3139-10, 4111-10, 4115-10, 5290-10, 5630-10, 702C-10",
+            "distance": 0.0007855224609407685
+          },
+          "originSequence": 32,
+          "transferSequence": 35,
+          "destinationSequence": 41,
+          "transferStop": {
+            "id": 260016857,
+            "name": "Pedro Taques B/C",
+            "desc": "R. Da Consolação, 1759 Ref.: R Coronel Jose Eusebio/ R Pedro Taques",
+            "lat": -23.5518,
+            "lon": -46.6574
+          }
+        }
+      }
+    ],
+    "rankingPriority": "arrives_first"
+  }
+}

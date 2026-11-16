@@ -36,7 +36,7 @@ class UseCasesTests: XCTestCase {
         func getAllRoutes(limit: Int, offset: Int) async throws -> [Route] {
             return try allRoutesResult.get()
         }
-        func planTrip(origin: Location, destination: Location, maxAlternatives: Int, rankingPriority: String) async throws -> TripPlan {
+        func planTrip(origin: Location, destination: Location, maxAlternatives: Int, rankingPriority: String, options: TripPlanningOptions) async throws -> TripPlan {
             return try planResult.get()
         }
     }

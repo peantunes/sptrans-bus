@@ -3,276 +3,221 @@ import MapKit
 
 struct SearchView: View {
     @StateObject private var viewModel: SearchViewModel
+    @ObservedObject private var conditions: JourneyConditionsStore
     let dependencies: AppDependencies
-    @State private var activeField: ActiveField? = nil
-    @State private var isCollapsed: Bool = false
-
-    enum ActiveField {
-        case origin
-        case destination
-    }
+    @FocusState private var focusedField: Field?
+    @State private var directOnly = false
+    private enum Field: Hashable { case origin, destination }
 
     init(viewModel: SearchViewModel, dependencies: AppDependencies) {
         _viewModel = StateObject(wrappedValue: viewModel)
+        _conditions = ObservedObject(wrappedValue: dependencies.journeyConditions)
         self.dependencies = dependencies
+    }
+
+    private var directCount: Int {
+        viewModel.alternatives.filter { $0.type != .walk && $0.transfers == 0 }.count
+    }
+    private var visibleAlternatives: [TripPlanAlternative] {
+        directOnly ? viewModel.alternatives.filter { $0.type != .walk && $0.transfers == 0 } : viewModel.alternatives
     }
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                if isCollapsed {
-                    Button(action: {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            isCollapsed = false
-                        }
-                    }) {
-                        GlassCard {
-                            VStack(alignment: .leading, spacing: 8) {
-                                HStack {
-                                    Text("Route")
-                                        .font(AppFonts.caption())
-                                        .foregroundColor(AppColors.text.opacity(0.6))
-
-                                    Spacer()
-
-                                    Image(systemName: "chevron.down")
-                                        .font(.caption.weight(.semibold))
-                                        .foregroundColor(AppColors.text.opacity(0.6))
-                                }
-
-                                Text("\(viewModel.originQuery) → \(viewModel.destinationQuery)")
-                                    .font(AppFonts.subheadline())
-                                    .foregroundColor(AppColors.text)
-                                    .lineLimit(1)
+            VStack(alignment: .leading, spacing: 20) {
+                JourneyCard {
+                    VStack(alignment: .leading, spacing: 18) {
+                        HStack(alignment: .center, spacing: 12) {
+                            VStack(spacing: 14) {
+                                locationField(.origin, title: "From", text: $viewModel.originQuery, symbol: "circle.fill")
+                                Divider().padding(.leading, 30)
+                                locationField(.destination, title: "To", text: $viewModel.destinationQuery, symbol: "mappin.and.ellipse")
                             }
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            Button {
+                                focusedField = nil
+                                viewModel.swapLocations()
+                            } label: {
+                                Image(systemName: "arrow.up.arrow.down").font(.title3.weight(.semibold))
+                                    .padding(13).background(AppColors.primary.opacity(0.12), in: Circle())
+                            }
+                            .accessibilityLabel("Swap origin and destination")
+                            .accessibilityIdentifier("planner.swap")
                         }
+
+                        if let field = focusedField {
+                            suggestions(for: field)
+                        }
+                        Button {
+                            focusedField = nil
+                            viewModel.setOriginToCurrentLocation()
+                        } label: {
+                            Label("Use current location", systemImage: "location.fill").font(.subheadline)
+                        }
+                        Divider()
+                        HStack {
+                            Label("Departure", systemImage: "clock").font(.headline)
+                            Spacer()
+                            Picker("Departure", selection: $viewModel.useDepartureTime) {
+                                Text("Now").tag(false)
+                                Text("Choose time").tag(true)
+                            }.pickerStyle(.menu).labelsHidden()
+                            .accessibilityIdentifier("planner.departureMode")
+                        }
+                        if viewModel.useDepartureTime {
+                            DatePicker("Leave at", selection: $viewModel.departureDate, displayedComponents: [.date, .hourAndMinute])
+                                .environment(\.timeZone, TimeZone(identifier: "America/Sao_Paulo")!)
+                                .accessibilityIdentifier("planner.departureDate")
+                        }
+                        Text("Times shown in São Paulo time.").font(.caption).foregroundStyle(.secondary)
+                        DisclosureGroup("Journey preferences") {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Picker("Sort by", selection: $viewModel.rankingPriority) {
+                                    Text("Arrive earliest").tag("arrives_first")
+                                    Text("Shortest journey").tag("shortest")
+                                    Text("Fewest transfers").tag("fewest_transfers")
+                                    Text("Least walking").tag("least_walking")
+                                    Text("Closest boarding stop").tag("closest_origin")
+                                    Text("Closest arrival stop").tag("closest_destination")
+                                }
+                                Picker("Preferred maximum transfers", selection: $viewModel.maxTransfers) {
+                                    ForEach(0...4, id: \.self) { Text("\($0)").tag($0) }
+                                }
+                                Text("If no route is found, options with more transfers may appear.")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }.padding(.top, 12)
+                        }
+                        Button(action: search) {
+                            HStack {
+                                if viewModel.isPlanning { ProgressView().tint(.white) }
+                                Text(LocalizedStringKey(viewModel.isPlanning ? "Searching journeys…" : "Search journeys"))
+                                    .font(.headline)
+                            }
+                            .frame(maxWidth: .infinity).padding(.vertical, 16)
+                            .foregroundStyle(.white)
+                            .background(AppColors.primary.opacity(viewModel.canPlan || viewModel.isPlanning ? 1 : 0.45), in: Capsule())
+                        }
+                        .disabled(!viewModel.canPlan)
+                        .accessibilityIdentifier("planner.search")
+                        if viewModel.isResolving {
+                            Label("Finding location…", systemImage: "mappin").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                if let error = viewModel.errorMessage {
+                    Label(error, systemImage: "exclamationmark.circle")
+                        .font(.subheadline).foregroundStyle(.red)
+                        .accessibilityIdentifier("planner.error")
+                }
+                results
+            }
+            .padding(16)
+            .frame(maxWidth: 720)
+            .frame(maxWidth: .infinity)
+        }
+        .background(Color(uiColor: .systemGroupedBackground))
+        .scrollDismissesKeyboard(.interactively)
+        .navigationTitle("Plan a trip")
+        .navigationBarTitleDisplayMode(.large)
+        .tint(AppColors.primary)
+        .onChange(of: viewModel.useDepartureTime) { _, newValue in
+            if !newValue { viewModel.departNow() } else { viewModel.invalidateResults() }
+        }
+        .onChange(of: viewModel.departureDate) { _, _ in viewModel.invalidateResults() }
+        .onChange(of: viewModel.rankingPriority) { _, _ in viewModel.invalidateResults() }
+        .onChange(of: viewModel.maxTransfers) { _, _ in viewModel.invalidateResults() }
+        .onAppear { dependencies.analyticsService.trackScreen(name: "SearchView", className: "SearchView") }
+    }
+
+    private func locationField(_ field: Field, title: LocalizedStringKey, text: Binding<String>, symbol: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: symbol).foregroundStyle(AppColors.primary).frame(width: 20)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title).font(.caption).foregroundStyle(.secondary)
+                TextField("Address or place", text: text)
+                    .font(.body.weight(.medium)).focused($focusedField, equals: field)
+                    .autocorrectionDisabled().submitLabel(.search)
+                    .accessibilityIdentifier(field == .origin ? "planner.origin" : "planner.destination")
+            }
+        }
+    }
+
+    @ViewBuilder private func suggestions(for field: Field) -> some View {
+        let values = field == .origin ? viewModel.originSuggestions : viewModel.destinationSuggestions
+        if !values.isEmpty {
+            VStack(spacing: 0) {
+                ForEach(Array(values.prefix(6).enumerated()), id: \.offset) { _, suggestion in
+                    Button {
+                        Task {
+                            if field == .origin { await viewModel.selectOriginSuggestion(suggestion) }
+                            else { await viewModel.selectDestinationSuggestion(suggestion) }
+                            if (field == .origin ? viewModel.originLocation : viewModel.destinationLocation) != nil {
+                                focusedField = nil
+                            }
+                        }
+                    } label: {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(suggestion.title).font(.subheadline.weight(.medium))
+                            Text(suggestion.subtitle).font(.caption).foregroundStyle(.secondary)
+                        }.frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 10)
+                    }.buttonStyle(.plain)
+                    Divider()
+                }
+            }
+        }
+    }
+
+    @ViewBuilder private var results: some View {
+        if viewModel.hasPlanned, let context = viewModel.resultContext {
+            VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("Journey options").font(.title2.bold())
+                    Text("\(context.originLabel) → \(context.destinationLabel)").font(.subheadline).foregroundStyle(.secondary)
+                    Text(context.departure, format: .dateTime.day().month().hour().minute().timeZone(.specificName(.short)))
+                        .environment(\.timeZone, TimeZone(identifier: "America/Sao_Paulo")!)
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                if !viewModel.alternatives.isEmpty {
+                    Picker("Journey options", selection: $directOnly) {
+                        Text("All (\(viewModel.alternatives.count))").tag(false)
+                        Text("Direct only (\(directCount))").tag(true)
+                    }.pickerStyle(.segmented)
+                }
+                if visibleAlternatives.isEmpty {
+                    ContentUnavailableView("No journeys found", systemImage: "point.topleft.down.to.point.bottomright.curvepath",
+                        description: Text(LocalizedStringKey(directOnly ? "Try all journeys to include transfers and walking." : "Try another departure time or nearby locations.")))
+                }
+                ForEach(visibleAlternatives) { alternative in
+                    NavigationLink {
+                        TripPlanDetailView(alternative: alternative,
+                            originLocation: context.origin, destinationLocation: context.destination,
+                            originLabel: context.originLabel, destinationLabel: context.destinationLabel,
+                            dependencies: dependencies, departureDate: context.departure)
+                    } label: {
+                        JourneyOptionCard(alternative: alternative,
+                            alerts: conditions.alerts(for: alternative),
+                            statusUnavailable: conditions.statusUnavailable(for: alternative),
+                            statusRefreshFailed: conditions.failed)
                     }
                     .buttonStyle(.plain)
-                    .padding(.horizontal)
-                } else {
-                    GlassCard {
-                        VStack(alignment: .leading, spacing: 14) {
-                            SearchLocationField(
-                                title: "Origin",
-                                placeholder: "Current location",
-                                systemImage: "location.fill",
-                                text: $viewModel.originQuery,
-                                trailingTitle: "Use"
-                            ) {
-                                viewModel.setOriginToCurrentLocation()
-                                hideKeyboard()
-                            }
-                            .onTapGesture { activeField = .origin }
-                            .onChange(of: viewModel.originQuery) { _, _ in
-                                activeField = .origin
-                            }
-
-                            SearchLocationField(
-                                title: "Destination",
-                                placeholder: "Search destination",
-                                systemImage: "mappin.and.ellipse",
-                                text: $viewModel.destinationQuery
-                            )
-                            .onTapGesture { activeField = .destination }
-                            .onChange(of: viewModel.destinationQuery) { _, _ in
-                                activeField = .destination
-                            }
-
-                            Button(action: {
-                                hideKeyboard()
-                                activeField = nil
-                                viewModel.clearSuggestions()
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    isCollapsed = true
-                                }
-                                Task {
-                                    await viewModel.planTrip()
-                                }
-                            }) {
-                                HStack {
-                                    Image(systemName: "arrow.triangle.branch")
-                                    Text("Plan route")
-                                }
-                                .font(AppFonts.callout())
-                                .foregroundColor(.white)
-                                .padding(.vertical, 10)
-                                .frame(maxWidth: .infinity)
-                                .background(AppColors.primary)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                            }
-                        }
-                    }
-                    .padding(.horizontal)
+                    .accessibilityIdentifier("planner.result")
                 }
-
-                if !isCollapsed, activeField == .origin, !viewModel.originSuggestions.isEmpty {
-                    suggestionList(
-                        title: "Origin suggestions",
-                        suggestions: viewModel.originSuggestions,
-                        onSelect: { suggestion in
-                            Task {
-                                await viewModel.selectOriginSuggestion(suggestion)
-                                hideKeyboard()
-                                activeField = nil
-                            }
-                        }
-                    )
-                }
-
-                if !isCollapsed, activeField == .destination, !viewModel.destinationSuggestions.isEmpty {
-                    suggestionList(
-                        title: "Destination suggestions",
-                        suggestions: viewModel.destinationSuggestions,
-                        onSelect: { suggestion in
-                            Task {
-                                await viewModel.selectDestinationSuggestion(suggestion)
-                                hideKeyboard()
-                                activeField = nil
-                            }
-                        }
-                    )
-                }
-
-                if viewModel.isPlanning {
-                    HStack {
-                        Spacer()
-                        LoadingView()
-                        Spacer()
-                    }
-                } else if let errorMessage = viewModel.errorMessage {
-                    ErrorView(message: errorMessage) {
-                        Task {
-                            await viewModel.planTrip()
-                        }
-                    }
-                    .padding(.horizontal)
-                }
-
+                if conditions.isLoading { ProgressView("Checking rail conditions…").font(.caption) }
                 if !viewModel.alternatives.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Best options")
-                            .font(AppFonts.headline())
-                            .foregroundColor(AppColors.text)
-                            .padding(.horizontal)
-
-                        ForEach(viewModel.alternatives) { alternative in
-                            NavigationLink {
-                                TripPlanDetailView(
-                                    alternative: alternative,
-                                    originLocation: viewModel.originLocation,
-                                    destinationLocation: viewModel.destinationLocation,
-                                    originLabel: viewModel.originQuery,
-                                    destinationLabel: viewModel.destinationQuery,
-                                    dependencies: dependencies
-                                )
-                            } label: {
-                                JourneyOptionCard(alternative: alternative)
-                            }
-                            .buttonStyle(.plain)
-                            .simultaneousGesture(TapGesture().onEnded {
-                                dependencies.analyticsService.trackEvent(
-                                    name: "search_alternative_opened",
-                                    properties: [
-                                        "type": alternative.type.rawValue,
-                                        "legs": "\(alternative.legCount)"
-                                    ]
-                                )
-                            })
-                            .padding(.horizontal)
-                        }
-                    }
+                    Text("Scheduled estimates. Live arrivals and reported line alerts are shown separately when available.")
+                        .font(.caption).foregroundStyle(.secondary)
                 }
             }
-            .padding(.vertical, 12)
-        }
-        .navigationTitle("Search")
-        .navigationBarTitleDisplayMode(.inline)
-        .onAppear {
-            dependencies.analyticsService.trackScreen(name: "SearchView", className: "SearchView")
-            dependencies.analyticsService.trackEvent(name: "search_screen_opened")
         }
     }
 
-    private func suggestionList(
-        title: String,
-        suggestions: [MKLocalSearchCompletion],
-        onSelect: @escaping (MKLocalSearchCompletion) -> Void
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(AppFonts.caption())
-                .foregroundColor(AppColors.text.opacity(0.6))
-                .padding(.horizontal)
-
-            GlassCard {
-                VStack(spacing: 10) {
-                    ForEach(suggestions, id: \.stableIdentifier) { suggestion in
-                        Button(action: { onSelect(suggestion) }) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(suggestion.title)
-                                    .font(AppFonts.subheadline())
-                                    .foregroundColor(AppColors.text)
-
-                                if !suggestion.subtitle.isEmpty {
-                                    Text(suggestion.subtitle)
-                                        .font(AppFonts.caption())
-                                        .foregroundColor(AppColors.text.opacity(0.6))
-                                }
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .buttonStyle(.plain)
-
-                        if suggestion.stableIdentifier != suggestions.last?.stableIdentifier {
-                            Divider()
-                                .background(AppColors.text.opacity(0.1))
-                        }
-                    }
-                }
+    private func search() {
+        focusedField = nil
+        directOnly = false
+        Task {
+            await viewModel.planTrip()
+            if viewModel.alternatives.contains(where: { $0.vehicleLegs.contains(where: { $0.railSource != nil }) }) {
+                await conditions.refresh()
             }
-            .padding(.horizontal)
         }
-    }
-}
-
-#Preview {
-    class MockPlanTripUseCase: PlanTripUseCase {
-        init() {
-            super.init(transitRepository: MockTransitRepository())
-        }
-        override func execute(origin: Location, destination: Location, maxAlternatives: Int = 5, rankingPriority: String = "arrives_first") async throws -> TripPlan {
-            TripPlan(alternatives: [
-                TripPlanAlternative(type: .direct, departureTime: "08:10", arrivalTime: "08:55", legCount: 1, stopCount: 12, lineSummary: "1080-0"),
-                TripPlanAlternative(type: .transfer, departureTime: "08:20", arrivalTime: "09:12", legCount: 2, stopCount: 18, lineSummary: "1080-0 > 9033-1")
-            ], rankingPriority: "arrives_first")
-        }
-    }
-
-    class MockLocationService: LocationServiceProtocol {
-        func requestLocationPermission() {}
-        func getCurrentLocation() -> Location? { Location(latitude: -23.5505, longitude: -46.6333) }
-        func startUpdatingLocation() {}
-        func stopUpdatingLocation() {}
-    }
-
-    class MockTransitRepository: TransitRepositoryProtocol {
-        func getNearbyStops(location: Location, limit: Int) async throws -> [Stop] { [] }
-        func getArrivals(stopId: Int, limit: Int) async throws -> [Arrival] { [] }
-        func searchStops(query: String, limit: Int) async throws -> [Stop] { [] }
-        func getTrip(tripId: String) async throws -> TripStop { fatalError() }
-        func getRoute(routeId: String) async throws -> Route { fatalError() }
-        func getShape(shapeId: String) async throws -> [Location] { [] }
-        func getAllRoutes(limit: Int, offset: Int) async throws -> [Route] { [] }
-        func planTrip(origin: Location, destination: Location, maxAlternatives: Int, rankingPriority: String) async throws -> TripPlan {
-            TripPlan(alternatives: [], rankingPriority: rankingPriority)
-        }
-    }
-
-    let viewModel = SearchViewModel(planTripUseCase: MockPlanTripUseCase(), locationService: MockLocationService())
-    let dependencies = AppDependencies()
-
-    return NavigationView {
-        SearchView(viewModel: viewModel, dependencies: dependencies)
     }
 }

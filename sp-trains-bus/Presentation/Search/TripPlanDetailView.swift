@@ -4,6 +4,8 @@ import MapKit
 struct TripPlanDetailView: View {
     @StateObject private var viewModel: TripPlanDetailViewModel
     let alternative: TripPlanAlternative
+    let departureDate: Date?
+    @ObservedObject private var conditions: JourneyConditionsStore
     let originLabel: String
     let destinationLabel: String
     private let analyticsService: AnalyticsServiceProtocol
@@ -15,7 +17,8 @@ struct TripPlanDetailView: View {
         destinationLocation: Location?,
         originLabel: String,
         destinationLabel: String,
-        dependencies: AppDependencies
+        dependencies: AppDependencies,
+        departureDate: Date? = nil
     ) {
         _viewModel = StateObject(
             wrappedValue: TripPlanDetailViewModel(
@@ -25,10 +28,13 @@ struct TripPlanDetailView: View {
                 originLabel: originLabel,
                 destinationLabel: destinationLabel,
                 getTripRouteUseCase: dependencies.getTripRouteUseCase,
-                getRouteShapeUseCase: dependencies.getRouteShapeUseCase
+                getRouteShapeUseCase: dependencies.getRouteShapeUseCase,
+                liveArrivals: { stopID in try await dependencies.transitRepository.getArrivals(stopId: stopID, limit: 40) }
             )
         )
         self.alternative = alternative
+        self.departureDate = departureDate
+        _conditions = ObservedObject(wrappedValue: dependencies.journeyConditions)
         self.originLabel = originLabel
         self.destinationLabel = destinationLabel
         self.analyticsService = dependencies.analyticsService
@@ -37,7 +43,35 @@ struct TripPlanDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                GlassCard {
+                TripPlanSummaryCard(alternative: alternative, originLabel: originLabel,
+                                    destinationLabel: destinationLabel, departureDate: departureDate)
+                JourneyRailAlertsView(alerts: conditions.alerts(for: alternative),
+                    unavailable: conditions.statusUnavailable(for: alternative), refreshFailed: conditions.failed)
+                TimelineView(.periodic(from: .now, by: 30)) { context in
+                    if let live = viewModel.liveArrival, live.isFresh(at: context.date) {
+                        JourneyCard {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Label("Live at the boarding stop", systemImage: "dot.radiowaves.left.and.right")
+                                    .font(.headline).foregroundStyle(AppColors.primary)
+                                Text("Next arrival: \(live.expectedTimeText)")
+                                Text("Towards \(live.headsign)").font(.subheadline)
+                                Text("This is a live stop prediction, not a confirmed delay for this journey.")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+                HStack {
+                    Text("Route overview").font(.headline)
+                    Spacer()
+                    Button("Refresh conditions") {
+                        Task {
+                            await conditions.refresh()
+                            await viewModel.refreshLiveArrival()
+                        }
+                    }.font(.caption).disabled(conditions.isLoading || viewModel.isLoadingLiveArrival)
+                }
+                JourneyCard {
                     if viewModel.combinedSegments.isEmpty && viewModel.combinedStops.isEmpty {
                         VStack(spacing: 10) {
                             Image(systemName: "map")
@@ -64,59 +98,29 @@ struct TripPlanDetailView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                     }
                 }
-                .padding(.horizontal)
 
-                TripPlanSummaryCard(
-                    alternative: alternative,
-                    originLabel: originLabel,
-                    destinationLabel: destinationLabel
-                )
-                .padding(.horizontal)
-
-                if let walk = viewModel.preWalk {
-                    WalkSegmentCard(segment: walk, title: "Walk to boarding stop", onFocus: {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            expandedLegId = nil
-                            viewModel.setFocusForWalk(walk)
-                        }
-                    })
-                    .padding(.horizontal)
-                }
-
-                ForEach(viewModel.legs) { leg in
-                    TripPlanLegSection(
-                        leg: leg,
-                        isExpanded: expandedLegId == leg.id,
-                        onToggle: {
+                ForEach(viewModel.segments.indices, id: \.self) { index in
+                    switch viewModel.segments[index] {
+                    case .walk(let walk):
+                        WalkSegmentCard(segment: walk, title: walkTitle(at: index), onFocus: {
                             withAnimation(.easeInOut(duration: 0.2)) {
-                                if expandedLegId == leg.id {
-                                    expandedLegId = nil
-                                    viewModel.setFocusForLeg(nil)
-                                } else {
-                                    expandedLegId = leg.id
-                                    viewModel.setFocusForLeg(leg)
-                                }
+                                expandedLegId = nil
+                                viewModel.setFocusForWalk(walk)
                             }
-                        },
-                        onRetry: {
-                            Task { await viewModel.reloadLeg(leg.id) }
+                        })
+                    case .transit(let legIndex):
+                        if viewModel.legs.indices.contains(legIndex) {
+                            legSection(viewModel.legs[legIndex])
                         }
-                    )
-                    .padding(.horizontal)
+                    }
                 }
-
-                if let walk = viewModel.postWalk {
-                    WalkSegmentCard(segment: walk, title: "Walk to destination", onFocus: {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            expandedLegId = nil
-                            viewModel.setFocusForWalk(walk)
-                        }
-                    })
-                    .padding(.horizontal)
-                }
+                Text("Walking paths on the map are approximate.").font(.caption).foregroundStyle(.secondary)
             }
-            .padding(.vertical, 12)
+            .padding(16)
+            .frame(maxWidth: 720)
+            .frame(maxWidth: .infinity)
         }
+        .background(Color(uiColor: .systemGroupedBackground))
         .navigationTitle("Journey")
         .navigationBarTitleDisplayMode(.inline)
         .task {
@@ -128,8 +132,38 @@ struct TripPlanDetailView: View {
                     "legs": "\(alternative.legCount)"
                 ]
             )
+            expandedLegId = viewModel.legs.first?.id
             await viewModel.load()
         }
+        .task {
+            if alternative.vehicleLegs.contains(where: { $0.railSource != nil }) { await conditions.refresh() }
+            await viewModel.refreshLiveArrival()
+        }
+    }
+
+    private func walkTitle(at index: Int) -> String {
+        if alternative.type == .walk { return "Walk to destination" }
+        if index == 0 { return "Walk to boarding stop" }
+        if index == viewModel.segments.count - 1 { return "Walk to destination" }
+        return "Walk between stops"
+    }
+
+    private func legSection(_ leg: TripPlanLegState) -> some View {
+        TripPlanLegSection(leg: leg,
+            alerts: conditions.railLines.filter { $0.isDisrupted && leg.details.map($0.matches) == true },
+            statusRefreshFailed: conditions.failed, isExpanded: expandedLegId == leg.id, onToggle: {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                if expandedLegId == leg.id {
+                    expandedLegId = nil
+                    viewModel.setFocusForLeg(nil)
+                } else {
+                    expandedLegId = leg.id
+                    viewModel.setFocusForLeg(leg)
+                }
+            }
+        }, onRetry: {
+            Task { await viewModel.reloadLeg(leg.id) }
+        })
     }
 }
 
@@ -137,87 +171,46 @@ private struct TripPlanSummaryCard: View {
     let alternative: TripPlanAlternative
     let originLabel: String
     let destinationLabel: String
-
-    private var departureText: String {
-        alternative.departureTime ?? "--:--"
-    }
-
-    private var arrivalText: String {
-        alternative.arrivalTime ?? "--:--"
-    }
-
-    private var legText: String {
-        let count = alternative.legCount
-        return count == 1 ? "1 leg" : "\(count) legs"
-    }
-
-    private var stopText: String {
-        if let stopCount = alternative.stopCount {
-            return stopCount == 1 ? "1 stop" : "\(stopCount) stops"
-        }
-        return "-- stops"
-    }
+    let departureDate: Date?
 
     var body: some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Departure → Arrival")
-                            .font(AppFonts.caption())
-                            .foregroundColor(AppColors.text.opacity(0.6))
-
-                        HStack(spacing: 6) {
-                            Text(departureText)
-                                .font(AppFonts.headline())
-                                .foregroundColor(AppColors.text)
-
-                            Image(systemName: "arrow.right")
-                                .font(.caption.weight(.semibold))
-                                .foregroundColor(AppColors.text.opacity(0.5))
-
-                            Text(arrivalText)
-                                .font(AppFonts.headline())
-                                .foregroundColor(AppColors.text)
-                        }
-                    }
-
-                    Spacer()
-
-                    Text(legText)
-                        .font(AppFonts.caption())
-                        .foregroundColor(AppColors.text.opacity(0.6))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(AppColors.text.opacity(0.1))
-                        .clipShape(Capsule())
+        VStack(alignment: .leading, spacing: 18) {
+            if let date = alternative.startTimestamp.map({ Date(timeIntervalSince1970: $0) }) ?? departureDate {
+                Text(date, format: .dateTime.weekday().day().month())
+                    .environment(\.timeZone, TimeZone(identifier: "America/Sao_Paulo")!)
+                    .font(.caption.weight(.semibold)).textCase(.uppercase).opacity(0.8)
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                Text(originLabel).font(.title2.bold())
+                Image(systemName: "arrow.down").font(.title3).opacity(0.7)
+                Text(destinationLabel).font(.title2.bold())
+            }
+            HStack(alignment: .bottom) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("Departure").font(.caption).opacity(0.8)
+                    Text(alternative.displayDepartureTime).font(.title.bold()).monospacedDigit()
                 }
-
-                HStack(spacing: 12) {
-                    Label(stopText, systemImage: "signpost.right.fill")
-                        .font(AppFonts.caption())
-                        .foregroundColor(AppColors.text.opacity(0.7))
-
-                    if !alternative.lineSummary.isEmpty {
-                        Text(alternative.lineSummary)
-                            .font(AppFonts.caption())
-                            .foregroundColor(AppColors.text)
-                            .monospaced()
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Route")
-                        .font(AppFonts.caption())
-                        .foregroundColor(AppColors.text.opacity(0.6))
-
-                    Text("\(originLabel) → \(destinationLabel)")
-                        .font(AppFonts.subheadline())
-                        .foregroundColor(AppColors.text)
-                        .lineLimit(2)
+                Spacer()
+                VStack(alignment: .trailing, spacing: 5) {
+                    Text("Arrival").font(.caption).opacity(0.8)
+                    Text(alternative.displayArrivalTime).font(.title.bold()).monospacedDigit()
                 }
             }
+            HStack {
+                Text(alternative.transferDescription)
+                if let duration = alternative.durationMinutes { Text("· " + TripPlanTime.duration(duration)) }
+            }.font(.subheadline.weight(.semibold))
+            if let walking = alternative.walkMinutes {
+                Label("Includes \(walking) min walking", systemImage: "figure.walk").font(.subheadline)
+            }
+            Label("Scheduled estimate · São Paulo time", systemImage: "clock")
+                .font(.caption).opacity(0.8)
         }
+        .foregroundStyle(.white)
+        .padding(24)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(LinearGradient(colors: [AppColors.primary.mix(with: .black, by: 0.5), AppColors.primary.mix(with: .black, by: 0.7)],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 28))
     }
 }
 
@@ -228,7 +221,7 @@ private struct WalkSegmentCard: View {
 
     var body: some View {
         Button(action: onFocus) {
-            GlassCard {
+            JourneyCard {
                 HStack(spacing: 12) {
                     Image(systemName: "figure.walk")
                         .font(.system(size: 20, weight: .semibold))
@@ -238,7 +231,7 @@ private struct WalkSegmentCard: View {
                         .clipShape(Circle())
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(title)
+                        Text(LocalizedStringKey(title))
                             .font(AppFonts.subheadline())
                             .foregroundColor(AppColors.text)
 
@@ -258,6 +251,11 @@ private struct WalkSegmentCard: View {
                         Text(segment.durationText)
                             .font(AppFonts.caption2())
                             .foregroundColor(AppColors.text.opacity(0.6))
+                        if let departure = segment.departureTime, let arrival = segment.arrivalTime {
+                            Text("\(TripPlanTime.display(departure)) → \(TripPlanTime.display(arrival))")
+                                .font(AppFonts.caption2())
+                                .foregroundColor(AppColors.text.opacity(0.6))
+                        }
                     }
                 }
             }
