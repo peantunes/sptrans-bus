@@ -149,6 +149,12 @@
     <string name="plan_premium_choose_time">Escolher data e horário de partida é um recurso Premium. No plano gratuito, as buscas usam o horário atual.</string>
     <string name="plan_see_premium">Ver Premium</string>
     <string name="plan_not_now">Agora não</string>
+    <string name="plan_share_title">Compartilhar viagem</string>
+    <string name="plan_share_failed">Não foi possível compartilhar esta viagem agora. Tente de novo.</string>
+    <string name="plan_shared_title">Viagem compartilhada</string>
+    <string name="plan_shared_loading">Carregando viagem compartilhada…</string>
+    <string name="plan_shared_not_found">Esta viagem compartilhada não está mais disponível.</string>
+    <string name="plan_shared_unavailable">Não foi possível carregar a viagem agora.</string>
     <string name="plan_clear">Limpar</string>
     <string name="plan_clear_field">Limpar campo</string>
     <string name="premium_feature_planner">Planejador sem limites: buscas e rotas salvas ilimitadas, com data e horário de partida</string>

@@ -74,6 +74,14 @@ class TransitApi(
         "max_alternatives" to maxAlternatives.toString(),
     )
 
+    /** Creates (or reuses) the link of a journey. */
+    suspend fun createShare(request: ShareRequest): ShareResponse {
+        val body = json.encodeToString(request).toRequestBody(JSON_MEDIA_TYPE)
+        return json.decodeFromString(fetch("share.php", emptyList(), body))
+    }
+
+    suspend fun sharedJourney(token: String): SharedJourneyResponse = get("share.php", "t" to token)
+
     suspend fun railStatus(refresh: Boolean = false): RailStatusResponse =
         get("metro_cptm.php", "refresh" to if (refresh) "1" else null)
 

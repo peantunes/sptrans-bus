@@ -90,6 +90,7 @@ data class TimedStop(val id: Int?, val name: String, val lat: Double?, val lon: 
 
 data class RideLeg(
     val route: PlanRoute?,
+    val tripId: String? = null,
     val mode: TransitMode,
     val headsign: String?,
     val board: TimedStop,

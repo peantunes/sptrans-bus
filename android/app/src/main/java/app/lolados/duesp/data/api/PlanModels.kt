@@ -162,3 +162,25 @@ object LenientStringSerializer : KSerializer<String?> {
     override fun deserialize(decoder: Decoder): String? = decoder.primitiveContent()
     override fun serialize(encoder: Encoder, value: String?) = encoder.encodeString(value.orEmpty())
 }
+
+// share.php (shared journeys, https://sptrans.lolados.app/j/<token>). Requests carry references only.
+
+@Serializable
+data class ShareRequest(val date: String, val legs: List<ShareLeg>)
+
+@Serializable
+data class ShareLeg(val tripId: String, val from: String, val to: String, val departure: String)
+
+@Serializable
+data class ShareResponse(val token: String, val url: String)
+
+@Serializable
+data class SharedJourneyResponse(
+    val token: String,
+    val url: String,
+    val from: String = "",
+    val to: String = "",
+    val state: String = "upcoming",
+    @Serializable(with = LenientIntSerializer::class) val departsAt: Int? = null,
+    val journey: PlanAlternativeDto,
+)

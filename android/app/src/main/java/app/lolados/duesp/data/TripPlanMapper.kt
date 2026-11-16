@@ -51,6 +51,14 @@ class TripPlanMapper(private val json: Json = Json { ignoreUnknownKeys = true; c
         return TripPlan(journeys, walkOnly)
     }
 
+    /** A shared journey: one alternative, from its first boarding stop to its last alighting stop. */
+    fun mapShared(dto: PlanAlternativeDto, from: String, to: String): Journey? {
+        val segments = decodeOrNull<List<PlanSegmentDto>>(dto.segments).orEmpty()
+        val first = segments.firstOrNull { it.type == "transit" }?.originStop
+        val last = segments.lastOrNull { it.type == "transit" }?.destinationStop
+        return mapAlternative(0, dto, Place(from, first?.lat, first?.lon), Place(to, last?.lat, last?.lon))
+    }
+
     private fun mapAlternative(index: Int, dto: PlanAlternativeDto, origin: Place, destination: Place): Journey? {
         val segments = decodeOrNull<List<PlanSegmentDto>>(dto.segments).orEmpty()
         val steps = if (segments.any { it.type == "transit" }) {
@@ -79,6 +87,7 @@ class TripPlanMapper(private val json: Json = Json { ignoreUnknownKeys = true; c
             when (segment.type) {
                 "transit" -> ride(
                     route = segment.route,
+                    tripId = segment.tripId,
                     mode = segment.mode,
                     headsign = segment.headsign,
                     origin = segment.originStop,
@@ -119,7 +128,7 @@ class TripPlanMapper(private val json: Json = Json { ignoreUnknownKeys = true; c
             }
         }
         val rides = legs.mapNotNull {
-            ride(it.route, it.mode, it.headsign, it.originStop, it.destinationStop, it.departureTime, it.arrivalTime,
+            ride(it.route, it.tripId, it.mode, it.headsign, it.originStop, it.destinationStop, it.departureTime, it.arrivalTime,
                 it.intermediateStops, it.durationMinutes, it.headwayMinutes)
         }
         if (rides.isEmpty()) return emptyList()
@@ -137,6 +146,7 @@ class TripPlanMapper(private val json: Json = Json { ignoreUnknownKeys = true; c
 
     private fun ride(
         route: PlanRouteDto?,
+        tripId: String?,
         mode: String?,
         headsign: String?,
         origin: PlanStopDto?,
@@ -161,6 +171,7 @@ class TripPlanMapper(private val json: Json = Json { ignoreUnknownKeys = true; c
         return JourneyStep.Ride(
             RideLeg(
                 route = planRoute,
+                tripId = tripId?.ifBlank { null },
                 mode = RideLeg.modeOf(mode, route?.type),
                 headsign = headsign?.ifBlank { null },
                 board = origin.toTimedStop(departure),

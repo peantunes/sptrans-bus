@@ -15,6 +15,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Directions
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import app.lolados.duesp.data.JourneyShareRepository
+import app.lolados.duesp.ui.plan.SharedJourneyScreen
+import app.lolados.duesp.ui.plan.canShare
+import app.lolados.duesp.ui.plan.rememberJourneySharer
+import kotlinx.coroutines.launch
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -59,17 +66,25 @@ private enum class Tab(val route: String, val label: Int, val icon: ImageVector)
 
 class MainActivity : ComponentActivity() {
     private val openStatusRequests = mutableIntStateOf(0)
+    /** Token of a shared journey link (https://sptrans.lolados.app/j/<token>) waiting to be shown. */
+    private val sharedJourneyToken = mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         if (savedInstanceState == null && intent.opensRailStatus()) openStatusRequests.intValue++
-        setContent { DueSPTheme { DueSPApp(openStatusRequests.intValue) } }
+        if (savedInstanceState == null) sharedJourneyToken.value = JourneyShareRepository.token(intent.data)
+        setContent {
+            DueSPTheme {
+                DueSPApp(openStatusRequests.intValue, sharedJourneyToken.value) { sharedJourneyToken.value = null }
+            }
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (intent.opensRailStatus()) openStatusRequests.intValue++
+        JourneyShareRepository.token(intent.data)?.let { sharedJourneyToken.value = it }
     }
 
     /** Taps on rail alert notifications: ours (foreground) or FCM's system notification (data extras). */
@@ -94,8 +109,13 @@ private fun planViewModel(owner: androidx.lifecycle.ViewModelStoreOwner): PlanVi
     }
 
 @androidx.compose.runtime.Composable
-private fun DueSPApp(openStatusRequest: Int) {
+private fun DueSPApp(openStatusRequest: Int, sharedJourneyToken: String?, onSharedJourneyShown: () -> Unit) {
     val nav = rememberNavController()
+    LaunchedEffect(sharedJourneyToken) {
+        val token = sharedJourneyToken ?: return@LaunchedEffect
+        nav.navigate("shared/$token") { launchSingleTop = true }
+        onSharedJourneyShown()
+    }
     LaunchedEffect(openStatusRequest) {
         if (openStatusRequest > 0) {
             nav.navigate(Tab.STATUS.route) {
@@ -148,12 +168,26 @@ private fun DueSPApp(openStatusRequest: Int) {
                     val vm = planViewModel(parent)
                     val state by vm.state.collectAsStateWithLifecycle()
                     val journey = vm.journey(entry.arguments?.getInt("id") ?: -1)
+                    val sharer = rememberJourneySharer()
+                    val scope = rememberCoroutineScope()
+                    val serviceDay = state.context?.departure?.toLocalDate()
                     JourneyDetailScreen(
                         journey = journey,
                         originLabel = state.context?.origin?.name.orEmpty(),
                         destinationLabel = state.context?.destination?.name.orEmpty(),
                         onBack = nav::popBackStack,
+                        isSharing = sharer.isCreating,
+                        onShare = if (journey != null && serviceDay != null && canShare(journey)) {
+                            { scope.launch { sharer.share(journey, serviceDay) } }
+                        } else {
+                            null
+                        },
                     )
+                }
+                composable("shared/{token}", arguments = listOf(navArgument("token") { type = NavType.StringType })) { entry ->
+                    SharedJourneyScreen(token = entry.arguments?.getString("token").orEmpty(), onBack = {
+                        if (!nav.popBackStack()) nav.navigate(Tab.MAP.route)
+                    })
                 }
                 composable(Tab.STATUS.route) { StatusScreen(onOpenPremium = openPremium, onOpenAlerts = { nav.navigate("alerts") }) }
                 composable("alerts") { RailAlertsScreen(onBack = nav::popBackStack) }

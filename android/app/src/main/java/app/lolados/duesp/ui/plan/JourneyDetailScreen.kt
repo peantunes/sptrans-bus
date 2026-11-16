@@ -14,6 +14,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -52,12 +54,27 @@ import org.osmdroid.views.overlay.Polyline
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun JourneyDetailScreen(journey: Journey?, originLabel: String, destinationLabel: String, onBack: () -> Unit) {
+fun JourneyDetailScreen(
+    journey: Journey?,
+    originLabel: String,
+    destinationLabel: String,
+    onBack: () -> Unit,
+    isSharing: Boolean = false,
+    onShare: (() -> Unit)? = null,
+) {
     Column(Modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text(stringResource(R.string.plan_journey_title)) },
             navigationIcon = {
                 IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.action_back)) }
+            },
+            actions = {
+                if (onShare != null) {
+                    IconButton(onClick = onShare, enabled = !isSharing) {
+                        if (isSharing) androidx.compose.material3.CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                        else Icon(Icons.Filled.Share, stringResource(R.string.plan_share_title))
+                    }
+                }
             },
         )
         if (journey == null) {
