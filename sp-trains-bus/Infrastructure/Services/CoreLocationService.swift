@@ -17,7 +17,12 @@ class CoreLocationService: NSObject, LocationServiceProtocol, CLLocationManagerD
     }
 
     func getCurrentLocation() -> Location? {
-        return currentLocation
+        if let currentLocation {
+            return currentLocation
+        }
+        // Updates may not have started yet; use the fix CoreLocation already has.
+        guard let cached = locationManager.location else { return nil }
+        return Location(latitude: cached.coordinate.latitude, longitude: cached.coordinate.longitude)
     }
 
     func startUpdatingLocation() {

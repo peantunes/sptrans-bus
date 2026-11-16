@@ -125,7 +125,10 @@ struct SearchView: View {
         .onChange(of: viewModel.departureDate) { _, _ in viewModel.invalidateResults() }
         .onChange(of: viewModel.rankingPriority) { _, _ in viewModel.invalidateResults() }
         .onChange(of: viewModel.maxTransfers) { _, _ in viewModel.invalidateResults() }
-        .onAppear { dependencies.analyticsService.trackScreen(name: "SearchView", className: "SearchView") }
+        .onAppear {
+            dependencies.analyticsService.trackScreen(name: "SearchView", className: "SearchView")
+            viewModel.fillOriginWithCurrentLocationIfEmpty()
+        }
     }
 
     private func locationField(_ field: Field, title: LocalizedStringKey, text: Binding<String>, symbol: String) -> some View {

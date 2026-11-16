@@ -222,6 +222,33 @@ final class JourneyPlannerTests: XCTestCase {
     }
 
     @MainActor
+    func testTextFieldRewritingTheSameTextKeepsTheSelectedPlace() {
+        let model = SearchViewModel(planTripUseCase: ControlledPlanner(plan: TripPlan(alternatives: [], rankingPriority: "arrives_first")), locationService: PlannerLocationStub())
+        model.selectPlace(.saoPaulo, name: "Home", isOrigin: true)
+        model.selectPlace(Location(latitude: -23.54, longitude: -46.62), name: "Estação da Luz", isOrigin: false)
+        // SwiftUI writes the unchanged text back when the field loses focus.
+        model.destinationQuery = "Estação da Luz"
+        model.originQuery = "Home"
+        XCTAssertNotNil(model.destinationLocation)
+        XCTAssertNotNil(model.originLocation)
+        XCTAssertTrue(model.canPlan)
+    }
+
+    @MainActor
+    func testOriginFillsWithCurrentLocationOnceAvailable() {
+        let location = PlannerLocationStub()
+        let model = SearchViewModel(planTripUseCase: ControlledPlanner(plan: TripPlan(alternatives: [], rankingPriority: "arrives_first")), locationService: location)
+        XCTAssertNil(model.originLocation)
+        location.current = .saoPaulo
+        model.fillOriginWithCurrentLocationIfEmpty()
+        XCTAssertEqual(model.originLocation, .saoPaulo)
+        // A place the user typed or chose is never replaced.
+        model.selectPlace(Location(latitude: -23.54, longitude: -46.62), name: "Work", isOrigin: true)
+        model.fillOriginWithCurrentLocationIfEmpty()
+        XCTAssertEqual(model.originQuery, "Work")
+    }
+
+    @MainActor
     func testSwapExchangesBothNamesAndCoordinates() async {
         let model = SearchViewModel(planTripUseCase: ControlledPlanner(plan: TripPlan(alternatives: [], rankingPriority: "arrives_first")), locationService: PlannerLocationStub())
         let destination = Location(latitude: -23.54, longitude: -46.62)
@@ -305,8 +332,9 @@ private final class PlannerContractURLProtocol: URLProtocol {
 }
 
 private final class PlannerLocationStub: LocationServiceProtocol {
+    var current: Location?
     func requestLocationPermission() {}
-    func getCurrentLocation() -> Location? { nil }
+    func getCurrentLocation() -> Location? { current }
     func startUpdatingLocation() {}
     func stopUpdatingLocation() {}
 }

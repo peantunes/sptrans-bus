@@ -12,8 +12,10 @@ struct JourneySearchContext {
 
 @MainActor
 class SearchViewModel: NSObject, ObservableObject {
-    @Published var originQuery = "" { didSet { queryChanged(isOrigin: true) } }
-    @Published var destinationQuery = "" { didSet { queryChanged(isOrigin: false) } }
+    // TextField writes the same text back (e.g. when focus moves); only a real edit
+    // may discard the selected place.
+    @Published var originQuery = "" { didSet { if originQuery != oldValue { queryChanged(isOrigin: true) } } }
+    @Published var destinationQuery = "" { didSet { if destinationQuery != oldValue { queryChanged(isOrigin: false) } } }
     @Published var originSuggestions: [MKLocalSearchCompletion] = []
     @Published var destinationSuggestions: [MKLocalSearchCompletion] = []
     @Published private(set) var originLocation: Location?
@@ -57,6 +59,15 @@ class SearchViewModel: NSObject, ObservableObject {
         if let location = locationService.getCurrentLocation() {
             selectPlace(location, name: NSLocalizedString("Current location", comment: ""), isOrigin: true)
         }
+    }
+
+    /// The view model is created at app launch, usually before a location fix exists.
+    /// Fill an untouched origin with the current location once one is available.
+    func fillOriginWithCurrentLocationIfEmpty() {
+        guard originLocation == nil,
+              originQuery.trimmingCharacters(in: .whitespaces).isEmpty,
+              let location = locationService.getCurrentLocation() else { return }
+        selectPlace(location, name: NSLocalizedString("Current location", comment: ""), isOrigin: true)
     }
 
     func setOriginToCurrentLocation() {
