@@ -132,6 +132,7 @@ struct ClipRootView: View {
                         .task { await model.keepRefreshing() }
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .navigationTitle("Viagem")
             .navigationBarTitleDisplayMode(.inline)
             .background(Color(uiColor: .systemGroupedBackground))
@@ -166,6 +167,8 @@ struct ClipJourneyView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
             .padding(16)
+            // Room for the App Store overlay, so it never hides the last stops.
+            .padding(.bottom, 110)
         }
     }
 
