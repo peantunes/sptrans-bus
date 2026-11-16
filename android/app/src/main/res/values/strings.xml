@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Due SP</string>
+
+    <string name="tab_map">Mapa</string>
+    <string name="tab_status">Status</string>
+    <string name="tab_settings">Ajustes</string>
+
+    <string name="action_search">Buscar ponto</string>
+    <string name="action_retry">Tentar novamente</string>
+    <string name="action_refresh">Atualizar</string>
+    <string name="action_back">Voltar</string>
+    <string name="action_favorite">Favoritar</string>
+    <string name="action_unfavorite">Remover dos favoritos</string>
+
+    <string name="filter_all">Todos</string>
+    <string name="filter_bus">Ônibus</string>
+    <string name="filter_metro">Metrô</string>
+    <string name="filter_train">Trem</string>
+
+    <string name="nearby_title">Pontos próximos</string>
+    <string name="nearby_empty">Nenhum ponto encontrado por perto.</string>
+    <string name="nearby_location_denied">Sem permissão de localização. Mostrando pontos perto da Praça da Sé.</string>
+    <string name="nearby_location_unavailable">Não foi possível obter sua localização. Mostrando pontos perto da Praça da Sé.</string>
+    <string name="favorites_title">Favoritos</string>
+    <string name="distance_meters">%1$d m</string>
+
+    <string name="search_hint">Nome do ponto, rua ou linha</string>
+    <string name="search_min_chars">Digite ao menos 3 letras.</string>
+    <string name="search_empty">Nenhum ponto encontrado.</string>
+
+    <string name="arrivals_title">Próximas chegadas</string>
+    <string name="arrivals_empty">Nenhuma chegada prevista.</string>
+    <string name="arrivals_now">Agora</string>
+    <string name="arrivals_minutes">%1$d min</string>
+    <string name="arrivals_departed">Passou</string>
+    <string name="arrivals_previous">Chegadas anteriores</string>
+    <string name="arrivals_next">Mais chegadas</string>
+    <string name="arrivals_pick_time">Escolher data e hora</string>
+    <string name="arrivals_reset_time">Voltar para agora</string>
+    <string name="arrivals_reference">Horários a partir de %1$s</string>
+
+    <string name="status_title">Metrô e CPTM</string>
+    <string name="status_metro">Metrô</string>
+    <string name="status_cptm">CPTM</string>
+    <string name="status_unavailable">Fonte indisponível no momento.</string>
+    <string name="status_updated_at">Atualizado em %1$s</string>
+    <string name="status_line_format">Linha %1$s – %2$s</string>
+    <string name="status_analytics">Analytics de status</string>
+    <string name="status_analytics_subtitle">Histórico de interrupções por linha</string>
+    <string name="status_alerts">Alertas de interrupção</string>
+    <string name="status_alerts_subtitle">Receba um aviso quando suas linhas tiverem problema</string>
+    <string name="alerts_description">Escolha as linhas. Você recebe um aviso quando houver problema na operação e outro quando ela normalizar no mesmo dia.</string>
+    <string name="alerts_select_all">Todas</string>
+    <string name="alerts_save">Salvar alertas (%1$d)</string>
+    <string name="alerts_saved">Alertas salvos.</string>
+    <string name="alerts_not_configured">Notificações ainda não configuradas nesta versão (falta o google-services.json do Firebase).</string>
+    <string name="alerts_channel_name">Alertas de linhas</string>
+    <string name="alerts_channel_description">Problemas e normalização nas linhas do Metrô e da CPTM que você segue</string>
+
+    <string name="premium_title">Due SP Premium</string>
+    <string name="premium_badge">PREMIUM</string>
+    <string name="premium_locked">Recurso Premium</string>
+    <string name="premium_description">Desbloqueie as ferramentas premium do app com um plano recorrente. Os planos semanal e anual liberam exatamente os mesmos recursos.</string>
+    <string name="premium_features_title">Inclui</string>
+    <string name="premium_feature_analytics">Analytics de status ferroviário</string>
+    <string name="premium_feature_arrivals">Data/hora personalizada e chegadas anteriores/seguintes no detalhe do ponto</string>
+    <string name="premium_plan_weekly">Semanal</string>
+    <string name="premium_plan_yearly">Anual</string>
+    <string name="premium_plan_yearly_badge">Melhor valor</string>
+    <string name="premium_active">Premium ativo</string>
+    <string name="premium_subscribe">Assinar</string>
+    <string name="premium_billing_soon">A compra pelo Google Play ainda não está disponível nesta versão.</string>
+    <string name="premium_debug_toggle">Simular Premium (debug)</string>
+
+    <string name="settings_about">Sobre</string>
+    <string name="settings_version">Versão %1$s</string>
+    <string name="settings_support">Suporte</string>
+    <string name="settings_premium">Plano Premium</string>
+    <string name="settings_website">Site</string>
+    <string name="settings_contact">Fale conosco</string>
+    <string name="settings_legal">Legal</string>
+    <string name="settings_privacy">Política de privacidade</string>
+    <string name="settings_terms">Termos de uso</string>
+
+    <string name="error_generic">Não foi possível carregar os dados.</string>
+</resources>
