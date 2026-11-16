@@ -395,3 +395,15 @@
 "Fetching stops and route shape…" = "Fetching stops and route shape…";
 "Could not load this leg" = "Could not load this leg";
 "Show fewer stops" = "Show fewer stops";
+"Line" = "Line";
+"towards %@" = "towards %@";
+"every %lld min" = "every %lld min";
+"BOARD HERE" = "BOARD HERE";
+"GET OFF HERE" = "GET OFF HERE";
+"%lld stops on the way" = "%lld stops on the way";
+"Hide stops" = "Hide stops";
+"Loading stops…" = "Loading stops…";
+"Could not load the stops" = "Could not load the stops";
+"Try again" = "Try again";
+"your destination" = "your destination";
+"Walk %@ to %@" = "Walk %@ to %@";

@@ -9,7 +9,6 @@ struct TripPlanDetailView: View {
     let originLabel: String
     let destinationLabel: String
     private let analyticsService: AnalyticsServiceProtocol
-    @State private var expandedLegId: UUID?
 
     init(
         alternative: TripPlanAlternative,
@@ -102,9 +101,10 @@ struct TripPlanDetailView: View {
                 ForEach(viewModel.segments.indices, id: \.self) { index in
                     switch viewModel.segments[index] {
                     case .walk(let walk):
-                        WalkSegmentCard(segment: walk, title: walkTitle(at: index), onFocus: {
+                        WalkStepRow(segment: walk,
+                                    toDestination: alternative.type == .walk || index == viewModel.segments.count - 1,
+                                    onFocus: {
                             withAnimation(.easeInOut(duration: 0.2)) {
-                                expandedLegId = nil
                                 viewModel.setFocusForWalk(walk)
                             }
                         })
@@ -132,7 +132,6 @@ struct TripPlanDetailView: View {
                     "legs": "\(alternative.legCount)"
                 ]
             )
-            expandedLegId = viewModel.legs.first?.id
             await viewModel.load()
         }
         .task {
@@ -141,25 +140,12 @@ struct TripPlanDetailView: View {
         }
     }
 
-    private func walkTitle(at index: Int) -> String {
-        if alternative.type == .walk { return "Walk to destination" }
-        if index == 0 { return "Walk to boarding stop" }
-        if index == viewModel.segments.count - 1 { return "Walk to destination" }
-        return "Walk between stops"
-    }
-
     private func legSection(_ leg: TripPlanLegState) -> some View {
         TripPlanLegSection(leg: leg,
             alerts: conditions.railLines.filter { $0.isDisrupted && leg.details.map($0.matches) == true },
-            statusRefreshFailed: conditions.failed, isExpanded: expandedLegId == leg.id, onToggle: {
+            statusRefreshFailed: conditions.failed, onFocus: {
             withAnimation(.easeInOut(duration: 0.2)) {
-                if expandedLegId == leg.id {
-                    expandedLegId = nil
-                    viewModel.setFocusForLeg(nil)
-                } else {
-                    expandedLegId = leg.id
-                    viewModel.setFocusForLeg(leg)
-                }
+                viewModel.setFocusForLeg(viewModel.selectedLegId == leg.id ? nil : leg)
             }
         }, onRetry: {
             Task { await viewModel.reloadLeg(leg.id) }
@@ -214,56 +200,6 @@ private struct TripPlanSummaryCard: View {
     }
 }
 
-private struct WalkSegmentCard: View {
-    let segment: TripPlanWalkSegment
-    let title: String
-    let onFocus: () -> Void
-
-    var body: some View {
-        Button(action: onFocus) {
-            JourneyCard {
-                HStack(spacing: 12) {
-                    Image(systemName: "figure.walk")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(AppColors.primary)
-                        .padding(10)
-                        .background(AppColors.primary.opacity(0.15))
-                        .clipShape(Circle())
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(LocalizedStringKey(title))
-                            .font(AppFonts.subheadline())
-                            .foregroundColor(AppColors.text)
-
-                        Text("\(segment.fromLabel) → \(segment.toLabel)")
-                            .font(AppFonts.caption())
-                            .foregroundColor(AppColors.text.opacity(0.6))
-                            .lineLimit(2)
-                    }
-
-                    Spacer()
-
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text(segment.distanceText)
-                            .font(AppFonts.caption())
-                            .foregroundColor(AppColors.text.opacity(0.8))
-
-                        Text(segment.durationText)
-                            .font(AppFonts.caption2())
-                            .foregroundColor(AppColors.text.opacity(0.6))
-                        if let departure = segment.departureTime, let arrival = segment.arrivalTime {
-                            Text("\(TripPlanTime.display(departure)) → \(TripPlanTime.display(arrival))")
-                                .font(AppFonts.caption2())
-                                .foregroundColor(AppColors.text.opacity(0.6))
-                        }
-                    }
-                }
-            }
-        }
-        .buttonStyle(.plain)
-    }
-}
-
 private struct CombinedJourneyMapView: UIViewRepresentable {
     let segments: [TripPlanMapSegment]
     let stops: [Stop]
@@ -297,11 +233,19 @@ private struct CombinedJourneyMapView: UIViewRepresentable {
                 guard segment.coordinates.count > 1 else { continue }
                 let coordinates = segment.coordinates.map { $0.toCLLocationCoordinate2D() }
                 let points = coordinates.map { MKMapPoint($0) }
+                if !segment.isWalking {
+                    // Dark outline so light line colours (e.g. Metrô L4 yellow) stand out on the map.
+                    let casing = MKPolyline(points: points, count: points.count)
+                    context.coordinator.setStyle(for: casing, color: UIColor.black.withAlphaComponent(0.45),
+                                                 isWalking: false, width: 8)
+                    uiView.addOverlay(casing)
+                }
                 let polyline = MKPolyline(points: points, count: points.count)
                 context.coordinator.setStyle(
                     for: polyline,
                     color: UIColor(Color(hex: segment.colorHex)),
-                    isWalking: segment.isWalking
+                    isWalking: segment.isWalking,
+                    width: segment.isWalking ? 3 : 5
                 )
                 uiView.addOverlay(polyline)
             }
@@ -370,8 +314,8 @@ private struct CombinedJourneyMapView: UIViewRepresentable {
             self.routeColor = routeColor
         }
 
-        func setStyle(for overlay: MKOverlay, color: UIColor, isWalking: Bool) {
-            overlayStyles[ObjectIdentifier(overlay)] = OverlayStyle(color: color, isWalking: isWalking)
+        func setStyle(for overlay: MKOverlay, color: UIColor, isWalking: Bool, width: CGFloat) {
+            overlayStyles[ObjectIdentifier(overlay)] = OverlayStyle(color: color, isWalking: isWalking, width: width)
         }
 
         func resetStyles() {
@@ -386,7 +330,7 @@ private struct CombinedJourneyMapView: UIViewRepresentable {
             let renderer = MKPolylineRenderer(polyline: polyline)
             if let style = overlayStyles[ObjectIdentifier(polyline)] {
                 renderer.strokeColor = style.color
-                renderer.lineWidth = style.isWalking ? 3 : 4
+                renderer.lineWidth = style.width
                 renderer.lineCap = .round
                 renderer.lineJoin = .round
                 if style.isWalking {
@@ -447,4 +391,5 @@ private final class JourneyOverviewAnnotation: NSObject, MKAnnotation {
 private struct OverlayStyle {
     let color: UIColor
     let isWalking: Bool
+    let width: CGFloat
 }

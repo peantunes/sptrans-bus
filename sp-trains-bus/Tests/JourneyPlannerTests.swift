@@ -221,6 +221,25 @@ final class JourneyPlannerTests: XCTestCase {
         XCTAssertNil(model.resultContext)
     }
 
+    func testYellowLineGetsDarkBadgeTextAndDarkerTextOnWhite() throws {
+        // The API sends white text for Metrô L4 (FFD700).
+        XCTAssertEqual(LineColor.badgeText(background: "FFD700", preferred: "FFFFFF"), LineColor.darkText)
+        let readable = try XCTUnwrap(LineColor.readable("FFD700", on: LineColor.lightSurface, minimumContrast: LineColor.textContrast))
+        XCTAssertGreaterThanOrEqual(LineColor.contrast(LineColor.parse(readable)!, LineColor.parse("FFFFFF")!), LineColor.textContrast)
+    }
+
+    func testReadableLineColorsAreKept() throws {
+        // Navy bus with white text: both already readable.
+        XCTAssertEqual(LineColor.badgeText(background: "002F6C", preferred: "FFFFFF"), "FFFFFF")
+        XCTAssertEqual(LineColor.readable("002F6C", on: LineColor.lightSurface, minimumContrast: LineColor.textContrast), "002F6C")
+        // On a dark card the navy is lightened instead.
+        let onDark = try XCTUnwrap(LineColor.readable("002F6C", on: LineColor.darkSurface, minimumContrast: LineColor.graphicContrast))
+        XCTAssertGreaterThanOrEqual(LineColor.contrast(LineColor.parse(onDark)!, LineColor.parse(LineColor.darkSurface)!), LineColor.graphicContrast)
+        // Missing or invalid colours fall back to the caller's default.
+        XCTAssertNil(LineColor.readable("", on: LineColor.lightSurface, minimumContrast: 3))
+        XCTAssertEqual(LineColor.badgeText(background: nil, preferred: nil), LineColor.lightText)
+    }
+
     @MainActor
     func testTextFieldRewritingTheSameTextKeepsTheSelectedPlace() {
         let model = SearchViewModel(planTripUseCase: ControlledPlanner(plan: TripPlan(alternatives: [], rankingPriority: "arrives_first")), locationService: PlannerLocationStub())

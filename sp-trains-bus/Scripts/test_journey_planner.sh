@@ -25,6 +25,7 @@ for planner_source in \
     Infrastructure/Services/JourneyConditionsStore.swift \
     Infrastructure/Analytics/AnalyticsServiceProtocol.swift \
     Presentation/Common/Extensions/MKCoordinateRegion+Extensions.swift \
+    Presentation/Common/Styles/LineColor.swift \
     Presentation/Search/{TripPlanDetailViewModel,SearchViewModel}.swift; do
     cp "$planner_root/$planner_source" "$planner_package/Sources/sp_trains_bus/"
 done

@@ -73,10 +73,7 @@ struct JourneyMetrics: View {
     private var routes: some View {
         // Legacy responses synthesize legs; index identity keeps those badges stable.
         ForEach(Array(alternative.vehicleLegs.enumerated()), id: \.offset) { _, leg in
-            Label(leg.route?.shortName ?? leg.route?.routeId ?? "", systemImage: leg.systemImage)
-                .font(.caption.weight(.medium))
-                .padding(.horizontal, 9).padding(.vertical, 6)
-                .background(AppColors.primary.opacity(0.08), in: Capsule())
+            LineBadge(route: leg.route, systemImage: leg.systemImage)
         }
     }
 }

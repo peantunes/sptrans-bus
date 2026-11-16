@@ -395,3 +395,15 @@
 "Fetching stops and route shape…" = "Buscando paradas e traçado…";
 "Could not load this leg" = "Não foi possível carregar este trecho";
 "Show fewer stops" = "Mostrar menos paradas";
+"Line" = "Linha";
+"towards %@" = "sentido %@";
+"every %lld min" = "a cada %lld min";
+"BOARD HERE" = "EMBARQUE AQUI";
+"GET OFF HERE" = "DESÇA AQUI";
+"%lld stops on the way" = "%lld paradas no caminho";
+"Hide stops" = "Ocultar paradas";
+"Loading stops…" = "Carregando paradas…";
+"Could not load the stops" = "Não foi possível carregar as paradas";
+"Try again" = "Tentar de novo";
+"your destination" = "o destino";
+"Walk %@ to %@" = "Caminhe %@ até %@";
