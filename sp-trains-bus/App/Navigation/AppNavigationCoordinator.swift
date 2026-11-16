@@ -7,6 +7,19 @@ final class AppNavigationCoordinator: ObservableObject {
     @Published var pendingLineID: String?
     /// Token of a shared journey link (https://sptrans.lolados.app/j/<token>) to show.
     @Published var pendingSharedJourney: SharedJourneyToken?
+    /// Shows the journey being tracked (from the Live Activity).
+    @Published var showsTrackedJourney = false
+    /// Keyboard / menu command for the trip planner, consumed by SearchView.
+    @Published var plannerCommand: PlannerCommand?
+
+    func select(_ tab: MainTabView.TabOption) {
+        pendingTabRawValue = tab.rawValue
+    }
+
+    func send(_ command: PlannerCommand) {
+        select(.search)
+        plannerCommand = command
+    }
 
     func handle(url: URL) {
         if let token = JourneyShareLink.token(from: url) {
@@ -22,6 +35,8 @@ final class AppNavigationCoordinator: ObservableObject {
         case .stopDetail(let stop):
             pendingTabRawValue = MainTabView.TabOption.map.rawValue
             pendingStop = stop
+        case .journey:
+            showsTrackedJourney = true
         }
     }
 
@@ -42,4 +57,11 @@ final class AppNavigationCoordinator: ObservableObject {
 /// Identifiable wrapper for presenting a shared journey sheet.
 struct SharedJourneyToken: Identifiable, Equatable {
     let id: String
+}
+
+enum PlannerCommand: Equatable {
+    case newTrip
+    case findDestination
+    case savedRoutes
+    case search
 }

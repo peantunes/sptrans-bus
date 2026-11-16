@@ -347,6 +347,64 @@ final class JourneyPlannerTests: XCTestCase {
         XCTAssertNil(storage.form?.destination)
     }
 
+    // MARK: - Journey tracking
+
+    /// The fixture journey (16 Nov, 23:50 → 00:40): walk, bus 1, walk, metro 2, walk, rail 3, walk.
+    private func trackingTimeline() throws -> JourneyTimeline {
+        let alternative = try XCTUnwrap(decode().alternatives.first)
+        let serviceDay = ISO8601DateFormatter().date(from: "2026-11-16T15:00:00Z")!
+        return JourneyTimeline(alternative: alternative, serviceDay: serviceDay,
+                               destinationName: "Work", destination: Location(latitude: -23.54, longitude: -46.63))
+    }
+
+    private func at(_ iso: String) -> Date { ISO8601DateFormatter().date(from: iso)! }
+
+    func testTimetableDrivesProgressWithoutLocation() throws {
+        let timeline = try trackingTimeline()
+        let start = JourneyProgressCalculator.progress(timeline, now: at("2026-11-17T02:49:00Z"), location: nil, accuracy: nil)
+        XCTAssertEqual(start.phase, .walking)
+        XCTAssertEqual(start.stepIndex, 0)
+        XCTAssertTrue(start.subtitle.contains("23:51"))
+
+        let onBus = JourneyProgressCalculator.progress(timeline, now: at("2026-11-17T03:01:00Z"), location: nil, accuracy: nil)
+        XCTAssertEqual(onBus.phase, .riding)
+        XCTAssertEqual(onBus.stepIndex, 1)
+        XCTAssertEqual(onBus.lineName, "1")
+        XCTAssertFalse(onBus.usesLocation)
+
+        let done = JourneyProgressCalculator.progress(timeline, now: at("2026-11-17T03:45:00Z"), location: nil, accuracy: nil)
+        XCTAssertEqual(done.phase, .arrived)
+        XCTAssertEqual(timeline.steps.count, 7)
+    }
+
+    func testLocationWinsOverTheTimetable() throws {
+        let timeline = try trackingTimeline()
+        let now = at("2026-11-17T03:03:00Z")   // 00:03: the timetable says walking to the metro
+        let stop4 = Location(latitude: -23.546, longitude: -46.63)
+        let byGPS = JourneyProgressCalculator.progress(timeline, now: now, location: stop4, accuracy: 15)
+        XCTAssertEqual(byGPS.phase, .waiting)
+        XCTAssertEqual(byGPS.stepIndex, 3)
+        XCTAssertEqual(byGPS.lineName, "2")
+        XCTAssertEqual(byGPS.stopLocation, stop4)
+        XCTAssertTrue(byGPS.usesLocation)
+
+        let imprecise = JourneyProgressCalculator.progress(timeline, now: now, location: stop4, accuracy: 500)
+        XCTAssertEqual(imprecise.phase, .walking)
+        XCTAssertEqual(imprecise.stepIndex, 2)
+
+        let atDestination = JourneyProgressCalculator.progress(timeline, now: now, location: Location(latitude: -23.54, longitude: -46.63), accuracy: 10)
+        XCTAssertEqual(atDestination.phase, .arrived)
+    }
+
+    func testLegsFarInTheFutureAreNotMatchedByLocation() throws {
+        let timeline = try trackingTimeline()
+        // At the rail boarding stop, but its train leaves in 35 minutes: stay on the timetable.
+        let progress = JourneyProgressCalculator.progress(timeline, now: at("2026-11-17T02:51:00Z"),
+                                                          location: Location(latitude: -23.543, longitude: -46.63), accuracy: 10)
+        XCTAssertFalse(progress.usesLocation)
+        XCTAssertLessThan(progress.stepIndex, 5)
+    }
+
     // MARK: - Shared journeys
 
     func testShareLinksAreRecognisedStrictly() {

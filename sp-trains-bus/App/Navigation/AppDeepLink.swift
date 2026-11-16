@@ -3,6 +3,8 @@ import Foundation
 enum AppDeepLink {
     case status(lineID: String?)
     case stopDetail(Stop)
+    /// The journey being tracked (Live Activity tap).
+    case journey
 }
 
 enum AppDeepLinkBuilder {
@@ -77,6 +79,8 @@ enum AppDeepLinkParser {
             return .status(lineID: components.queryItem(named: "line_id"))
         case "stop":
             return parseStopDetail(from: components)
+        case "journey":
+            return .journey
         default:
             return nil
         }

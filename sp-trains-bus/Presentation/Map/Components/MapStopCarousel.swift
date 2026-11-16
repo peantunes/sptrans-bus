@@ -16,8 +16,15 @@ struct MapStopCarousel: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal)
+                .scrollTargetLayout()
             }
+            // Cards snap into place and keep clear of the edges, including a side tab bar
+            // (iPhone Duo folded, iPad).
+            .scrollTargetBehavior(.viewAligned)
+            .safeAreaPadding(.horizontal, 16)
+            // Scroll views draw into the safe area; keep the cards from sliding under a side tab bar,
+            // while leaving vertical room for the card shadows.
+            .mask { Rectangle().padding(.vertical, -40) }
         }
         .padding(.vertical, 8)
     }

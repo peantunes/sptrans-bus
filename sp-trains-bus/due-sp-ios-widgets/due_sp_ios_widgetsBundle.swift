@@ -7,5 +7,6 @@ struct due_sp_ios_widgetsBundle: WidgetBundle {
         due_sp_ios_status()
         due_sp_ios_next_arrival()
         due_sp_ios_nearby_stops()
+        JourneyLiveActivity()
     }
 }

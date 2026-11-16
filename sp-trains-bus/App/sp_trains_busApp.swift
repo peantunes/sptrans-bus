@@ -44,6 +44,9 @@ struct sp_trains_busApp: App {
                     }
                 }
         }
+        .commands {
+            AppCommands(coordinator: navigationCoordinator)
+        }
     }
 
     private func startAnalyticsIfNeeded() {
@@ -52,5 +55,29 @@ struct sp_trains_busApp: App {
         guard !hasTrackedAppOpen else { return }
         hasTrackedAppOpen = true
         dependencies.analyticsService.trackEvent(name: "app_opened")
+    }
+}
+
+/// Keyboard shortcuts and menu bar commands (iPad with a keyboard, iPhone Duo with a keyboard).
+private struct AppCommands: Commands {
+    let coordinator: AppNavigationCoordinator
+
+    var body: some Commands {
+        CommandMenu(Text("Navigate")) {
+            Button("Map") { coordinator.select(.map) }.keyboardShortcut("1")
+            if FeatureToggles.isSearchEnabled {
+                Button("Plan a trip") { coordinator.select(.search) }.keyboardShortcut("2")
+            }
+            Button("Status") { coordinator.select(.status) }.keyboardShortcut("3")
+            Button("Settings") { coordinator.select(.settings) }.keyboardShortcut("4")
+        }
+        if FeatureToggles.isSearchEnabled {
+            CommandMenu(Text("Trip")) {
+                Button("New trip") { coordinator.send(.newTrip) }.keyboardShortcut("n")
+                Button("Choose destination") { coordinator.send(.findDestination) }.keyboardShortcut("f")
+                Button("Search journeys") { coordinator.send(.search) }.keyboardShortcut(.return, modifiers: .command)
+                Button("Saved routes") { coordinator.send(.savedRoutes) }.keyboardShortcut("s", modifiers: [.command, .shift])
+            }
+        }
     }
 }

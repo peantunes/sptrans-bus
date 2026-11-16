@@ -15,7 +15,7 @@ let package = Package(name: "JourneyPlannerChecks", platforms: [.macOS(.v14)], t
 ])
 PACKAGE
 for planner_source in \
-    Domain/Entities/{Location,Stop,Trip,TripStop,Route,Arrival,ArrivalsPageDirection,TripPlan,JourneyConditions,SavedRoute}.swift \
+    Domain/Entities/{Location,Stop,Trip,TripStop,Route,Arrival,ArrivalsPageDirection,TripPlan,JourneyConditions,SavedRoute,JourneyProgress}.swift \
     Infrastructure/Services/PlannerStore.swift \
     Infrastructure/Services/JourneyShareService.swift \
     Domain/Protocols/{TransitRepositoryProtocol,LocationServiceProtocol}.swift \

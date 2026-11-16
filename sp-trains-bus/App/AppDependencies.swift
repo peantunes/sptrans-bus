@@ -6,6 +6,7 @@ class AppDependencies {
     let journeyConditions: JourneyConditionsStore
     let apiClient: APIClient
     let journeyShare: JourneyShareService
+    let journeyTracker: JourneyTracker
     let transitRepository: TransitRepositoryProtocol
     let locationService: LocationServiceProtocol
     let storageService: StorageServiceProtocol
@@ -69,6 +70,7 @@ class AppDependencies {
         getRouteShapeUseCase = GetRouteShapeUseCase(transitRepository: transitRepository)
         getMetroStatusUseCase = GetMetroStatusUseCase()
         planTripUseCase = PlanTripUseCase(transitRepository: transitRepository)
+        journeyTracker = JourneyTracker(planTripUseCase: planTripUseCase)
         importGTFSDataUseCase = ImportGTFSDataUseCase(importService: gtfsImportService, modeService: transitDataModeService)
         checkGTFSRefreshUseCase = CheckGTFSRefreshUseCase(feedService: gtfsFeedService)
 

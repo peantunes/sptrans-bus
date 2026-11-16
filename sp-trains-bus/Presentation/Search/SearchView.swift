@@ -4,6 +4,7 @@ import Combine
 
 struct SearchView: View {
     @StateObject private var viewModel: SearchViewModel
+    @EnvironmentObject private var navigationCoordinator: AppNavigationCoordinator
     @ObservedObject private var conditions: JourneyConditionsStore
     let dependencies: AppDependencies
     @FocusState private var focusedField: Field?
@@ -25,27 +26,46 @@ struct SearchView: View {
         directOnly ? viewModel.alternatives.filter { $0.type != .walk && $0.transfers == 0 } : viewModel.alternatives
     }
 
+    @State private var containerWidth: CGFloat = 0
+    /// iPad landscape and other wide screens: form on the left, results on the right.
+    private var isWide: Bool { containerWidth >= 900 }
+
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                placesCard
-                whenCard
-                searchButton
-                if let error = viewModel.errorMessage {
-                    Label(error, systemImage: "exclamationmark.circle")
-                        .font(.subheadline).foregroundStyle(.red)
-                        .accessibilityIdentifier("planner.error")
+        Group {
+            if isWide {
+                HStack(alignment: .top, spacing: 0) {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 16) { formColumn }
+                            .padding(20)
+                    }
+                    .frame(width: min(460, containerWidth * 0.42))
+                    Divider()
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 14) {
+                            if viewModel.hasPlanned { results } else { resultsPlaceholder }
+                        }
+                        .padding(20)
+                        .frame(maxWidth: 720)
+                        .frame(maxWidth: .infinity)
+                    }
                 }
-                results
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        formColumn
+                        results
+                    }
+                    .padding(16)
+                    .frame(maxWidth: 720)
+                    .frame(maxWidth: .infinity)
+                }
             }
-            .padding(16)
-            .frame(maxWidth: 720)
-            .frame(maxWidth: .infinity)
         }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { containerWidth = $0 }
         .background(Color(uiColor: .systemGroupedBackground))
         .scrollDismissesKeyboard(.interactively)
         .navigationTitle("Plan a trip")
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
         .tint(AppColors.primary)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -87,9 +107,48 @@ struct SearchView: View {
                 viewModel.objectWillChange.send()
             }
         }
+        .onChange(of: navigationCoordinator.plannerCommand) { _, command in
+            guard let command else { return }
+            navigationCoordinator.plannerCommand = nil
+            switch command {
+            case .newTrip:
+                viewModel.clearForm()
+                directOnly = false
+                focusedField = .destination
+            case .findDestination:
+                focusedField = .destination
+            case .savedRoutes:
+                focusedField = nil
+                showsSavedRoutes = true
+            case .search:
+                if viewModel.canPlan { search() }
+            }
+        }
         .onAppear {
             dependencies.analyticsService.trackScreen(name: "SearchView", className: "SearchView")
             viewModel.fillOriginWithCurrentLocationIfEmpty()
+        }
+    }
+
+    @ViewBuilder private var formColumn: some View {
+        PlannerHeroHeader(compact: isWide)
+        placesCard
+        whenCard
+        searchButton
+        if let error = viewModel.errorMessage {
+            Label(error, systemImage: "exclamationmark.circle")
+                .font(.subheadline).foregroundStyle(.red)
+                .accessibilityIdentifier("planner.error")
+        }
+    }
+
+    /// Wide screens before the first search: the results column is not left empty.
+    private var resultsPlaceholder: some View {
+        ImageBanner(imageName: "planner_results_ipiranga", height: 220) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Your journey options appear here").font(.title3.bold())
+                Text("Door to door by bus, Metro and CPTM, with every stop.").font(.subheadline).opacity(0.85)
+            }
         }
     }
 
@@ -333,12 +392,14 @@ struct SearchView: View {
     @ViewBuilder private var results: some View {
         if viewModel.hasPlanned, let context = viewModel.resultContext {
             VStack(alignment: .leading, spacing: 14) {
-                VStack(alignment: .leading, spacing: 5) {
-                    Text("Journey options").font(.title2.bold())
-                    Text("\(context.originLabel) → \(context.destinationLabel)").font(.subheadline).foregroundStyle(.secondary)
-                    Text(context.departure, format: .dateTime.day().month().hour().minute().timeZone(.specificName(.short)))
-                        .environment(\.timeZone, TimeZone(identifier: "America/Sao_Paulo")!)
-                        .font(.caption).foregroundStyle(.secondary)
+                ImageBanner(imageName: resultsImage(for: context.destinationLabel), height: 132) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Journey options").font(.title2.bold())
+                        Text("\(context.originLabel) → \(context.destinationLabel)").font(.subheadline).lineLimit(2)
+                        Text(context.departure, format: .dateTime.day().month().hour().minute().timeZone(.specificName(.short)))
+                            .environment(\.timeZone, TimeZone(identifier: "America/Sao_Paulo")!)
+                            .font(.caption).opacity(0.85)
+                    }
                 }
                 if !viewModel.alternatives.isEmpty {
                     Picker("Journey options", selection: $directOnly) {
@@ -372,6 +433,11 @@ struct SearchView: View {
                 }
             }
         }
+    }
+
+    /// Alternates the two results illustrations, stable for a destination.
+    private func resultsImage(for destination: String) -> String {
+        destination.unicodeScalars.reduce(0) { $0 &+ Int($1.value) } % 2 == 0 ? "planner_results_luz" : "planner_results_ipiranga"
     }
 
     private func search() {
@@ -500,5 +566,48 @@ private struct SavedRoutesSheet: View {
         if viewModel.currentRouteIsSaved { return "Current route saved" }
         if viewModel.originLocation == nil || viewModel.destinationLocation == nil { return "Choose origin and destination to save" }
         return "Save current route"
+    }
+}
+
+/// Header of the planner: São Paulo by night (MASP and Ponte Estaiada) with the screen's question.
+private struct PlannerHeroHeader: View {
+    var compact = false
+
+    var body: some View {
+        ImageBanner(imageName: "planner_header", height: compact ? 170 : 200) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Where to?").font(.largeTitle.bold())
+                Text("Bus, Metro and CPTM, door to door.").font(.subheadline.weight(.medium)).opacity(0.9)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isHeader)
+    }
+}
+
+/// An illustration with a dark gradient and white text at the bottom, in the journey detail's card style.
+struct ImageBanner<Content: View>: View {
+    let imageName: String
+    let height: CGFloat
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        Image(imageName)
+            .resizable()
+            .scaledToFill()
+            .frame(height: height)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .clipped()
+            .accessibilityHidden(true)
+            .overlay(alignment: .bottomLeading) {
+                content
+                    .foregroundStyle(.white)
+                    .padding(20)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        LinearGradient(colors: [.clear, .black.opacity(0.72)], startPoint: .top, endPoint: .bottom)
+                    )
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 28))
     }
 }

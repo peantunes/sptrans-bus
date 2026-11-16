@@ -10,6 +10,9 @@ struct TripPlanDetailView: View {
     let destinationLabel: String
     private let analyticsService: AnalyticsServiceProtocol
     private let journeyShare: JourneyShareService
+    @ObservedObject private var tracker: JourneyTracker
+    private let originLocation: Location?
+    private let destinationLocation: Location?
     /// Set when this journey came from a shared link: sharing it again reuses that link.
     private let sharedURL: URL?
     @State private var shareItem: ShareItem?
@@ -45,6 +48,9 @@ struct TripPlanDetailView: View {
         self.destinationLabel = destinationLabel
         self.analyticsService = dependencies.analyticsService
         self.journeyShare = dependencies.journeyShare
+        _tracker = ObservedObject(wrappedValue: dependencies.journeyTracker)
+        self.originLocation = originLocation
+        self.destinationLocation = destinationLocation
         self.sharedURL = sharedURL
     }
 
@@ -71,86 +77,36 @@ struct TripPlanDetailView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                TripPlanSummaryCard(alternative: alternative, originLabel: originLabel,
-                                    destinationLabel: destinationLabel, departureDate: departureDate)
-                JourneyRailAlertsView(alerts: conditions.alerts(for: alternative),
-                    unavailable: conditions.statusUnavailable(for: alternative), refreshFailed: conditions.failed)
-                TimelineView(.periodic(from: .now, by: 30)) { context in
-                    if let live = viewModel.liveArrival, live.isFresh(at: context.date) {
-                        JourneyCard {
-                            VStack(alignment: .leading, spacing: 6) {
-                                Label("Live at the boarding stop", systemImage: "dot.radiowaves.left.and.right")
-                                    .font(.headline).foregroundStyle(AppColors.primary)
-                                Text("Next arrival: \(live.expectedTimeText)")
-                                Text("Towards \(live.headsign)").font(.subheadline)
-                                Text("This is a live stop prediction, not a confirmed delay for this journey.")
-                                    .font(.caption).foregroundStyle(.secondary)
-                            }
-                        }
+        Group {
+            if isWide {
+                // iPad and other wide screens: overview and map on one side, the steps on the other.
+                HStack(alignment: .top, spacing: 0) {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 16) { overviewSection }
+                            .padding(20)
+                    }
+                    .frame(width: min(480, containerWidth * 0.46))
+                    Divider()
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 16) { stepsSection }
+                            .padding(20)
+                            .frame(maxWidth: 640)
+                            .frame(maxWidth: .infinity)
                     }
                 }
-                HStack {
-                    Text("Route overview").font(.headline)
-                    Spacer()
-                    Button("Refresh conditions") {
-                        Task {
-                            await conditions.refresh()
-                            await viewModel.refreshLiveArrival()
-                        }
-                    }.font(.caption).disabled(conditions.isLoading || viewModel.isLoadingLiveArrival)
-                }
-                JourneyCard {
-                    if viewModel.combinedSegments.isEmpty && viewModel.combinedStops.isEmpty {
-                        VStack(spacing: 10) {
-                            Image(systemName: "map")
-                                .font(.system(size: 28))
-                                .foregroundColor(AppColors.text.opacity(0.4))
-
-                            Text("Map preview unavailable")
-                                .font(AppFonts.subheadline())
-                                .foregroundColor(AppColors.text)
-
-                            Text("We couldn't build a full route overview yet.")
-                                .font(AppFonts.caption())
-                                .foregroundColor(AppColors.text.opacity(0.6))
-                        }
-                        .frame(maxWidth: .infinity, minHeight: 180)
-                    } else {
-                        CombinedJourneyMapView(
-                            segments: viewModel.combinedSegments,
-                            stops: viewModel.combinedStops,
-                            focusCoordinates: viewModel.focusCoordinates,
-                            routeColor: AppColors.accent
-                        )
-                        .frame(height: 220)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        overviewSection
+                        stepsSection
                     }
+                    .padding(16)
+                    .frame(maxWidth: 720)
+                    .frame(maxWidth: .infinity)
                 }
-
-                ForEach(viewModel.segments.indices, id: \.self) { index in
-                    switch viewModel.segments[index] {
-                    case .walk(let walk):
-                        WalkStepRow(segment: walk,
-                                    toDestination: alternative.type == .walk || index == viewModel.segments.count - 1,
-                                    onFocus: {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                viewModel.setFocusForWalk(walk)
-                            }
-                        })
-                    case .transit(let legIndex):
-                        if viewModel.legs.indices.contains(legIndex) {
-                            legSection(viewModel.legs[legIndex])
-                        }
-                    }
-                }
-                Text("Walking paths on the map are approximate.").font(.caption).foregroundStyle(.secondary)
             }
-            .padding(16)
-            .frame(maxWidth: 720)
-            .frame(maxWidth: .infinity)
         }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { containerWidth = $0 }
         .background(Color(uiColor: .systemGroupedBackground))
         .navigationTitle("Journey")
         .navigationBarTitleDisplayMode(.inline)
@@ -190,6 +146,96 @@ struct TripPlanDetailView: View {
             if alternative.vehicleLegs.contains(where: { $0.railSource != nil }) { await conditions.refresh() }
             await viewModel.refreshLiveArrival()
         }
+    }
+
+    @State private var containerWidth: CGFloat = 0
+    private var isWide: Bool { containerWidth >= 900 }
+
+    @ViewBuilder private var overviewSection: some View {
+        TripPlanSummaryCard(alternative: alternative, originLabel: originLabel,
+                            destinationLabel: destinationLabel, departureDate: departureDate)
+        if alternative.type != .walk {
+            JourneyTrackingCard(tracker: tracker, isThisJourney: tracker.isTracking(alternative)) {
+                tracker.start(alternative: alternative, serviceDay: departureDate ?? Date(),
+                              originLabel: originLabel, destinationLabel: destinationLabel,
+                              origin: originLocation, destination: destinationLocation)
+                analyticsService.trackEvent(name: "journey_tracking_started", properties: ["legs": "\(alternative.legCount)"])
+            }
+        }
+        JourneyRailAlertsView(alerts: conditions.alerts(for: alternative),
+            unavailable: conditions.statusUnavailable(for: alternative), refreshFailed: conditions.failed)
+        TimelineView(.periodic(from: .now, by: 30)) { context in
+            if let live = viewModel.liveArrival, live.isFresh(at: context.date) {
+                JourneyCard {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Label("Live at the boarding stop", systemImage: "dot.radiowaves.left.and.right")
+                            .font(.headline).foregroundStyle(AppColors.primary)
+                        Text("Next arrival: \(live.expectedTimeText)")
+                        Text("Towards \(live.headsign)").font(.subheadline)
+                        Text("This is a live stop prediction, not a confirmed delay for this journey.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+        HStack {
+            Text("Route overview").font(.headline)
+            Spacer()
+            Button("Refresh conditions") {
+                Task {
+                    await conditions.refresh()
+                    await viewModel.refreshLiveArrival()
+                }
+            }.font(.caption).disabled(conditions.isLoading || viewModel.isLoadingLiveArrival)
+        }
+        JourneyCard {
+            if viewModel.combinedSegments.isEmpty && viewModel.combinedStops.isEmpty {
+                VStack(spacing: 10) {
+                    Image(systemName: "map")
+                        .font(.system(size: 28))
+                        .foregroundColor(AppColors.text.opacity(0.4))
+
+                    Text("Map preview unavailable")
+                        .font(AppFonts.subheadline())
+                        .foregroundColor(AppColors.text)
+
+                    Text("We couldn't build a full route overview yet.")
+                        .font(AppFonts.caption())
+                        .foregroundColor(AppColors.text.opacity(0.6))
+                }
+                .frame(maxWidth: .infinity, minHeight: 180)
+            } else {
+                CombinedJourneyMapView(
+                    segments: viewModel.combinedSegments,
+                    stops: viewModel.combinedStops,
+                    focusCoordinates: viewModel.focusCoordinates,
+                    routeColor: AppColors.accent
+                )
+                .frame(height: isWide ? 320 : 220)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
+        }
+
+    }
+
+    @ViewBuilder private var stepsSection: some View {
+        ForEach(viewModel.segments.indices, id: \.self) { index in
+            switch viewModel.segments[index] {
+            case .walk(let walk):
+                WalkStepRow(segment: walk,
+                            toDestination: alternative.type == .walk || index == viewModel.segments.count - 1,
+                            onFocus: {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        viewModel.setFocusForWalk(walk)
+                    }
+                })
+            case .transit(let legIndex):
+                if viewModel.legs.indices.contains(legIndex) {
+                    legSection(viewModel.legs[legIndex])
+                }
+            }
+        }
+        Text("Walking paths on the map are approximate.").font(.caption).foregroundStyle(.secondary)
     }
 
     private func legSection(_ leg: TripPlanLegState) -> some View {

@@ -83,6 +83,9 @@ struct MainTabView: View {
             }
 
         }
+        // Sidebar on iPad and other wide screens, tab bar on iPhone.
+        .tabViewStyle(.sidebarAdaptable)
+        .environmentObject(navigationCoordinator)
         .onAppear {
             trackTabSelection(for: storedTabSelection, trigger: "initial")
         }
@@ -100,6 +103,9 @@ struct MainTabView: View {
         }
         .sheet(item: $navigationCoordinator.pendingSharedJourney) { shared in
             SharedJourneyScreen(token: shared.id, dependencies: dependencies)
+        }
+        .sheet(isPresented: $navigationCoordinator.showsTrackedJourney) {
+            TrackedJourneyScreen(dependencies: dependencies)
         }
     }
 
