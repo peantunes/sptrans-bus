@@ -75,7 +75,9 @@ class AppDependencies {
         searchViewModel = SearchViewModel(
             planTripUseCase: planTripUseCase,
             locationService: locationService,
-            analyticsService: analyticsService
+            analyticsService: analyticsService,
+            storage: PlannerStore(),
+            isPremium: { PremiumAccessGate.hasPremiumAccess() }
         )
         systemStatusViewModel = SystemStatusViewModel(
             apiClient: apiClient,

@@ -221,6 +221,132 @@ final class JourneyPlannerTests: XCTestCase {
         XCTAssertNil(model.resultContext)
     }
 
+    // MARK: - Saved routes, free tier limits and the remembered form
+
+    private let emptyPlan = TripPlan(alternatives: [], rankingPriority: "arrives_first")
+    private let work = Location(latitude: -23.54, longitude: -46.62)
+
+    @MainActor
+    private func plannerModel(planner: ControlledPlanner, storage: InMemoryPlannerStore, premium: Bool = false,
+                              clock: @escaping () -> Date = Date.init, location: PlannerLocationStub = PlannerLocationStub()) -> SearchViewModel {
+        SearchViewModel(planTripUseCase: planner, locationService: location, storage: storage,
+                        isPremium: { premium }, now: clock)
+    }
+
+    @MainActor
+    func testNowSearchesSendTheTimeTheButtonIsPressed() async {
+        let planner = ControlledPlanner(plan: emptyPlan)
+        var clock = Date(timeIntervalSince1970: 1_794_840_000)
+        let model = plannerModel(planner: planner, storage: InMemoryPlannerStore(), clock: { clock })
+        model.selectPlace(.saoPaulo, name: "Home", isOrigin: true)
+        model.selectPlace(work, name: "Work", isOrigin: false)
+        await model.planTrip()
+        clock = clock.addingTimeInterval(420)
+        await model.planTrip()
+        XCTAssertEqual(planner.requested, [Date(timeIntervalSince1970: 1_794_840_000), Date(timeIntervalSince1970: 1_794_840_420)])
+    }
+
+    @MainActor
+    func testFreeUsersGetFiveSearchesPerDay() async {
+        let planner = ControlledPlanner(plan: emptyPlan)
+        let storage = InMemoryPlannerStore()
+        var clock = Date(timeIntervalSince1970: 1_794_840_000)
+        let model = plannerModel(planner: planner, storage: storage, clock: { clock })
+        model.selectPlace(.saoPaulo, name: "Home", isOrigin: true)
+        model.selectPlace(work, name: "Work", isOrigin: false)
+        for _ in 0..<PlannerLimits.freeDailySearches { await model.planTrip() }
+        XCTAssertEqual(model.searchesLeft, 0)
+        await model.planTrip()
+        XCTAssertEqual(planner.requested.count, PlannerLimits.freeDailySearches)
+        XCTAssertEqual(model.premiumPrompt, .searchLimit)
+        clock = clock.addingTimeInterval(86_400)
+        await model.planTrip()
+        XCTAssertEqual(planner.requested.count, PlannerLimits.freeDailySearches + 1)
+    }
+
+    @MainActor
+    func testPremiumHasUnlimitedSearchesAndChosenTimes() async {
+        let planner = ControlledPlanner(plan: emptyPlan)
+        let model = plannerModel(planner: planner, storage: InMemoryPlannerStore(), premium: true)
+        model.selectPlace(.saoPaulo, name: "Home", isOrigin: true)
+        model.selectPlace(work, name: "Work", isOrigin: false)
+        XCTAssertTrue(model.chooseDepartureTime())
+        let chosen = Date(timeIntervalSince1970: 1_795_000_000)
+        model.departureDate = chosen
+        for _ in 0..<(PlannerLimits.freeDailySearches + 2) { await model.planTrip() }
+        XCTAssertEqual(planner.requested.count, PlannerLimits.freeDailySearches + 2)
+        XCTAssertTrue(planner.requested.allSatisfy { $0 == chosen })
+        XCTAssertNil(model.searchesLeft)
+    }
+
+    @MainActor
+    func testFreeUsersCannotChooseATime() {
+        let model = plannerModel(planner: ControlledPlanner(plan: emptyPlan), storage: InMemoryPlannerStore())
+        XCTAssertFalse(model.chooseDepartureTime())
+        XCTAssertFalse(model.useDepartureTime)
+        XCTAssertEqual(model.premiumPrompt, .chooseTime)
+    }
+
+    @MainActor
+    func testFreeUsersCanSaveTwoRoutes() {
+        let storage = InMemoryPlannerStore()
+        let model = plannerModel(planner: ControlledPlanner(plan: emptyPlan), storage: storage)
+        model.selectPlace(.saoPaulo, name: "Home", isOrigin: true)
+        model.selectPlace(work, name: "Work", isOrigin: false)
+        model.saveCurrentRoute()
+        model.swapLocations()
+        model.saveCurrentRoute()
+        model.selectPlace(Location(latitude: -23.5, longitude: -46.6), name: "Gym", isOrigin: false)
+        model.saveCurrentRoute()
+        XCTAssertEqual(storage.routes.count, PlannerLimits.freeSavedRoutes)
+        XCTAssertEqual(model.premiumPrompt, .saveLimit)
+    }
+
+    @MainActor
+    func testSavedCurrentLocationRouteResolvesWhereYouAreAndSearchesNow() async {
+        let planner = ControlledPlanner(plan: emptyPlan)
+        let storage = InMemoryPlannerStore()
+        let location = PlannerLocationStub()
+        location.current = .saoPaulo
+        let model = plannerModel(planner: planner, storage: storage, location: location)
+        XCTAssertTrue(model.originIsCurrentLocation)
+        model.selectPlace(work, name: "Work", isOrigin: false)
+        model.saveCurrentRoute()
+        let route = try! XCTUnwrap(storage.routes.first)
+        XCTAssertTrue(route.originIsCurrentLocation)
+
+        let moved = Location(latitude: -23.60, longitude: -46.70)
+        location.current = moved
+        await model.useRoute(route)
+        XCTAssertEqual(model.originLocation, moved)
+        XCTAssertEqual(planner.requested.count, 1)
+        XCTAssertTrue(model.hasPlanned)
+    }
+
+    @MainActor
+    func testLastFormIsRememberedAndClearKeepsPreferences() {
+        let storage = InMemoryPlannerStore()
+        let first = plannerModel(planner: ControlledPlanner(plan: emptyPlan), storage: storage)
+        first.selectPlace(.saoPaulo, name: "Home", isOrigin: true)
+        first.selectPlace(work, name: "Work", isOrigin: false)
+        first.rankingPriority = "least_walking"
+
+        let reopened = plannerModel(planner: ControlledPlanner(plan: emptyPlan), storage: storage)
+        XCTAssertEqual(reopened.originQuery, "Home")
+        XCTAssertEqual(reopened.destinationLocation, work)
+        XCTAssertEqual(reopened.rankingPriority, "least_walking")
+        XCTAssertTrue(reopened.canPlan)
+
+        reopened.clearField(isOrigin: false)
+        XCTAssertNil(reopened.destinationLocation)
+        XCTAssertNotNil(reopened.originLocation)
+        reopened.clearForm()
+        XCTAssertEqual(reopened.originQuery, "")
+        XCTAssertFalse(reopened.hasFormContent)
+        XCTAssertEqual(reopened.rankingPriority, "least_walking")
+        XCTAssertNil(storage.form?.destination)
+    }
+
     func testYellowLineGetsDarkBadgeTextAndDarkerTextOnWhite() throws {
         // The API sends white text for Metrô L4 (FFD700).
         XCTAssertEqual(LineColor.badgeText(background: "FFD700", preferred: "FFFFFF"), LineColor.darkText)
@@ -362,12 +488,14 @@ private final class ControlledPlanner: PlanTripUseCase {
     let plan: TripPlan
     var shouldSuspend = false
     var continuation: CheckedContinuation<Void, Never>?
+    var requested: [Date?] = []
     init(plan: TripPlan) {
         self.plan = plan
         super.init(transitRepository: TransitAPIRepository(apiClient: APIClient()))
     }
     override func execute(origin: Location, destination: Location, maxAlternatives: Int = 5,
         rankingPriority: String = "arrives_first", options: TripPlanningOptions = TripPlanningOptions()) async throws -> TripPlan {
+        requested.append(options.departure)
         if shouldSuspend { await withCheckedContinuation { continuation = $0 } }
         return plan
     }
