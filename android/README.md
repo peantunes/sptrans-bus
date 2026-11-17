@@ -59,4 +59,4 @@ Sem o `google-services.json`, o app compila normalmente e a tela de alertas avis
 
 - Mapa com osmdroid (OpenStreetMap), sem chave de API.
 - Premium (`app.lolados.data.weekly` / `app.lolados.data.yearly`) via Google Play Billing (`data/PremiumBilling.kt`). Em builds debug continua o toggle "Simular Premium", que não é sobrescrito quando o Play não tem compras.
-- `applicationId` provisório: `app.lolados.duesp`. Confirme antes de publicar, pois não dá para mudar depois.
+- `applicationId` definitivo: `app.lolados.duesp` (não pode mudar depois de publicado no Google Play).
