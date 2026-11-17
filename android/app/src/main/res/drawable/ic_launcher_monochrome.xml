@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Placeholder bus icon; replace with the Due SP brand icon (Android Studio > New > Image Asset). -->
+<!-- Single-colour bus for themed (monochrome) launcher icons on Android 13+. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
