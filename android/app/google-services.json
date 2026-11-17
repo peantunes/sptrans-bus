@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "474238093298",
+    "project_id": "due-sp",
+    "storage_bucket": "due-sp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:474238093298:android:05774e1f7e5f3b57b40d6b",
+        "android_client_info": {
+          "package_name": "app.lolados.duesp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBUrnUJAiu3JrNbTZo8quisq74YG1wJYy8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
