@@ -2,6 +2,33 @@
 
 iOS app for Sao Paulo transit, including bus arrivals, rail status, maps, widgets, and watch support.
 
+## Backend API
+
+The backend is no longer part of this repository. It lives in the `Lolados-server` project (`apps/sptrans.lolados.app`) and is served at:
+
+```
+https://sptrans.lolados.app/api/
+```
+
+Endpoints (all under `/api/`, parameters via query string unless noted):
+
+| Endpoint | Purpose | Parameters |
+| --- | --- | --- |
+| `search.php` | Search stops/routes | `q`, `limit` |
+| `nearby.php` | Stops near a location | `lat`, `lon`, `limit`, `include_arrivals` |
+| `stop.php` | Stop details | `stop_id`, `include_arrivals` |
+| `arrivals.php` | Next arrivals at a stop | `stop_id`, `direction`, `date`, `time`, `cursor_date`, `cursor_time`, `limit` |
+| `routes.php` | List routes | `limit`, `offset` |
+| `route.php` | Route details | `route_id` |
+| `trip.php` | Trip details | `trip_id` |
+| `shape.php` | Route/trip shape | `shape_id`, `format` |
+| `plan.php` | Trip planner | `origin_lat`, `origin_lon`, `dest_lat`, `dest_lon`, `origin_limit`, `destination_limit`, `direct_limit`, `transfer_limit`, `max_transfers`, `max_alternatives`, `ranking_priority` |
+| `metro_cptm.php` | Metro/CPTM rail status | `refresh`, `installation_id` |
+| `rail_status_report.php` | Rail status analytics (premium) | `period_days`, `source`, `line_number` |
+| `rail_alert_subscriptions.php` | Rail disruption notification subscriptions (GET/POST) | `installation_id` |
+
+Rail status sources and push (APNs) setup are documented in the server repo (`docs/sptrans-server-setup.md`).
+
 ## Premium Access
 
 Premium features are gated by StoreKit subscriptions:
