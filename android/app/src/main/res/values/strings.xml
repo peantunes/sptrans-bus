@@ -46,8 +46,6 @@
     <string name="status_unavailable">Fonte indisponível no momento.</string>
     <string name="status_updated_at">Atualizado em %1$s</string>
     <string name="status_line_format">Linha %1$s – %2$s</string>
-    <string name="status_analytics">Analytics de status</string>
-    <string name="status_analytics_subtitle">Histórico de interrupções por linha</string>
     <string name="status_alerts">Alertas de interrupção</string>
     <string name="status_alerts_subtitle">Receba um aviso quando suas linhas tiverem problema</string>
     <string name="alerts_description">Escolha as linhas. Você recebe um aviso quando houver problema na operação e outro quando ela normalizar no mesmo dia.</string>
@@ -63,7 +61,6 @@
     <string name="premium_locked">Recurso Premium</string>
     <string name="premium_description">Desbloqueie as ferramentas premium do app com um plano recorrente. Os planos semanal e anual liberam exatamente os mesmos recursos.</string>
     <string name="premium_features_title">Inclui</string>
-    <string name="premium_feature_analytics">Analytics de status ferroviário</string>
     <string name="premium_feature_arrivals">Data/hora personalizada e chegadas anteriores/seguintes no detalhe do ponto</string>
     <string name="premium_plan_weekly">Semanal</string>
     <string name="premium_plan_yearly">Anual</string>

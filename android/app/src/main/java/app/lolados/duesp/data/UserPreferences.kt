@@ -37,7 +37,7 @@ class FavoritesRepository(private val context: Context) {
 /**
  * Premium entitlement gate, mirroring iOS `PremiumAccessGate`.
  * Free: map, nearby, search, arrivals now, rail status, disruption alerts.
- * Premium (`app.lolados.data.weekly` / `app.lolados.data.yearly`): rail status analytics,
+ * Premium (`app.lolados.data.weekly` / `app.lolados.data.yearly`): unlimited journey planning,
  * custom date/time and previous/next arrivals pages.
  *
  * The flag is a cache of the Google Play entitlement kept up to date by [PremiumBilling].
@@ -46,7 +46,6 @@ class PremiumAccess(private val context: Context) {
     private val key = booleanPreferencesKey("premium_subscription_is_active_v1")
 
     val hasPremium: Flow<Boolean> = context.dataStore.data.map { it[key] ?: false }
-    val hasAnalyticsAccess: Flow<Boolean> get() = hasPremium
     val hasArrivalsHistoryAccess: Flow<Boolean> get() = hasPremium
 
     suspend fun setPremium(active: Boolean) {

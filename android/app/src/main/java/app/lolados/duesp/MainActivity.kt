@@ -189,7 +189,7 @@ private fun DueSPApp(openStatusRequest: Int, sharedJourneyToken: String?, onShar
                         if (!nav.popBackStack()) nav.navigate(Tab.MAP.route)
                     })
                 }
-                composable(Tab.STATUS.route) { StatusScreen(onOpenPremium = openPremium, onOpenAlerts = { nav.navigate("alerts") }) }
+                composable(Tab.STATUS.route) { StatusScreen(onOpenAlerts = { nav.navigate("alerts") }) }
                 composable("alerts") { RailAlertsScreen(onBack = nav::popBackStack) }
                 composable(Tab.SETTINGS.route) { SettingsScreen(onOpenPremium = openPremium) }
                 composable("search") { SearchScreen(onBack = nav::popBackStack, onOpenStop = openStop) }

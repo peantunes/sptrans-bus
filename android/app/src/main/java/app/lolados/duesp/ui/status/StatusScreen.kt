@@ -11,8 +11,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Insights
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,7 +32,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import app.lolados.duesp.R
-import app.lolados.duesp.data.PremiumAccess
 import app.lolados.duesp.data.TransitRepository
 import app.lolados.duesp.domain.RailLineStatus
 import app.lolados.duesp.domain.RailNetworkStatus
@@ -58,10 +55,9 @@ data class StatusUiState(
     val error: String? = null,
 )
 
-class StatusViewModel(private val repository: TransitRepository, premium: PremiumAccess) : ViewModel() {
+class StatusViewModel(private val repository: TransitRepository) : ViewModel() {
     private val _state = MutableStateFlow(StatusUiState())
     val state: StateFlow<StatusUiState> = _state.asStateFlow()
-    val hasAnalytics = premium.hasAnalyticsAccess.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     init { load() }
 
@@ -77,10 +73,9 @@ class StatusViewModel(private val repository: TransitRepository, premium: Premiu
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StatusScreen(onOpenPremium: () -> Unit, onOpenAlerts: () -> Unit) {
-    val vm = containerViewModel { StatusViewModel(it.transitRepository, it.premium) }
+fun StatusScreen(onOpenAlerts: () -> Unit) {
+    val vm = containerViewModel { StatusViewModel(it.transitRepository) }
     val state by vm.state.collectAsStateWithLifecycle()
-    val hasAnalytics by vm.hasAnalytics.collectAsStateWithLifecycle()
 
     Column(Modifier.fillMaxSize()) {
         TopAppBar(
@@ -102,14 +97,6 @@ fun StatusScreen(onOpenPremium: () -> Unit, onOpenAlerts: () -> Unit) {
                                     modifier = Modifier.padding(horizontal = 16.dp),
                                 )
                             }
-                        }
-                        item {
-                            ListItem(
-                                modifier = Modifier.clickable(onClick = onOpenPremium),
-                                leadingContent = { Icon(if (hasAnalytics) Icons.Filled.Insights else Icons.Filled.Lock, null) },
-                                headlineContent = { Text(stringResource(R.string.status_analytics)) },
-                                supportingContent = { Text(stringResource(R.string.status_analytics_subtitle)) },
-                            )
                         }
                         item {
                             ListItem(
