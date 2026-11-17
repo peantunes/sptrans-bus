@@ -1,5 +1,8 @@
 package app.lolados.duesp.ui.settings
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +21,9 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Policy
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -28,6 +34,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -40,6 +47,9 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import app.lolados.duesp.BuildConfig
 import app.lolados.duesp.R
+import app.lolados.duesp.data.BillingStatus
+import app.lolados.duesp.data.PremiumAccess
+import app.lolados.duesp.data.PremiumBilling
 import app.lolados.duesp.ui.appContainer
 import app.lolados.duesp.ui.map.SectionHeader
 import kotlinx.coroutines.launch
@@ -94,8 +104,14 @@ private fun Row(icon: ImageVector, title: String, trailing: @Composable () -> Un
 @Composable
 fun PremiumScreen(onBack: () -> Unit) {
     val premium = appContainer().premium
+    val billing = appContainer().billing
     val hasPremium by premium.hasPremium.collectAsState(initial = false)
+    val plans by billing.plans.collectAsState()
+    val status by billing.status.collectAsState()
+    val pending by billing.pending.collectAsState()
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    LaunchedEffect(Unit) { billing.refresh() }
 
     Column(Modifier.fillMaxSize()) {
         TopAppBar(
@@ -119,21 +135,40 @@ fun PremiumScreen(onBack: () -> Unit) {
             }
             if (hasPremium) {
                 Text(stringResource(R.string.premium_active), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                OutlinedButton(
+                    onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, PremiumBilling.manageUrl(context.packageName, null).toUri())) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(stringResource(R.string.premium_manage)) }
             } else {
-                listOf(R.string.premium_plan_weekly, R.string.premium_plan_yearly).forEach { plan ->
-                    Card(Modifier.fillMaxWidth()) {
-                        Column(Modifier.padding(16.dp)) {
-                            Text(stringResource(plan), style = MaterialTheme.typography.titleMedium)
-                            if (plan == R.string.premium_plan_yearly) {
-                                Text(stringResource(R.string.premium_plan_yearly_badge), color = MaterialTheme.colorScheme.primary)
+                when {
+                    plans.isNotEmpty() -> plans.forEach { plan ->
+                        val yearly = plan.productId == PremiumAccess.PRODUCT_YEARLY
+                        Card(Modifier.fillMaxWidth()) {
+                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(
+                                    stringResource(if (yearly) R.string.premium_plan_yearly else R.string.premium_plan_weekly),
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                                if (yearly) Text(stringResource(R.string.premium_plan_yearly_badge), color = MaterialTheme.colorScheme.primary)
+                                Text(
+                                    stringResource(if (yearly) R.string.premium_price_year else R.string.premium_price_week, plan.formattedPrice),
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                                Button(
+                                    onClick = { context.findActivity()?.let { billing.purchase(it, plan) } },
+                                    enabled = !pending,
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) { Text(stringResource(R.string.premium_subscribe)) }
                             }
                         }
                     }
+                    status == BillingStatus.Connecting -> CircularProgressIndicator()
+                    else -> Text(stringResource(R.string.premium_unavailable), style = MaterialTheme.typography.bodyMedium)
                 }
-                Button(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.premium_subscribe))
-                }
-                Text(stringResource(R.string.premium_billing_soon), style = MaterialTheme.typography.bodySmall)
+                if (pending) Text(stringResource(R.string.premium_pending), style = MaterialTheme.typography.bodyMedium)
+                TextButton(onClick = billing::refresh, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.premium_restore)) }
+                Text(stringResource(R.string.premium_terms), style = MaterialTheme.typography.bodySmall)
             }
             if (BuildConfig.DEBUG) {
                 ListItem(
@@ -145,4 +180,11 @@ fun PremiumScreen(onBack: () -> Unit) {
             }
         }
     }
+}
+
+/** The Activity behind a Compose context (needed to show the Play purchase sheet). */
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }

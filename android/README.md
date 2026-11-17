@@ -40,8 +40,23 @@ Para ativar:
 
 Sem o `google-services.json`, o app compila normalmente e a tela de alertas avisa que as notificações não estão configuradas.
 
+## Publicar no Google Play
+
+1. **Chave de upload** (fica fora do git): `keytool -genkeypair -v -keystore ~/keys/duesp-upload.jks -alias upload -keyalg RSA -keysize 4096 -validity 10000`, e crie `android/keystore.properties`:
+   ```
+   storeFile=/Users/<você>/keys/duesp-upload.jks
+   storePassword=...
+   keyAlias=upload
+   keyPassword=...
+   ```
+   Sem esse arquivo o release sai sem assinatura (útil só para testar o R8).
+2. **Bundle:** `./gradlew :app:bundleRelease` → `app/build/outputs/bundle/release/app-release.aab`. Ative o Play App Signing no primeiro envio.
+3. **Assinaturas** no Play Console → Monetizar → Assinaturas: `app.lolados.data.weekly` e `app.lolados.data.yearly`, cada uma com um plano base (semanal/anual). O app mostra o preço do plano base.
+4. **App Links:** Play Console → Integridade do app → Assinatura do app → copie o SHA-256 da *chave de assinatura do app* e adicione em `sptrans.lolados.app/.well-known/assetlinks.json` (mantenha também o de debug).
+5. **Política:** Segurança dos dados (localização aproximada/precisa, compras, identificadores de analytics), questionário de classificação, política de privacidade (`https://sptrans.lolados.app/privacy.html`).
+
 ## Notas
 
 - Mapa com osmdroid (OpenStreetMap), sem chave de API.
-- Premium (`app.lolados.data.weekly` / `app.lolados.data.yearly`) ainda sem Google Play Billing; em builds debug há o toggle "Simular Premium" na tela Premium.
+- Premium (`app.lolados.data.weekly` / `app.lolados.data.yearly`) via Google Play Billing (`data/PremiumBilling.kt`). Em builds debug continua o toggle "Simular Premium", que não é sobrescrito quando o Play não tem compras.
 - `applicationId` provisório: `app.lolados.duesp`. Confirme antes de publicar, pois não dá para mudar depois.

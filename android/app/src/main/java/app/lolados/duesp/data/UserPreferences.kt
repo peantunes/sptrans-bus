@@ -40,7 +40,7 @@ class FavoritesRepository(private val context: Context) {
  * Premium (`app.lolados.data.weekly` / `app.lolados.data.yearly`): rail status analytics,
  * custom date/time and previous/next arrivals pages.
  *
- * TODO: back this with Google Play Billing; for now the flag only changes through the debug toggle.
+ * The flag is a cache of the Google Play entitlement kept up to date by [PremiumBilling].
  */
 class PremiumAccess(private val context: Context) {
     private val key = booleanPreferencesKey("premium_subscription_is_active_v1")

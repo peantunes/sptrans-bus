@@ -70,7 +70,13 @@
     <string name="premium_plan_yearly_badge">Melhor valor</string>
     <string name="premium_active">Premium ativo</string>
     <string name="premium_subscribe">Assinar</string>
-    <string name="premium_billing_soon">A compra pelo Google Play ainda não está disponível nesta versão.</string>
+    <string name="premium_price_week">%1$s por semana</string>
+    <string name="premium_price_year">%1$s por ano</string>
+    <string name="premium_restore">Restaurar compras</string>
+    <string name="premium_manage">Gerenciar assinatura no Google Play</string>
+    <string name="premium_pending">Pagamento pendente. O Premium é liberado assim que o Google Play confirmar.</string>
+    <string name="premium_unavailable">As assinaturas não estão disponíveis agora. Confira se o Google Play está atualizado e se você entrou com sua conta Google.</string>
+    <string name="premium_terms">A assinatura renova automaticamente pelo mesmo valor até ser cancelada no Google Play. Cancele quando quiser.</string>
     <string name="premium_debug_toggle">Simular Premium (debug)</string>
 
     <string name="settings_about">Sobre</string>

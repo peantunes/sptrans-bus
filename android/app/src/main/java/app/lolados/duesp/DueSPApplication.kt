@@ -9,6 +9,7 @@ import app.lolados.duesp.data.LocationProvider
 import app.lolados.duesp.data.PlaceSearch
 import app.lolados.duesp.data.PlannerStore
 import app.lolados.duesp.data.PremiumAccess
+import app.lolados.duesp.data.PremiumBilling
 import app.lolados.duesp.data.TransitRepository
 import app.lolados.duesp.data.api.TransitApi
 import org.osmdroid.config.Configuration
@@ -21,6 +22,7 @@ class AppContainer(app: Application) {
     val alerts = RailAlertsRepository(app, api)
     val favorites = FavoritesRepository(app)
     val premium = PremiumAccess(app)
+    val billing = PremiumBilling(app, premium)
     val location = LocationProvider(app)
     val places = PlaceSearch(app, transitRepository)
     val planner = PlannerStore(app)
@@ -34,6 +36,8 @@ class DueSPApplication : Application() {
         super.onCreate()
         container = AppContainer(this)
         RailAlertNotifications.createChannel(this)
+        // Restore Premium from Google Play (renewals, cancellations, purchases on other devices).
+        container.billing.refresh()
         // OpenStreetMap tile servers require an identifying user agent.
         Configuration.getInstance().userAgentValue = "DueSP-Android/${BuildConfig.VERSION_NAME}"
     }
