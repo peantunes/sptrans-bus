@@ -396,7 +396,7 @@ struct SearchView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Journey options").font(.title2.bold())
                         Text("\(context.originLabel) → \(context.destinationLabel)").font(.subheadline).lineLimit(2)
-                        Text(context.departure, format: .dateTime.day().month().hour().minute().timeZone(.specificName(.short)))
+                        Text(context.departure, format: .dateTime.day().month().hour().minute())
                             .environment(\.timeZone, TimeZone(identifier: "America/Sao_Paulo")!)
                             .font(.caption).opacity(0.85)
                     }

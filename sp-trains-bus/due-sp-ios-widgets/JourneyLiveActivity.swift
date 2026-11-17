@@ -76,7 +76,8 @@ private struct JourneyLockScreenView: View {
             HStack {
                 Text("\(attributes.from) → \(attributes.to)").lineLimit(1)
                 Spacer()
-                Text(state.arrivalDate, format: saoPauloTime)
+                // Formatted to a String first: Text(_:format:) would apply the device time zone.
+                Text(state.arrivalDate.formatted(saoPauloTime))
             }
             .font(.caption).foregroundStyle(.white.opacity(0.7))
             if !state.alternatives.isEmpty {

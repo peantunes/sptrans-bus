@@ -63,7 +63,8 @@ struct JourneyMetrics: View {
             Label("Walk \(minutes) min", systemImage: "figure.walk")
         }
         if let metres = alternative.walkMeters {
-            Text(metres >= 1000 ? String(format: "%.1f km", metres / 1000) : String(format: "%.0f m", metres))
+            // Locale decimal separator: "1.5 km" in English, "1,5 km" in Portuguese.
+            Text(metres >= 1000 ? "\((metres / 1000).formatted(.number.precision(.fractionLength(1)))) km" : String(format: "%.0f m", metres))
         }
         if let stops = alternative.stopCount, alternative.type != .walk {
             Text(stops == 1 ? NSLocalizedString("1 stop", comment: "") : String(format: NSLocalizedString("%d stops", comment: ""), stops))
