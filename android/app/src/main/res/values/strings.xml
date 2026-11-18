@@ -10,6 +10,7 @@
     <string name="action_retry">Tentar novamente</string>
     <string name="action_refresh">Atualizar</string>
     <string name="action_back">Voltar</string>
+    <string name="action_close">Fechar</string>
     <string name="action_favorite">Favoritar</string>
     <string name="action_unfavorite">Remover dos favoritos</string>
 
@@ -138,6 +139,8 @@
     <string name="plan_journey_gone">Esta viagem não está mais disponível. Faça a busca de novo.</string>
     <string name="plan_route_overview">Visão geral do trajeto</string>
     <string name="plan_walking_paths_note">Os trechos a pé no mapa são aproximados.</string>
+    <string name="plan_map_open">Ver mapa</string>
+    <string name="plan_map_title">Mapa do trajeto</string>
     <string name="plan_saved_routes">Rotas salvas</string>
     <string name="plan_saved_count">%1$d de %2$d</string>
     <string name="plan_saved_empty">Nenhuma rota salva ainda. Escolha origem e destino e salve aqui para buscar com um toque.</string>
