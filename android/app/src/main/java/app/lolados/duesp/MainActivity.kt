@@ -54,6 +54,8 @@ import app.lolados.duesp.ui.settings.PremiumScreen
 import app.lolados.duesp.ui.settings.SettingsScreen
 import app.lolados.duesp.ui.status.StatusScreen
 import app.lolados.duesp.ui.stop.StopDetailScreen
+import app.lolados.duesp.ui.stop.TripDetailScreen
+import app.lolados.duesp.ui.stop.TripSelection
 import app.lolados.duesp.ui.theme.DueSPTheme
 import kotlinx.serialization.json.Json
 
@@ -196,7 +198,13 @@ private fun DueSPApp(openStatusRequest: Int, sharedJourneyToken: String?, onShar
                 composable("premium") { PremiumScreen(onBack = nav::popBackStack) }
                 composable("stop/{stop}", arguments = listOf(navArgument("stop") { type = NavType.StringType })) { entry ->
                     val stop = Json.decodeFromString<Stop>(entry.arguments?.getString("stop").orEmpty())
-                    StopDetailScreen(stop, onBack = nav::popBackStack, onOpenPremium = openPremium)
+                    StopDetailScreen(stop, onBack = nav::popBackStack, onOpenPremium = openPremium, onOpenTrip = { selection ->
+                        nav.navigate("trip/${Uri.encode(Json.encodeToString(selection))}")
+                    })
+                }
+                composable("trip/{selection}", arguments = listOf(navArgument("selection") { type = NavType.StringType })) { entry ->
+                    val selection = Json.decodeFromString<TripSelection>(entry.arguments?.getString("selection").orEmpty())
+                    TripDetailScreen(selection, onBack = nav::popBackStack)
                 }
             }
         }

@@ -57,6 +57,37 @@ data class ArrivalDto(
     val scheduledTimestamp: Long? = null,
 )
 
+// trip.php?trip_id=… and shape.php?shape_id=…
+
+@Serializable
+data class TripResponse(val trip: TripDto)
+
+@Serializable
+data class TripDto(
+    val tripId: String,
+    val routeId: String = "",
+    val headsign: String = "",
+    val shapeId: String? = null,
+    val stops: List<TripStopDto> = emptyList(),
+)
+
+@Serializable
+data class TripStopDto(
+    val stopId: Int,
+    val stopName: String,
+    val stopDesc: String? = null,
+    val stopLat: Double,
+    val stopLon: Double,
+    val arrivalTime: String = "",
+    val stopSequence: Int = 0,
+)
+
+@Serializable
+data class ShapeResponse(val points: List<ShapePointDto> = emptyList())
+
+@Serializable
+data class ShapePointDto(val lat: Double, val lon: Double, val sequence: Int = 0)
+
 @Serializable
 data class RailStatusResponse(
     val generatedAt: String? = null,

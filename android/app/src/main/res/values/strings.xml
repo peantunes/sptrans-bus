@@ -22,6 +22,7 @@
     <string name="nearby_title">Pontos próximos</string>
     <string name="nearby_empty">Nenhum ponto encontrado por perto.</string>
     <string name="nearby_location_denied">Sem permissão de localização. Mostrando pontos perto da Praça da Sé.</string>
+    <string name="nearby_outside_area">Você está fora da Grande São Paulo. Mostrando pontos perto da Praça da Sé.</string>
     <string name="nearby_location_unavailable">Não foi possível obter sua localização. Mostrando pontos perto da Praça da Sé.</string>
     <string name="favorites_title">Favoritos</string>
     <string name="distance_meters">%1$d m</string>
@@ -39,6 +40,12 @@
     <string name="arrivals_next">Mais chegadas</string>
     <string name="arrivals_pick_time">Escolher data e hora</string>
     <string name="arrivals_reset_time">Voltar para agora</string>
+    <string name="trip_title">Trajeto da linha</string>
+    <string name="trip_stops_title">Paradas</string>
+    <string name="trip_stops_label">paradas</string>
+    <string name="trip_every_minutes">A cada %1$d min</string>
+    <string name="trip_stop_number">Parada %1$d</string>
+    <string name="trip_you_are_here">Você está aqui</string>
     <string name="arrivals_reference">Horários a partir de %1$s</string>
 
     <string name="status_title">Metrô e CPTM</string>

@@ -50,6 +50,12 @@ class TransitApi(
         "cursor_time" to cursorTime,
     )
 
+    /** One trip with all its stops, in order. */
+    suspend fun trip(tripId: String): TripResponse = get("trip.php", "trip_id" to tripId)
+
+    /** Geometry of a trip ([TripDto.shapeId]). */
+    suspend fun shape(shapeId: String): ShapeResponse = get("shape.php", "shape_id" to shapeId)
+
     /** Journey planner. [time] is HH:MM and [date] YYYY-MM-DD in São Paulo time; both null = now. */
     suspend fun plan(
         originLat: Double,

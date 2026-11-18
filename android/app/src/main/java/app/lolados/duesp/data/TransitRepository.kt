@@ -10,7 +10,16 @@ import java.time.LocalDateTime
 import app.lolados.duesp.domain.RailLineStatus
 import app.lolados.duesp.domain.RailNetworkStatus
 import app.lolados.duesp.domain.RailSource
+import app.lolados.duesp.domain.RailMapLine
+import app.lolados.duesp.domain.RailStation
 import app.lolados.duesp.domain.Stop
+import app.lolados.duesp.domain.TripRoute
+import app.lolados.duesp.domain.TripStop
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.pow
@@ -72,6 +81,52 @@ class TransitRepository(private val api: TransitApi) {
         return planMapper.map(response.result, origin, destination)
     }
 
+    /** A trip with all its stops in order, plus its geometry when available (the shape is optional). */
+    suspend fun trip(tripId: String): TripRoute = coroutineScope {
+        val trip = api.trip(tripId).trip
+        val shape = trip.shapeId?.takeIf { it.isNotBlank() }?.let { id ->
+            async { runCatching { api.shape(id).points.sortedBy { it.sequence }.map { it.lat to it.lon } }.getOrNull() }
+        }
+        val seen = HashSet<Int>()
+        TripRoute(
+            tripId = trip.tripId,
+            headsign = trip.headsign,
+            stops = trip.stops.sortedBy { it.stopSequence }
+                .filter { seen.add(it.stopSequence) }
+                .map { TripStop(it.stopId, it.stopName, it.stopLat, it.stopLon, it.arrivalTime, it.stopSequence) },
+            shape = shape?.await().orEmpty(),
+        )
+    }
+
+    private val railNetworkLock = Mutex()
+    @Volatile private var railNetworkCache: List<RailMapLine>? = null
+
+    /**
+     * Metrô and CPTM lines for the main map, loaded once per process (lines barely change). A line whose
+     * trip can't be loaded uses the built-in outline; if every request fails, nothing is cached so the
+     * next call tries again.
+     */
+    suspend fun railNetwork(): List<RailMapLine> = railNetworkLock.withLock {
+        railNetworkCache?.let { return it }
+        val loaded = coroutineScope {
+            RailNetwork.sources.map { source ->
+                async {
+                    runCatching {
+                        val trip = api.trip(source.tripId).trip
+                        val seen = HashSet<Int>()
+                        val stations = trip.stops.sortedBy { it.stopSequence }
+                            .filter { seen.add(it.stopId) }
+                            .map { RailStation(it.stopId, it.stopName, it.stopLat, it.stopLon) }
+                        RailMapLine(source.id, source.name, source.source, source.colorHex, stations)
+                    }.getOrNull()?.takeIf { it.stations.size >= 2 }
+                }
+            }.awaitAll()
+        }
+        val lines = RailNetwork.sources.mapIndexed { index, source -> loaded[index] ?: RailNetwork.fallback(source) }
+        if (loaded.any { it != null }) railNetworkCache = lines
+        lines
+    }
+
     suspend fun railStatus(refresh: Boolean = false): RailNetworkStatus {
         val response = api.railStatus(refresh)
         return RailNetworkStatus(
@@ -106,6 +161,7 @@ class TransitRepository(private val api: TransitApi) {
         serviceDate = serviceDate,
         scheduledTimestamp = scheduledTimestamp,
         stopSequence = stopSequence,
+        frequencyMinutes = frequency?.takeIf { it > 0 },
     )
 
     private fun RailLineStatusDto.toDomain(source: RailSource) = RailLineStatus(

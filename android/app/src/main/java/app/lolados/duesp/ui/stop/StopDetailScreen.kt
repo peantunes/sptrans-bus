@@ -2,6 +2,7 @@ package app.lolados.duesp.ui.stop
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -51,7 +52,7 @@ import java.time.LocalDateTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StopDetailScreen(stop: Stop, onBack: () -> Unit, onOpenPremium: () -> Unit) {
+fun StopDetailScreen(stop: Stop, onBack: () -> Unit, onOpenPremium: () -> Unit, onOpenTrip: (TripSelection) -> Unit) {
     val vm = containerViewModel(key = "stop-${stop.id}") {
         StopDetailViewModel(stop, it.transitRepository, it.favorites, it.premium)
     }
@@ -131,7 +132,9 @@ fun StopDetailScreen(stop: Stop, onBack: () -> Unit, onOpenPremium: () -> Unit) 
                     if (state.hasMorePrevious) {
                         item { PageButton(R.string.arrivals_previous, hasHistory, state.isLoadingPage) { if (hasHistory) vm.loadPage(true) else onOpenPremium() } }
                     }
-                    items(state.arrivals, key = { it.identity }) { ArrivalRow(it, showCountdown = !state.isCustomTime) }
+                    items(state.arrivals, key = { it.identity }) { arrival ->
+                        ArrivalRow(arrival, showCountdown = !state.isCustomTime) { onOpenTrip(TripSelection.of(arrival, stop.id)) }
+                    }
                     if (state.hasMoreNext) {
                         item { PageButton(R.string.arrivals_next, hasHistory, state.isLoadingPage) { if (hasHistory) vm.loadPage(false) else onOpenPremium() } }
                     }
@@ -153,10 +156,11 @@ private fun PageButton(label: Int, unlocked: Boolean, loading: Boolean, onClick:
 }
 
 @Composable
-private fun ArrivalRow(arrival: Arrival, showCountdown: Boolean) {
+private fun ArrivalRow(arrival: Arrival, showCountdown: Boolean, onClick: () -> Unit) {
     val bg = parseHexColor(arrival.routeColor, MaterialTheme.colorScheme.primary)
     val fg = parseHexColor(arrival.routeTextColor, Color.White)
     ListItem(
+        modifier = Modifier.clickable(onClickLabel = stringResource(R.string.trip_title), onClick = onClick),
         leadingContent = { RouteBadge(arrival.routeShortName, bg, fg) },
         headlineContent = { Text(arrival.headsign.ifBlank { arrival.routeLongName }, maxLines = 1) },
         supportingContent = { Text(arrival.displayTime, style = MaterialTheme.typography.bodySmall) },

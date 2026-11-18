@@ -49,6 +49,8 @@ data class Arrival(
     val serviceDate: String?,
     val scheduledTimestamp: Long?,
     val stopSequence: Int,
+    /** Minutes between departures, when the line runs by frequency. */
+    val frequencyMinutes: Int? = null,
 ) {
     val identity: String get() = "$tripId|$serviceDate|$scheduledTimestamp|$stopSequence"
 
@@ -68,6 +70,43 @@ data class Arrival(
             return "%02d:%s".format(hour % 24, minute)
         }
 }
+
+/** One stop of a trip, in order. [arrivalTime] is GTFS (may exceed 24:00:00). */
+data class TripStop(
+    val stopId: Int,
+    val name: String,
+    val lat: Double,
+    val lon: Double,
+    val arrivalTime: String,
+    val sequence: Int,
+) {
+    val displayTime: String
+        get() {
+            val parts = arrivalTime.split(":")
+            val hour = parts.getOrNull(0)?.toIntOrNull() ?: return ""
+            return "%02d:%s".format(hour % 24, parts.getOrNull(1) ?: "00")
+        }
+}
+
+/** A trip with all its stops and, when the API has it, the geometry of the route. */
+data class TripRoute(
+    val tripId: String,
+    val headsign: String,
+    val stops: List<TripStop>,
+    /** (lat, lon) pairs; empty when there is no shape, then the stops are joined instead. */
+    val shape: List<Pair<Double, Double>>,
+)
+
+/** A Metrô or CPTM line on the main map: its colour and stations in order. */
+data class RailMapLine(
+    val id: String,
+    val name: String,
+    val source: RailSource,
+    val colorHex: String,
+    val stations: List<RailStation>,
+)
+
+data class RailStation(val stopId: Int, val name: String, val lat: Double, val lon: Double)
 
 enum class RailSource { METRO, CPTM }
 
