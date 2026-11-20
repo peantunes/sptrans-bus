@@ -313,6 +313,8 @@ private fun StopsMap(
         update = { map ->
             map.overlays.clear()
             map.overlays.addAll(railOverlays)
+            // OpenStreetMap tile usage policy: visible attribution on every map.
+            map.overlays.add(org.osmdroid.views.overlay.CopyrightOverlay(context))
             stops.forEach { stop ->
                 map.overlays.add(
                     Marker(map).apply {

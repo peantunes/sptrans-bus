@@ -43,6 +43,8 @@ import app.lolados.duesp.ui.map.MapLine
 import app.lolados.duesp.ui.map.RouteMapContent
 import app.lolados.duesp.ui.map.RouteMapDialog
 import app.lolados.duesp.ui.map.StaticRouteMap
+import app.lolados.duesp.ui.OfficialSource
+import app.lolados.duesp.ui.SourceFooter
 import app.lolados.duesp.ui.parseHexColor
 import org.osmdroid.util.GeoPoint
 
@@ -116,6 +118,7 @@ fun JourneyDetailScreen(
                 Text(stringResource(R.string.plan_walking_paths_note), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+            item { SourceFooter(listOf(OfficialSource.SPTRANS)) }
         }
         if (showMap) {
             RouteMapDialog(stringResource(R.string.plan_map_title), content, mapFocus, onDismiss = { showMap = false })

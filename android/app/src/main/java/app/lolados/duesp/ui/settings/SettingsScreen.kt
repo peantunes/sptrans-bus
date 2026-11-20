@@ -14,6 +14,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.Info
+import app.lolados.duesp.ui.OfficialSource
+import app.lolados.duesp.ui.openUrl
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Email
@@ -74,6 +78,15 @@ fun SettingsScreen(onOpenPremium: () -> Unit) {
                 headlineContent = { Text(stringResource(R.string.app_name)) },
                 supportingContent = { Text(stringResource(R.string.settings_version, BuildConfig.VERSION_NAME)) },
             )
+            SectionHeader(stringResource(R.string.settings_sources))
+            ListItem(
+                leadingContent = { Icon(Icons.Filled.Info, null) },
+                headlineContent = { Text(stringResource(R.string.disclaimer_title), fontWeight = FontWeight.SemiBold) },
+                supportingContent = { Text(stringResource(R.string.disclaimer_full)) },
+            )
+            OfficialSource.entries.forEach { source ->
+                Row(Icons.AutoMirrored.Filled.OpenInNew, stringResource(source.label)) { openUrl(context, source.url) }
+            }
             SectionHeader(stringResource(R.string.settings_support))
             Row(
                 Icons.Filled.WorkspacePremium,
@@ -86,6 +99,12 @@ fun SettingsScreen(onOpenPremium: () -> Unit) {
             SectionHeader(stringResource(R.string.settings_legal))
             Row(Icons.Filled.Policy, stringResource(R.string.settings_privacy)) { open(PRIVACY) }
             Row(Icons.Filled.Description, stringResource(R.string.settings_terms)) { open(TERMS) }
+            Text(
+                stringResource(R.string.settings_copyright),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(16.dp),
+            )
         }
     }
 }

@@ -45,6 +45,8 @@ import app.lolados.duesp.domain.Arrival
 import app.lolados.duesp.domain.Stop
 import app.lolados.duesp.ui.ErrorBox
 import app.lolados.duesp.ui.LoadingBox
+import app.lolados.duesp.ui.OfficialSource
+import app.lolados.duesp.ui.SourceFooter
 import app.lolados.duesp.ui.RouteBadge
 import app.lolados.duesp.ui.containerViewModel
 import app.lolados.duesp.ui.parseHexColor
@@ -140,6 +142,7 @@ fun StopDetailScreen(stop: Stop, onBack: () -> Unit, onOpenPremium: () -> Unit, 
                     }
                 }
             }
+            item { SourceFooter(listOf(OfficialSource.SPTRANS)) }
         }
     }
 }

@@ -37,6 +37,8 @@ import app.lolados.duesp.domain.RailLineStatus
 import app.lolados.duesp.domain.RailNetworkStatus
 import app.lolados.duesp.ui.ErrorBox
 import app.lolados.duesp.ui.LoadingBox
+import app.lolados.duesp.ui.OfficialSource
+import app.lolados.duesp.ui.SourceFooter
 import app.lolados.duesp.ui.containerViewModel
 import app.lolados.duesp.ui.map.SectionHeader
 import app.lolados.duesp.ui.parseHexColor
@@ -112,6 +114,7 @@ fun StatusScreen(onOpenAlerts: () -> Unit) {
                         item { SectionHeader(stringResource(R.string.status_cptm)) }
                         if (!status.cptmAvailable) item { Unavailable() }
                         items(status.cptm, key = { "c-${it.number}" }) { LineRow(it) }
+                        item { SourceFooter(listOf(OfficialSource.METRO, OfficialSource.CPTM)) }
                     }
                 }
             }

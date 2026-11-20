@@ -57,6 +57,7 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.Projection
 import org.osmdroid.views.drawing.MapSnapshot
+import org.osmdroid.views.overlay.CopyrightOverlay
 import org.osmdroid.views.overlay.Overlay
 import org.osmdroid.views.overlay.Polyline
 
@@ -177,6 +178,16 @@ fun StaticRouteMap(content: RouteMapContent, picture: MutableState<Bitmap?>, mod
         } else {
             CircularProgressIndicator(Modifier.size(28.dp).align(Alignment.Center), strokeWidth = 2.5.dp)
         }
+        // OpenStreetMap tile usage policy: visible attribution on every map.
+        Text(
+            stringResource(R.string.map_attribution),
+            Modifier.align(Alignment.BottomStart)
+                .padding(6.dp)
+                .background(androidx.compose.ui.graphics.Color.White.copy(alpha = 0.8f), RoundedCornerShape(4.dp))
+                .padding(horizontal = 4.dp, vertical = 1.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = androidx.compose.ui.graphics.Color(0xFF333333),
+        )
         Surface(
             Modifier.align(Alignment.BottomEnd).padding(10.dp),
             shape = RoundedCornerShape(50),
@@ -246,6 +257,7 @@ private fun InteractiveRouteMap(content: RouteMapContent, focus: List<GeoPoint>?
     AndroidView(factory = { mapView }, modifier = modifier, update = { map ->
         map.overlays.clear()
         map.overlays.addAll(content.overlays(density))
+        map.overlays.add(CopyrightOverlay(context))
         val target = focus?.takeIf { it.isNotEmpty() } ?: content.allPoints
         if (target.isNotEmpty()) {
             val zoom = {

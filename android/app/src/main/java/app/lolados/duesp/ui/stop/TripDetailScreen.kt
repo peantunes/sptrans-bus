@@ -54,6 +54,8 @@ import app.lolados.duesp.domain.TripRoute
 import app.lolados.duesp.domain.TripStop
 import app.lolados.duesp.ui.ErrorBox
 import app.lolados.duesp.ui.LoadingBox
+import app.lolados.duesp.ui.OfficialSource
+import app.lolados.duesp.ui.SourceFooter
 import app.lolados.duesp.ui.RouteBadge
 import app.lolados.duesp.ui.containerViewModel
 import app.lolados.duesp.ui.map.MapDot
@@ -154,6 +156,7 @@ private fun TripContent(
                 },
             )
         }
+        item { SourceFooter(listOf(OfficialSource.SPTRANS), Modifier.padding(top = 8.dp)) }
     }
 
     if (showMap) {

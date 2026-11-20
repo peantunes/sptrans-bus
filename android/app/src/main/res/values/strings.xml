@@ -10,6 +10,17 @@
     <string name="action_retry">Tentar novamente</string>
     <string name="action_refresh">Atualizar</string>
     <string name="action_back">Voltar</string>
+    <string name="source_prefix">Fonte oficial:</string>
+    <string name="source_sptrans">SPTrans (horários e linhas)</string>
+    <string name="source_metro">Metrô de São Paulo</string>
+    <string name="source_cptm">CPTM</string>
+    <string name="source_osm">Mapa © colaboradores do OpenStreetMap</string>
+    <string name="disclaimer_short">O Due SP é um app independente e não oficial; não representa nenhum órgão de governo.</string>
+    <string name="disclaimer_title">Aviso: app não oficial</string>
+    <string name="disclaimer_full">O Due SP é um aplicativo independente, desenvolvido pela Lolados. Não é um aplicativo oficial e não representa, nem tem vínculo com, a SPTrans, o Metrô, a CPTM, a Prefeitura de São Paulo, o Governo do Estado de São Paulo ou qualquer outro órgão de governo. Os horários, linhas e status vêm de dados públicos dessas fontes oficiais e podem ter atraso ou diferenças; em caso de divergência, vale a informação oficial.</string>
+    <string name="settings_sources">Fontes oficiais e aviso</string>
+    <string name="settings_copyright">© 2026 Lolados. Todos os direitos reservados. Marcas e nomes da SPTrans, Metrô e CPTM pertencem aos seus titulares.</string>
+    <string name="map_attribution">© colaboradores do OpenStreetMap</string>
     <string name="action_close">Fechar</string>
     <string name="action_favorite">Favoritar</string>
     <string name="action_unfavorite">Remover dos favoritos</string>
