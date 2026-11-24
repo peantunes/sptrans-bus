@@ -1,0 +1,49 @@
+NOTICE: Due SP is an independent, UNOFFICIAL app. It does not represent, and is not affiliated with, SPTrans, Metrô, CPTM, the City of São Paulo, the State of São Paulo Government or any other government entity.
+
+Due SP is a city mobility app built for public transport in São Paulo.
+
+Plan door-to-door journeys, check upcoming bus, Metro and CPTM arrivals and follow line status. One app for your daily commute.
+
+PLAN YOUR JOURNEY
+• Door-to-door routes combining buses, Metro and CPTM
+• Compare options by arrival time, changes and walking time
+• Every leg explained: the line, where to board, stops on the way and where to get off
+• Walking legs clearly marked between steps
+• Route map with the colour of every line
+• Save routes and search again with one tap
+• The planner remembers your last journey and is easy to clear
+• Share a journey as a link that opens in the app or on the web
+
+ARRIVALS AND STATUS
+• Map with stops, stations and the Metro and CPTM lines
+• Search stops by name or address
+• Upcoming arrivals by line and destination at every stop
+• The full route of every line, with all its stops
+• Service status of Metro and CPTM lines
+• Disruption alerts for the lines you choose
+• Favourites to keep your key stops at the top
+
+DUE SP PREMIUM
+On the free plan you can run 5 journey searches a day, always leaving now, and save 2 routes. With Premium (weekly or yearly):
+• Unlimited journey searches and a choice of departure day and time
+• Unlimited saved routes
+• Arrivals for a custom date and time, with earlier and later arrivals
+
+The subscription renews automatically until cancelled in Google Play.
+
+Great for:
+• getting to work and back home
+• less waiting at stops and stations
+• choosing the best line right now
+• finding your way somewhere new in the city
+
+OFFICIAL DATA SOURCES
+Times are scheduled (not real time) and come from public data published by these official sources:
+• Timetables, lines and stops (bus, Metro and CPTM): SPTrans open data: https://www.sptrans.com.br/desenvolvedores/
+• Metro line status: https://www.metro.sp.gov.br/
+• CPTM line status: https://www.cptm.sp.gov.br/
+• Maps: © OpenStreetMap contributors: https://www.openstreetmap.org/copyright
+If anything differs, the official information prevails. For official information, always check SPTrans, Metrô and CPTM's own channels.
+
+© 2026 Lolados. Due SP is an independent app; the SPTrans, Metrô and CPTM names belong to their owners and are used only to identify lines.
+Privacy: https://sptrans.lolados.app/privacy.html · Terms: https://sptrans.lolados.app/terms.html
