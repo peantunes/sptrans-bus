@@ -76,7 +76,7 @@ class ViewModelsTests: XCTestCase {
     func testStopDetailViewModelLoadArrivalsSuccess() async throws {
         let mockGetArrivalsUseCase = MockGetArrivalsUseCase()
         let mockStorageService = MockStorageService()
-        mockGetArrivalsUseCase.arrivalsToReturn = [Arrival(tripId: "T1", routeId: "R1", routeShortName: "R1", routeLongName: "Route 1", headsign: "Dest", arrivalTime: "10:00", departureTime: "10:01", stopId: 1, stopSequence: 1, routeType: 3, routeColor: "FF0000", routeTextColor: "FFFFFF", frequency: nil, waitTime: 5)]
+        mockGetArrivalsUseCase.arrivalsToReturn = [Arrival(tripId: "T1", routeId: "R1", routeShortName: "R1", routeLongName: "Route 1", headsign: "Dest", arrivalTime: "10:00", departureTime: "10:01", stopId: 1, stopSequence: 1, routeType: 3, routeColor: "FF0000", routeTextColor: "FFFFFF", frequency: nil, waitTime: 5, isLiveFromOlhoVivo: true)]
 
         let stop = Stop(stopId: 1, stopName: "Test Stop", location: Location(latitude: 0, longitude: 0), stopSequence: 0, stopCode: "", wheelchairBoarding: 0)
         let viewModel = StopDetailViewModel(
@@ -94,6 +94,7 @@ class ViewModelsTests: XCTestCase {
             .sink { arrivals in
                 XCTAssertEqual(arrivals.count, 1)
                 XCTAssertEqual(arrivals.first?.tripId, "T1")
+                XCTAssertEqual(arrivals.first?.isLiveFromOlhoVivo, true)
                 expectation.fulfill()
             }
             .store(in: &cancellables)
@@ -471,7 +472,9 @@ class ViewModelsTests: XCTestCase {
             super.init(transitRepository: MockTransitRepository())
         }
 
-        override func execute(stopId: Int, limit: Int = 10) async throws -> [Arrival] {
+        override func execute(stopId: Int, limit: Int = 10, date: String? = nil, time: String? = nil,
+                              cursorDate: String? = nil, cursorTime: String? = nil,
+                              direction: ArrivalsPageDirection = .next) async throws -> [Arrival] {
             if shouldThrowError {
                 throw TestError.forcedError
             }

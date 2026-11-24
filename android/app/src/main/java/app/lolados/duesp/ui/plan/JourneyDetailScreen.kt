@@ -25,6 +25,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -46,6 +47,18 @@ import app.lolados.duesp.ui.map.StaticRouteMap
 import app.lolados.duesp.ui.OfficialSource
 import app.lolados.duesp.ui.SourceFooter
 import app.lolados.duesp.ui.parseHexColor
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
+import app.lolados.duesp.domain.Arrival
+import app.lolados.duesp.domain.ArrivalCursor
+import app.lolados.duesp.domain.RideLeg
+import app.lolados.duesp.domain.TransitMode
+import app.lolados.duesp.ui.appContainer
+import java.time.Instant
+import java.time.LocalDate
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import org.osmdroid.util.GeoPoint
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,6 +68,7 @@ fun JourneyDetailScreen(
     originLabel: String,
     destinationLabel: String,
     onBack: () -> Unit,
+    serviceDay: LocalDate? = null,
     isSharing: Boolean = false,
     onShare: (() -> Unit)? = null,
 ) {
@@ -83,6 +97,7 @@ fun JourneyDetailScreen(
         val fallback = MaterialTheme.colorScheme.primary
         val walkColor = MaterialTheme.colorScheme.onSurfaceVariant
         val content = remember(journey, fallback, walkColor) { journeyMapContent(journey, fallback, walkColor) }
+        val prediction = boardingPrediction(journey.rides.firstOrNull(), serviceDay)
         val preview = remember(journey) { mutableStateOf<Bitmap?>(null) }
         var mapFocus by remember(journey) { mutableStateOf<List<GeoPoint>?>(null) }
         var showMap by remember(journey) { mutableStateOf(false) }
@@ -96,6 +111,17 @@ fun JourneyDetailScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             item { JourneySummaryCard(journey, originLabel, destinationLabel) }
+            if (prediction != null) {
+                item {
+                    PlanCard {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(stringResource(R.string.arrivals_olho_vivo_live), style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.primary)
+                            Text(stringResource(R.string.plan_live_boarding, prediction.routeShortName, prediction.headsign, prediction.displayTime))
+                        }
+                    }
+                }
+            }
             item {
                 Text(stringResource(R.string.plan_route_overview), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             }
@@ -124,6 +150,35 @@ fun JourneyDetailScreen(
             RouteMapDialog(stringResource(R.string.plan_map_title), content, mapFocus, onDismiss = { showMap = false })
         }
     }
+}
+
+@Composable
+private fun boardingPrediction(leg: RideLeg?, serviceDay: LocalDate?): Arrival? {
+    val stopId = leg?.board?.id ?: return null
+    val seconds = leg.board.time?.let(ArrivalCursor::gtfsSeconds) ?: return null
+    if (leg.mode != TransitMode.BUS || serviceDay == null || leg.tripId.isNullOrBlank()) return null
+    val departure = serviceDay.atStartOfDay(PlanViewModel.SAO_PAULO).toEpochSecond() + seconds
+    val repository = appContainer().transitRepository
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val result by produceState<Arrival?>(null, leg, departure, lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            value = null
+            while (departure - Instant.now().epochSecond in 0..3600) {
+                value = try {
+                    repository.arrivals(stopId, 40).firstOrNull {
+                        it.liveFromOlhoVivo && it.tripId == leg.tripId && it.minutesUntil(Instant.now().epochSecond) in 0..60
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    null
+                }
+                delay(30_000)
+            }
+            value = null
+        }
+    }
+    return result
 }
 
 private fun Place.geo(): GeoPoint? = if (hasLocation) GeoPoint(lat!!, lon!!) else null

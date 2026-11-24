@@ -16,7 +16,8 @@ struct Arrival: Identifiable {
     let routeTextColor: String
     let frequency: Int?
     let waitTime: Int
-    var isLiveFromOlhoVivo: Bool = false
+    let isLiveFromOlhoVivo: Bool
+    let vehicleId: String?
     let serviceDate: String?
     let scheduledTimestamp: Int?
 
@@ -36,6 +37,7 @@ struct Arrival: Identifiable {
         frequency: Int?,
         waitTime: Int,
         isLiveFromOlhoVivo: Bool = false,
+        vehicleId: String? = nil,
         serviceDate: String? = nil,
         scheduledTimestamp: Int? = nil
     ) {
@@ -53,6 +55,7 @@ struct Arrival: Identifiable {
         self.routeTextColor = routeTextColor
         self.frequency = frequency
         self.waitTime = waitTime
+        self.vehicleId = vehicleId
         self.isLiveFromOlhoVivo = isLiveFromOlhoVivo
         self.serviceDate = serviceDate
         self.scheduledTimestamp = scheduledTimestamp
@@ -102,7 +105,7 @@ struct Arrival: Identifiable {
 
     /// Stable key for UI selection comparisons.
     var selectionKey: String {
-        "\(tripId)|\(arrivalTime)|\(waitTime)"
+        "\(vehicleId ?? tripId)|\(arrivalTime)|\(waitTime)"
     }
 }
 

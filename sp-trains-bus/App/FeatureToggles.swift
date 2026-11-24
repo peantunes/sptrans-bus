@@ -5,17 +5,6 @@ enum FeatureToggles {
     static let isSearchEnabled = true
     static let isWeatherEnabled = false
     static let isHomeWorkLocationsEnabled = false
-    static let isOlhoVivoArrivalsEnabled = true
-
-    static func olhoVivoAPIKey(bundle: Bundle = .main) -> String? {
-        guard isOlhoVivoArrivalsEnabled else { return nil }
-        guard let rawValue = bundle.object(forInfoDictionaryKey: "OLHO_VIVO_API_KEY") as? String else {
-            return nil
-        }
-        let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
-    }
-
     static var availableUserPlaceTypes: [UserPlaceType] {
         if isHomeWorkLocationsEnabled {
             return UserPlaceType.allCases

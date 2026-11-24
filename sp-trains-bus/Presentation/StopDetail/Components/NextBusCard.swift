@@ -32,12 +32,11 @@ struct NextBusCard: View {
                             HStack(spacing: 4) {
                                 Image(systemName: "dot.radiowaves.up.forward")
                                     .font(.caption)
-                                Text("Live")
+                                Text(localized("stop_detail.olho_vivo_live"))
                                     .font(AppFonts.caption())
                             }
                             .foregroundColor(.teal)
                             .accessibilityElement(children: .combine)
-                            .accessibilityLabel("Live data")
                         }
                     }
 

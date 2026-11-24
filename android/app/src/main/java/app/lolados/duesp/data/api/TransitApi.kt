@@ -44,6 +44,7 @@ class TransitApi(
         "stop_id" to stopId.toString(),
         "limit" to limit.toString(),
         "direction" to direction,
+        "realtime" to if (date == null && time == null && cursorDate == null && cursorTime == null && direction == "next") "1" else null,
         "date" to date,
         "time" to time,
         "cursor_date" to cursorDate,

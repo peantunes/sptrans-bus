@@ -38,6 +38,7 @@ class StopDetailViewModel: ObservableObject {
     @Published private(set) var hasMorePreviousPage = true
     private var didObserveTopBoundary = false
     private var timer: Timer?
+    private var arrivalsRevision = 0
 
     init(
         stop: Stop,
@@ -207,17 +208,19 @@ class StopDetailViewModel: ObservableObject {
             return
         }
 
+        let revision = arrivalsRevision
         do {
             let fetchedArrivals = try await getArrivalsUseCase.execute(
                 stopId: stop.stopId,
                 limit: pageSize,
-                date: referenceDate,
-                time: referenceTime,
+                date: isUsingCustomReference ? referenceDate : nil,
+                time: isUsingCustomReference ? referenceTime : nil,
                 direction: .next
             )
+            guard revision == arrivalsRevision else { return }
             let normalized = normalizeArrivals(from: fetchedArrivals, now: referenceAnchorDate())
             arrivals = normalized
-            hasMoreNextPage = fetchedArrivals.count >= pageSize
+            hasMoreNextPage = fetchedArrivals.count >= pageSize || fetchedArrivals.contains { $0.isLiveFromOlhoVivo }
             hasMorePreviousPage = true
             refreshBoundaryCursors(from: fetchedArrivals)
             syncWatchArrivals()
@@ -231,6 +234,7 @@ class StopDetailViewModel: ObservableObject {
                 ]
             )
         } catch {
+            guard revision == arrivalsRevision else { return }
             self.errorMessage = error.localizedDescription
             self.isLoading = false
             analyticsService.trackEvent(
@@ -246,6 +250,7 @@ class StopDetailViewModel: ObservableObject {
     @MainActor
     private func fetchPagedArrivals(direction: ArrivalsPageDirection, cursorDate: String, cursorTime: String) async {
         guard let referenceDate, let referenceTime else { return }
+        let revision = arrivalsRevision
         do {
             let page = try await getArrivalsUseCase.execute(
                 stopId: stop.stopId,
@@ -257,6 +262,7 @@ class StopDetailViewModel: ObservableObject {
                 direction: direction
             )
 
+            guard revision == arrivalsRevision else { return }
             if page.isEmpty {
                 if direction == .next {
                     hasMoreNextPage = false
@@ -314,6 +320,8 @@ class StopDetailViewModel: ObservableObject {
                     routeTextColor: source.routeTextColor,
                     frequency: source.frequency,
                     waitTime: waitTime,
+                    isLiveFromOlhoVivo: source.isLiveFromOlhoVivo,
+                    vehicleId: source.vehicleId,
                     serviceDate: serviceDate,
                     scheduledTimestamp: scheduledTimestamp
                 )
@@ -354,6 +362,7 @@ class StopDetailViewModel: ObservableObject {
     }
 
     private func resetPaginationState() {
+        arrivalsRevision += 1
         newestCursorDate = nil
         newestCursorTime = nil
         oldestCursorDate = nil
@@ -407,7 +416,7 @@ class StopDetailViewModel: ObservableObject {
     }
 
     private func arrivalIdentity(_ arrival: Arrival) -> String {
-        "\(arrival.tripId)|\(arrival.serviceDate ?? "")|\(arrival.scheduledTimestamp ?? 0)|\(arrival.stopSequence)"
+        "\(arrival.vehicleId ?? arrival.tripId)|\(arrival.serviceDate ?? "")|\(arrival.scheduledTimestamp ?? 0)|\(arrival.stopSequence)"
     }
 
     private func shiftedCursor(serviceDate: String, gtfsTime: String, deltaSeconds: Int) -> (date: String, time: String)? {

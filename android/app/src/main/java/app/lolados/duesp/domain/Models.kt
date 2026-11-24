@@ -51,8 +51,10 @@ data class Arrival(
     val stopSequence: Int,
     /** Minutes between departures, when the line runs by frequency. */
     val frequencyMinutes: Int? = null,
+    val liveFromOlhoVivo: Boolean = false,
+    val vehicleId: String? = null,
 ) {
-    val identity: String get() = "$tripId|$serviceDate|$scheduledTimestamp|$stopSequence"
+    val identity: String get() = "${vehicleId ?: tripId}|$serviceDate|$scheduledTimestamp|$stopSequence"
 
     /**
      * Minutes until arrival, recomputed from the scheduled timestamp (the API `waitTime` is relative to

@@ -158,6 +158,8 @@ class TransitRepository(private val api: TransitApi) {
         routeColor = routeColor,
         routeTextColor = routeTextColor,
         waitMinutes = waitTime,
+        liveFromOlhoVivo = source == "olho_vivo",
+        vehicleId = vehicleId,
         serviceDate = serviceDate,
         scheduledTimestamp = scheduledTimestamp,
         stopSequence = stopSequence,

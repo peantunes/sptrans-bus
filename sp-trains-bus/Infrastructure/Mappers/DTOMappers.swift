@@ -41,6 +41,8 @@ extension ArrivalDTO {
             routeTextColor: routeTextColor,
             frequency: frequency,
             waitTime: waitTime,
+            isLiveFromOlhoVivo: source == "olho_vivo",
+            vehicleId: vehicleId,
             serviceDate: serviceDate,
             scheduledTimestamp: scheduledTimestamp
         )

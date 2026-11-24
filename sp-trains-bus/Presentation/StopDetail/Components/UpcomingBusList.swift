@@ -46,7 +46,7 @@ struct UpcomingBusList: View {
                     .contentShape(Rectangle())
                     .padding(.horizontal)
                     .onTapGesture {
-                        onArrivalTap?(arrival)
+                        if !arrival.tripId.isEmpty { onArrivalTap?(arrival) }
                     }
                 }
 
@@ -132,10 +132,9 @@ struct UpcomingBusRow: View {
                         
                         HStack(spacing: 8) {
                             if arrival.isLiveFromOlhoVivo {
-                                Image(systemName: "dot.radiowaves.up.forward")
+                                Label(localized("stop_detail.olho_vivo_live"), systemImage: "dot.radiowaves.up.forward")
                                     .font(.caption)
                                     .foregroundColor(.teal)
-                                    .accessibilityLabel("Live data")
                             }
 
                             if let frequency = arrival.frequency {
@@ -160,10 +159,11 @@ struct UpcomingBusRow: View {
                         .foregroundColor(waitTimeColor)
                 }
 
-                // Chevron
-                Image(systemName: "chevron.right")
-                    .font(.caption)
-                    .foregroundColor(AppColors.text.opacity(0.3))
+                if !arrival.tripId.isEmpty {
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundColor(AppColors.text.opacity(0.3))
+                }
             }
         }
         .overlay(

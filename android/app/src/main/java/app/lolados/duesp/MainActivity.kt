@@ -178,6 +178,7 @@ private fun DueSPApp(openStatusRequest: Int, sharedJourneyToken: String?, onShar
                         originLabel = state.context?.origin?.name.orEmpty(),
                         destinationLabel = state.context?.destination?.name.orEmpty(),
                         onBack = nav::popBackStack,
+                        serviceDay = serviceDay,
                         isSharing = sharer.isCreating,
                         onShare = if (journey != null && serviceDay != null && canShare(journey)) {
                             { scope.launch { sharer.share(journey, serviceDay) } }

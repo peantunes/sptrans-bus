@@ -92,7 +92,9 @@ struct JourneyLiveArrival {
                 && normalized($0.headsign) == normalized(headsign)
         }
         guard let arrival = matches.min(by: { $0.waitTime < $1.waitTime }) else { return nil }
-        return JourneyLiveArrival(expectedAt: now.addingTimeInterval(Double(arrival.waitTime) * 60),
+        let expectedAt = arrival.scheduledTimestamp.map { Date(timeIntervalSince1970: Double($0)) }
+            ?? now.addingTimeInterval(Double(arrival.waitTime) * 60)
+        return JourneyLiveArrival(expectedAt: expectedAt,
                                   checkedAt: now, headsign: arrival.headsign)
     }
 }

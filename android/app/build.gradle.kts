@@ -31,8 +31,8 @@ android {
         minSdk = 26
         targetSdk = 37
         // Matches the iOS marketing version.
-        versionCode = 10
-        versionName = "6"
+        versionCode = 11
+        versionName = "7"
 
         buildConfigField("String", "API_BASE_URL", "\"https://sptrans.lolados.app/api/\"")
     }

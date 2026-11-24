@@ -163,10 +163,18 @@ private fun ArrivalRow(arrival: Arrival, showCountdown: Boolean, onClick: () -> 
     val bg = parseHexColor(arrival.routeColor, MaterialTheme.colorScheme.primary)
     val fg = parseHexColor(arrival.routeTextColor, Color.White)
     ListItem(
-        modifier = Modifier.clickable(onClickLabel = stringResource(R.string.trip_title), onClick = onClick),
+        modifier = Modifier.clickable(enabled = arrival.tripId.isNotEmpty(), onClickLabel = stringResource(R.string.trip_title), onClick = onClick),
         leadingContent = { RouteBadge(arrival.routeShortName, bg, fg) },
         headlineContent = { Text(arrival.headsign.ifBlank { arrival.routeLongName }, maxLines = 1) },
-        supportingContent = { Text(arrival.displayTime, style = MaterialTheme.typography.bodySmall) },
+        supportingContent = {
+            Column {
+                Text(arrival.displayTime, style = MaterialTheme.typography.bodySmall)
+                if (arrival.liveFromOlhoVivo) {
+                    Text(stringResource(R.string.arrivals_olho_vivo_live), color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.labelSmall)
+                }
+            }
+        },
         trailingContent = {
             if (showCountdown) {
                 val minutes = arrival.minutesUntil(System.currentTimeMillis() / 1000)

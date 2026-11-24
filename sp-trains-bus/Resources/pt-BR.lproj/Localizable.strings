@@ -371,7 +371,7 @@
 "Last known status · may be outdated" = "Última situação informada · pode estar desatualizada";
 "Current rail status could not be confirmed for this journey." = "Não foi possível confirmar a situação atual de todas as linhas desta viagem.";
 "Latest reported line conditions. Recheck before departure; journey times do not include disruption delays." = "Última situação informada das linhas. Confira antes de sair; os tempos da viagem não incluem atrasos causados por ocorrências.";
-"Live at the boarding stop" = "Previsão em tempo real no embarque";
+"Live at the boarding stop" = "Olho Vivo · Ao vivo no embarque";
 "Next arrival: %@" = "Próxima chegada: %@";
 "This is a live stop prediction, not a confirmed delay for this journey." = "Previsão em tempo real para a parada. Ela não confirma atraso nesta viagem.";
 "Route overview" = "Visão geral do trajeto";
@@ -460,3 +460,5 @@
 "New trip" = "Nova viagem";
 "Choose destination" = "Escolher destino";
 "Next in" = "Próximo em";
+
+"stop_detail.olho_vivo_live" = "Olho Vivo · Ao vivo";

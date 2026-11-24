@@ -371,7 +371,7 @@
 "Last known status · may be outdated" = "Last known status · may be outdated";
 "Current rail status could not be confirmed for this journey." = "Current rail status could not be confirmed for this journey.";
 "Latest reported line conditions. Recheck before departure; journey times do not include disruption delays." = "Latest reported line conditions. Recheck before departure; journey times do not include disruption delays.";
-"Live at the boarding stop" = "Live at the boarding stop";
+"Live at the boarding stop" = "Olho Vivo · Live at the boarding stop";
 "Next arrival: %@" = "Next arrival: %@";
 "This is a live stop prediction, not a confirmed delay for this journey." = "This is a live stop prediction, not a confirmed delay for this journey.";
 "Route overview" = "Route overview";
@@ -460,3 +460,5 @@
 "New trip" = "New trip";
 "Choose destination" = "Choose destination";
 "Next in" = "Next in";
+
+"stop_detail.olho_vivo_live" = "Olho Vivo · Live";

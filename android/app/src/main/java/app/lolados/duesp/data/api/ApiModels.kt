@@ -40,6 +40,8 @@ data class ArrivalsResponse(
 
 @Serializable
 data class ArrivalDto(
+    val source: String? = null,
+    val vehicleId: String? = null,
     val tripId: String,
     val routeId: String,
     val routeShortName: String,

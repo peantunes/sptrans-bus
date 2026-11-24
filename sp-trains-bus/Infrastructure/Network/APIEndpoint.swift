@@ -100,6 +100,7 @@ extension TransitAPIEndpoint: APIEndpoint {
             ]
         case .arrivals(let stopId, let limit):
             return [
+                URLQueryItem(name: "realtime", value: "1"),
                 URLQueryItem(name: "stop_id", value: "\(stopId)"),
                 URLQueryItem(name: "limit", value: "\(limit)")
             ]
@@ -114,6 +115,9 @@ extension TransitAPIEndpoint: APIEndpoint {
             }
             if let time {
                 items.append(URLQueryItem(name: "time", value: time))
+            }
+            if direction == .next, date == nil, time == nil, cursorDate == nil, cursorTime == nil {
+                items.append(URLQueryItem(name: "realtime", value: "1"))
             }
             if let cursorDate {
                 items.append(URLQueryItem(name: "cursor_date", value: cursorDate))

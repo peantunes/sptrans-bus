@@ -114,6 +114,13 @@ class NetworkLayerTests: XCTestCase {
 
         XCTAssertEqual(arrivals.count, 1)
         XCTAssertEqual(arrivals.first?.tripId, "1012-10-0")
+        XCTAssertEqual(arrivals.first?.isLiveFromOlhoVivo, false)
+
+        let liveJSON = json.replacingOccurrences(of: #""waitTime""#, with: #""source":"olho_vivo","vehicleId":"11819","waitTime""#)
+        mockSession.data = Data(liveJSON.utf8)
+        let live = try await transitRepository.getArrivals(stopId: 18848, limit: 1)
+        XCTAssertEqual(live.first?.isLiveFromOlhoVivo, true)
+        XCTAssertEqual(live.first?.vehicleId, "11819")
     }
 
     func testSearchStopsSuccess() async throws {

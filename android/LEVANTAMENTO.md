@@ -16,7 +16,7 @@ Levantamento feito a partir do app iOS (`sp-trains-bus/`), em 16/11/2026.
 
 ### Detalhe do ponto (`Presentation/StopDetail`)
 - Próximas chegadas (`arrivals.php`) com contagem regressiva e card "próximo ônibus".
-- Chegadas em tempo real via **Olho Vivo** (SPTrans) quando há `OLHO_VIVO_API_KEY` (`OlhoVivoTransitRepositoryDecorator`).
+- Chegadas em tempo real via **Olho Vivo** (SPTrans) pela API de chegadas do backend, com fallback para o GTFS.
 - Paginação de chegadas anteriores/seguintes e escolha de data/hora → **Premium**.
 - Viagem (`trip.php`) com lista de paradas e mapa do trajeto (`shape.php`).
 - Favoritar ponto.

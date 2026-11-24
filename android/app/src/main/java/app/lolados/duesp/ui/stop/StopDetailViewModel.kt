@@ -40,6 +40,7 @@ class StopDetailViewModel(
     premium: PremiumAccess,
 ) : ViewModel() {
 
+    private var revision = 0
     private val _state = MutableStateFlow(StopDetailUiState())
     val state: StateFlow<StopDetailUiState> = _state.asStateFlow()
 
@@ -61,31 +62,34 @@ class StopDetailViewModel(
 
     /** Premium: arrivals from a custom date/time. */
     fun loadFrom(dateTime: LocalDateTime, custom: Boolean = true) {
+        val request = ++revision
         val date = dateTime.format(DateTimeFormatter.ISO_LOCAL_DATE)
         val time = dateTime.format(TIME_FORMAT)
         _state.update {
-            it.copy(isLoading = true, error = null, referenceDate = date, referenceTime = time, isCustomTime = custom)
+            it.copy(isLoading = true, isLoadingPage = false, error = null, referenceDate = date, referenceTime = time, isCustomTime = custom)
         }
         viewModelScope.launch {
-            runCatching { repository.arrivals(stop.id, PAGE_SIZE, date = date, time = time) }
+            runCatching { repository.arrivals(stop.id, PAGE_SIZE, date = date.takeIf { custom }, time = time.takeIf { custom }) }
                 .onSuccess { list ->
+                    if (request != revision) return@launch
                     _state.update {
                         it.copy(
                             arrivals = list.sortedForDisplay(),
                             isLoading = false,
-                            hasMoreNext = list.size >= PAGE_SIZE,
+                            hasMoreNext = list.size >= PAGE_SIZE || list.any { it.liveFromOlhoVivo },
                             hasMorePrevious = true,
                         )
                     }
                 }
-                .onFailure { e -> _state.update { it.copy(isLoading = false, error = e.message) } }
+                .onFailure { e -> if (request == revision) _state.update { it.copy(isLoading = false, error = e.message) } }
         }
     }
 
     /** Premium: load the next or previous page. */
     fun loadPage(previous: Boolean) {
         val current = _state.value
-        if (current.isLoadingPage) return
+        if (current.isLoading || current.isLoadingPage) return
+        val request = revision
         val cursor = if (previous) ArrivalCursor.previous(current.arrivals) else ArrivalCursor.next(current.arrivals)
         cursor ?: return
         _state.update { it.copy(isLoadingPage = true) }
@@ -98,6 +102,7 @@ class StopDetailViewModel(
                     direction = if (previous) "previous" else "next",
                 )
             }.onSuccess { page ->
+                if (request != revision) return@launch
                 _state.update { s ->
                     val merged = (if (previous) page + s.arrivals else s.arrivals + page)
                         .distinctBy { it.identity }
@@ -109,7 +114,7 @@ class StopDetailViewModel(
                         hasMorePrevious = if (previous) page.size >= PAGE_SIZE else s.hasMorePrevious,
                     )
                 }
-            }.onFailure { _state.update { it.copy(isLoadingPage = false) } }
+            }.onFailure { if (request == revision) _state.update { it.copy(isLoadingPage = false) } }
         }
     }
 

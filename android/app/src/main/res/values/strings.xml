@@ -44,6 +44,8 @@
 
     <string name="arrivals_title">Próximas chegadas</string>
     <string name="arrivals_empty">Nenhuma chegada prevista.</string>
+    <string name="plan_live_boarding">Próxima chegada no embarque: %1$s sentido %2$s às %3$s</string>
+    <string name="arrivals_olho_vivo_live">Olho Vivo · Ao vivo</string>
     <string name="arrivals_now">Agora</string>
     <string name="arrivals_minutes">%1$d min</string>
     <string name="arrivals_departed">Passou</string>

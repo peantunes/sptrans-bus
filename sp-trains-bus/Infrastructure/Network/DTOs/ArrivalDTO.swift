@@ -1,6 +1,8 @@
 import Foundation
 
 struct ArrivalDTO: Decodable {
+    let source: String?
+    let vehicleId: String?
     let tripId: String
     let routeId: String
     let routeShortName: String

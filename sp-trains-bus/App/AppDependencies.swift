@@ -49,17 +49,11 @@ class AppDependencies {
         transitDataModeService = UserDefaultsTransitDataModeService()
         analyticsService = AppAnalyticsService()
         watchSnapshotSync = WatchSnapshotStore()
-        let configurableRepository = ConfigurableTransitRepository(
+        transitRepository = ConfigurableTransitRepository(
             remoteRepository: remoteRepository,
             localRepository: localRepository,
             modeService: transitDataModeService,
             feedService: gtfsFeedService
-        )
-        let olhoVivoService = FeatureToggles.olhoVivoAPIKey()
-            .map { OlhoVivoArrivalsService(apiKey: $0) }
-        transitRepository = OlhoVivoTransitRepositoryDecorator(
-            baseRepository: configurableRepository,
-            olhoVivoService: olhoVivoService
         )
 
         // Application Layer - Use Cases
