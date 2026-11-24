@@ -11,3 +11,6 @@ captures/
 *.keystore
 *.jks
 keystore.properties
+
+# Firebase Android config supplied at build time
+/app/google-services.json

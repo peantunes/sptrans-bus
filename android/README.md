@@ -34,9 +34,11 @@ Status → "Alertas de interrupção" permite escolher linhas do Metrô/CPTM. O 
 Para ativar:
 
 1. Firebase console → criar projeto → adicionar app Android com o pacote `app.lolados.duesp`.
-2. Baixar `google-services.json` para `android/app/` (o plugin só é aplicado se o arquivo existir; não commite se preferir mantê-lo privado).
+2. Baixe o `google-services.json` atualizado para o app `app.lolados.duesp` e coloque-o em `android/app/` antes de compilar. O Git ignora esse arquivo. Em um servidor de build, forneça-o pelo armazenamento de segredos do CI e grave-o nesse mesmo caminho antes de executar o Gradle.
 3. Firebase → Configurações do projeto → Contas de serviço → gerar chave privada (JSON).
 4. No servidor: copiar o JSON para `/var/www/private/sptrans.lolados.app/fcm-service-account.json` (`root:www-data`, `640`) e adicionar `FCM_SERVICE_ACCOUNT_PATH` ao `private-config.php`.
+
+O `google-services.json` configura o Firebase no app e a chave de API é incorporada ao APK/AAB. Restrinja essa chave às APIs Firebase necessárias no Google Cloud. A chave privada da conta de serviço FCM deve ficar no servidor de notificações.
 
 Sem o `google-services.json`, o app compila normalmente e a tela de alertas avisa que as notificações não estão configuradas.
 
